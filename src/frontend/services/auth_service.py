@@ -214,4 +214,13 @@ class EntraIDAuthService:
 
 
 # Global authentication service instance
-auth_service = EntraIDAuthService()
+# Note: This is created lazily to avoid issues during testing and import
+_auth_service = None
+
+
+def get_auth_service() -> EntraIDAuthService:
+    """Get the global authentication service instance."""
+    global _auth_service
+    if _auth_service is None:
+        _auth_service = EntraIDAuthService()
+    return _auth_service

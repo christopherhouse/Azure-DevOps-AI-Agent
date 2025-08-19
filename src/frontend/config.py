@@ -2,7 +2,7 @@
 
 from typing import Optional
 from pydantic import Field
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -42,12 +42,12 @@ class Settings(BaseSettings):
         default="http://localhost:7860,http://127.0.0.1:7860", alias="CORS_ORIGINS"
     )
 
-    class Config:
-        """Pydantic configuration."""
-
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",  # Ignore extra fields during testing
+    )
 
     @property
     def authority_url(self) -> str:
@@ -75,4 +75,32 @@ class Settings(BaseSettings):
 
 
 # Global settings instance
-settings = Settings()
+try:
+    settings = Settings()  # type: ignore
+except Exception as e:
+    # Fallback for environments without required config
+    # This should only be used in development/testing environments
+    # Try to load from test environment file first
+    import os
+
+    # Look for .env.test in the repository root (../../.env.test from src/frontend/)
+    test_env_path = os.path.join(os.path.dirname(__file__), "..", "..", ".env.test")
+    if os.path.exists(test_env_path):
+        try:
+            settings = Settings(_env_file=test_env_path)  # type: ignore
+        except Exception:
+            # If test env file doesn't work, provide helpful error
+            raise RuntimeError(
+                "Required configuration missing. Please set the following environment variables: "
+                "AZURE_TENANT_ID, AZURE_CLIENT_ID. "
+                "For testing purposes, copy .env.example to .env or .env.test with appropriate values. "
+                f"Original error: {e}"
+            )
+    else:
+        # In production, all required environment variables must be set
+        raise RuntimeError(
+            "Required configuration missing. Please set the following environment variables: "
+            "AZURE_TENANT_ID, AZURE_CLIENT_ID. "
+            "For testing purposes, create a .env file with these values. "
+            f"Original error: {e}"
+        )
