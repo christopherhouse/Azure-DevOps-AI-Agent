@@ -1,0 +1,389 @@
+name: Infrastructure Deployment
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'infra/**' ]
+  pull_request:
+    branches: [ main ]
+    paths: [ 'infra/**' ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+      destroy:
+        description: 'Destroy infrastructure'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  AZURE_RESOURCE_GROUP_DEV: rg-azure-devops-agent-dev
+  AZURE_RESOURCE_GROUP_PROD: rg-azure-devops-agent-prod
+  AZURE_LOCATION: eastus
+
+jobs:
+  validate:
+    name: Validate Infrastructure
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Azure CLI
+      uses: azure/CLI@v1
+      with:
+        azcliversion: latest
+        
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        
+    - name: Validate Bicep templates
+      run: |
+        echo "Validating Bicep templates..."
+        
+        # Validate main template
+        az deployment group validate \
+          --resource-group ${{ env.AZURE_RESOURCE_GROUP_DEV }} \
+          --template-file infra/main.bicep \
+          --parameters infra/parameters/dev.bicepparam
+          
+        # Check for any linting issues
+        az bicep lint --file infra/main.bicep
+        
+    - name: Generate ARM template
+      run: |
+        az bicep build --file infra/main.bicep --outfile infra/main.json
+        
+    - name: Upload ARM template
+      uses: actions/upload-artifact@v3
+      with:
+        name: arm-template
+        path: infra/main.json
+
+  security-scan:
+    name: Security Scan Infrastructure
+    runs-on: ubuntu-latest
+    needs: validate
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download ARM template
+      uses: actions/download-artifact@v3
+      with:
+        name: arm-template
+        path: infra/
+        
+    - name: Run Checkov security scan
+      uses: bridgecrewio/checkov-action@master
+      with:
+        directory: infra/
+        framework: arm
+        output_format: sarif
+        output_file_path: checkov-results.sarif
+        
+    - name: Upload Checkov results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: checkov-results.sarif
+
+  deploy-dev:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    needs: [validate, security-scan]
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    environment: 
+      name: development
+      url: https://dev-azure-devops-agent.azurecontainerapps.io
+    
+    outputs:
+      frontend-url: ${{ steps.deploy.outputs.frontend-url }}
+      backend-url: ${{ steps.deploy.outputs.backend-url }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Azure CLI
+      uses: azure/CLI@v1
+      with:
+        azcliversion: latest
+        
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        
+    - name: Create Resource Group
+      run: |
+        az group create \
+          --name ${{ env.AZURE_RESOURCE_GROUP_DEV }} \
+          --location ${{ env.AZURE_LOCATION }} \
+          --tags environment=dev project=azure-devops-agent
+          
+    - name: Deploy Infrastructure
+      id: deploy
+      run: |
+        echo "Deploying to development environment..."
+        
+        # Deploy main infrastructure
+        deployment_output=$(az deployment group create \
+          --resource-group ${{ env.AZURE_RESOURCE_GROUP_DEV }} \
+          --template-file infra/main.bicep \
+          --parameters infra/parameters/dev.bicepparam \
+          --query 'properties.outputs' \
+          --output json)
+        
+        # Extract outputs
+        frontend_url=$(echo $deployment_output | jq -r '.frontendUrl.value')
+        backend_url=$(echo $deployment_output | jq -r '.backendUrl.value')
+        
+        echo "frontend-url=${frontend_url}" >> $GITHUB_OUTPUT
+        echo "backend-url=${backend_url}" >> $GITHUB_OUTPUT
+        
+        echo "✅ Infrastructure deployed successfully"
+        echo "🌐 Frontend URL: ${frontend_url}"
+        echo "🔗 Backend URL: ${backend_url}"
+        
+    - name: Configure Container Apps
+      run: |
+        echo "Configuring Container Apps..."
+        
+        # Update container app with latest images if available
+        if [[ "${{ github.event_name }}" == "push" ]]; then
+          # Get the latest image tags
+          backend_image="ghcr.io/${{ github.repository }}/backend:${{ github.sha }}"
+          frontend_image="ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}"
+          
+          echo "Updating container images..."
+          echo "Backend: ${backend_image}"
+          echo "Frontend: ${frontend_image}"
+          
+          # Update backend container app
+          az containerapp update \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP_DEV }} \
+            --name backend-app \
+            --image ${backend_image}
+            
+          # Update frontend container app
+          az containerapp update \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP_DEV }} \
+            --name frontend-app \
+            --image ${frontend_image}
+        fi
+        
+    - name: Smoke Test
+      run: |
+        echo "Running smoke tests..."
+        
+        # Wait for deployment to be ready
+        sleep 60
+        
+        # Test backend health endpoint
+        backend_url="${{ steps.deploy.outputs.backend-url }}"
+        if curl -f "${backend_url}/health" > /dev/null 2>&1; then
+          echo "✅ Backend health check passed"
+        else
+          echo "❌ Backend health check failed"
+          exit 1
+        fi
+        
+        # Test frontend accessibility
+        frontend_url="${{ steps.deploy.outputs.frontend-url }}"
+        if curl -f "${frontend_url}" > /dev/null 2>&1; then
+          echo "✅ Frontend accessibility check passed"
+        else
+          echo "❌ Frontend accessibility check failed"
+          exit 1
+        fi
+
+  deploy-prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: deploy-dev
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: 
+      name: production
+      url: https://azure-devops-agent.azurecontainerapps.io
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Azure CLI
+      uses: azure/CLI@v1
+      with:
+        azcliversion: latest
+        
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS_PROD }}
+        
+    - name: Create Resource Group
+      run: |
+        az group create \
+          --name ${{ env.AZURE_RESOURCE_GROUP_PROD }} \
+          --location ${{ env.AZURE_LOCATION }} \
+          --tags environment=prod project=azure-devops-agent
+          
+    - name: Deploy Infrastructure
+      id: deploy
+      run: |
+        echo "Deploying to production environment..."
+        
+        # Deploy main infrastructure
+        deployment_output=$(az deployment group create \
+          --resource-group ${{ env.AZURE_RESOURCE_GROUP_PROD }} \
+          --template-file infra/main.bicep \
+          --parameters infra/parameters/prod.bicepparam \
+          --query 'properties.outputs' \
+          --output json)
+        
+        # Extract outputs
+        frontend_url=$(echo $deployment_output | jq -r '.frontendUrl.value')
+        backend_url=$(echo $deployment_output | jq -r '.backendUrl.value')
+        
+        echo "frontend-url=${frontend_url}" >> $GITHUB_OUTPUT
+        echo "backend-url=${backend_url}" >> $GITHUB_OUTPUT
+        
+        echo "✅ Production infrastructure deployed successfully"
+        echo "🌐 Frontend URL: ${frontend_url}"
+        echo "🔗 Backend URL: ${backend_url}"
+        
+    - name: Blue-Green Deployment
+      run: |
+        echo "Performing blue-green deployment..."
+        
+        # Get the latest tested images from dev
+        backend_image="ghcr.io/${{ github.repository }}/backend:${{ github.sha }}"
+        frontend_image="ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}"
+        
+        echo "Deploying tested images to production..."
+        echo "Backend: ${backend_image}"
+        echo "Frontend: ${frontend_image}"
+        
+        # Deploy to staging slot first (if using deployment slots)
+        # For Container Apps, we'll use a gradual rollout
+        
+        # Update backend with traffic splitting
+        az containerapp update \
+          --resource-group ${{ env.AZURE_RESOURCE_GROUP_PROD }} \
+          --name backend-app \
+          --image ${backend_image}
+          
+        # Update frontend with traffic splitting
+        az containerapp update \
+          --resource-group ${{ env.AZURE_RESOURCE_GROUP_PROD }} \
+          --name frontend-app \
+          --image ${frontend_image}
+          
+    - name: Production Smoke Test
+      run: |
+        echo "Running production smoke tests..."
+        
+        # Wait for deployment to be ready
+        sleep 90
+        
+        # Test backend health endpoint
+        backend_url="${{ steps.deploy.outputs.backend-url }}"
+        if curl -f "${backend_url}/health" > /dev/null 2>&1; then
+          echo "✅ Production backend health check passed"
+        else
+          echo "❌ Production backend health check failed"
+          exit 1
+        fi
+        
+        # Test frontend accessibility
+        frontend_url="${{ steps.deploy.outputs.frontend-url }}"
+        if curl -f "${frontend_url}" > /dev/null 2>&1; then
+          echo "✅ Production frontend accessibility check passed"
+        else
+          echo "❌ Production frontend accessibility check failed"
+          exit 1
+        fi
+        
+        echo "🚀 Production deployment completed successfully!"
+
+  destroy-infrastructure:
+    name: Destroy Infrastructure
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.destroy == 'true'
+    environment: 
+      name: ${{ github.event.inputs.environment }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Azure CLI
+      uses: azure/CLI@v1
+      with:
+        azcliversion: latest
+        
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        
+    - name: Set environment variables
+      run: |
+        if [[ "${{ github.event.inputs.environment }}" == "prod" ]]; then
+          echo "RESOURCE_GROUP=${{ env.AZURE_RESOURCE_GROUP_PROD }}" >> $GITHUB_ENV
+        else
+          echo "RESOURCE_GROUP=${{ env.AZURE_RESOURCE_GROUP_DEV }}" >> $GITHUB_ENV
+        fi
+        
+    - name: Confirm destruction
+      run: |
+        echo "⚠️ WARNING: This will destroy all resources in ${{ env.RESOURCE_GROUP }}"
+        echo "Environment: ${{ github.event.inputs.environment }}"
+        echo "Proceeding with destruction in 10 seconds..."
+        sleep 10
+        
+    - name: Destroy Infrastructure
+      run: |
+        echo "Destroying infrastructure in ${{ env.RESOURCE_GROUP }}..."
+        
+        # Delete the entire resource group
+        az group delete \
+          --name ${{ env.RESOURCE_GROUP }} \
+          --yes \
+          --no-wait
+          
+        echo "🗑️ Infrastructure destruction initiated"
+        echo "💡 Resources will be deleted in the background"
+
+  notify-teams:
+    name: Notify Microsoft Teams
+    runs-on: ubuntu-latest
+    needs: [deploy-dev, deploy-prod]
+    if: always() && (needs.deploy-dev.result == 'success' || needs.deploy-prod.result == 'success')
+    
+    steps:
+    - name: Send Teams notification
+      uses: aliencube/microsoft-teams-actions@v0.8.0
+      with:
+        webhook_uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+        title: 'Azure DevOps AI Agent Deployment'
+        summary: 'Infrastructure deployment completed'
+        text: |
+          **Environment**: ${{ github.event.inputs.environment || 'dev' }}
+          **Status**: ${{ job.status }}
+          **Commit**: ${{ github.sha }}
+          **Author**: ${{ github.actor }}
+          
+          ${{ needs.deploy-dev.result == 'success' && format('✅ Development: {0}', needs.deploy-dev.outputs.frontend-url) || '' }}
+          ${{ needs.deploy-prod.result == 'success' && format('🚀 Production: {0}', needs.deploy-prod.outputs.frontend-url) || '' }}
+        theme_color: ${{ job.status == 'success' && '00FF00' || 'FF0000' }}
