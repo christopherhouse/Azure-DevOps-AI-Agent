@@ -1,5 +1,5 @@
 // Production environment parameters for Azure DevOps AI Agent
-using 'main.bicep'
+using '../main.bicep'
 
 // Environment configuration
 param environment = 'prod'
