@@ -73,6 +73,7 @@ except Exception as e:
     # This should only be used in development/testing environments
     # Try to load from test environment file first
     import os
+
     if os.path.exists(".env.test"):
         try:
             settings = Settings(_env_file=".env.test")  # type: ignore
