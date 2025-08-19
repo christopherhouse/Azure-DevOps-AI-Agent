@@ -102,7 +102,7 @@ class AuthenticationService:
 
         return Token(
             access_token=encoded_jwt,
-            token_type="bearer",
+            token_type="bearer",  # nosec B106
             expires_in=self.jwt_expire_minutes * 60,
         )
 

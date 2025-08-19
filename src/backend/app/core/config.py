@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     environment: str = Field(default="development", description="Environment name")
 
     # Server
-    host: str = Field(default="0.0.0.0", description="Server host")
+    host: str = Field(default="0.0.0.0", description="Server host")  # nosec B104
     port: int = Field(default=8000, description="Server port")
 
     # Authentication - Azure Entra ID
@@ -68,10 +68,27 @@ class Settings(BaseSettings):
 # Global settings instance
 try:
     settings = Settings()  # type: ignore
-except Exception:
+except Exception as e:
     # Fallback for environments without required config
-    settings = Settings(
-        azure_tenant_id="mock-tenant",
-        azure_client_id="mock-client",
-        jwt_secret_key="mock-secret-key-32-chars-long",
-    )
+    # This should only be used in development/testing environments
+    # Try to load from test environment file first
+    import os
+    if os.path.exists(".env.test"):
+        try:
+            settings = Settings(_env_file=".env.test")  # type: ignore
+        except Exception:
+            # If test env file doesn't work, provide helpful error
+            raise RuntimeError(
+                "Required configuration missing. Please set the following environment variables: "
+                "AZURE_TENANT_ID, AZURE_CLIENT_ID, JWT_SECRET_KEY. "
+                "For testing purposes, copy .env.example to .env or .env.test with appropriate values. "
+                f"Original error: {e}"
+            )
+    else:
+        # In production, all required environment variables must be set
+        raise RuntimeError(
+            "Required configuration missing. Please set the following environment variables: "
+            "AZURE_TENANT_ID, AZURE_CLIENT_ID, JWT_SECRET_KEY. "
+            "For testing purposes, create a .env file with these values. "
+            f"Original error: {e}"
+        )

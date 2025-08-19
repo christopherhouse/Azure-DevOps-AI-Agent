@@ -1,0 +1,14 @@
+# Bandit configuration file
+# Documentation: https://bandit.readthedocs.io/en/latest/config.html
+
+[bandit]
+# Skip specific tests that are false positives or acceptable in our context
+# B104: Hardcoded bind all interfaces - acceptable for containerized applications
+# B106: Hardcoded password for "bearer" token type - false positive (not a password)
+skips = 
+
+# Exclude test directories and other non-production paths
+exclude = tests,*.md,.git,__pycache__,.tox,.eggs,*.egg
+
+# Include all severity levels by default
+# We'll address issues through code fixes rather than hiding them
