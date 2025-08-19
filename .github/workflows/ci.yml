@@ -57,7 +57,7 @@ jobs:
         bandit -r src/backend/app -f json -o bandit-report.json
         
     - name: Upload Bandit results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: bandit-results
@@ -109,14 +109,14 @@ jobs:
         pytest tests/ --cov=app --cov-report=xml --cov-report=html --junitxml=test-results.xml
         
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: backend-test-results
         path: src/backend/test-results.xml
         
     - name: Upload coverage reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: backend-coverage
@@ -163,14 +163,14 @@ jobs:
         pytest tests/ --cov=app --cov-report=xml --cov-report=html --junitxml=test-results.xml
         
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: frontend-test-results
         path: src/frontend/test-results.xml
         
     - name: Upload coverage reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: frontend-coverage

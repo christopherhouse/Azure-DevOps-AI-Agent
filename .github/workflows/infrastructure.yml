@@ -64,7 +64,7 @@ jobs:
         az bicep build --file infra/main.bicep --outfile infra/main.json
         
     - name: Upload ARM template
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: arm-template
         path: infra/main.json
@@ -79,7 +79,7 @@ jobs:
       uses: actions/checkout@v4
       
     - name: Download ARM template
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: arm-template
         path: infra/
