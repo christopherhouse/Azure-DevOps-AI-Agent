@@ -72,6 +72,6 @@ except Exception:
     # Fallback for environments without required config
     settings = Settings(
         azure_tenant_id="mock-tenant",
-        azure_client_id="mock-client", 
-        jwt_secret_key="mock-secret-key-32-chars-long"
+        azure_client_id="mock-client",
+        jwt_secret_key="mock-secret-key-32-chars-long",
     )

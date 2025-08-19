@@ -2,7 +2,13 @@
 
 import logging
 from fastapi import APIRouter, HTTPException, status, Depends, Query
-from app.models.projects import Project, ProjectCreate, ProjectUpdate, ProjectList, ProjectState
+from app.models.projects import (
+    Project,
+    ProjectCreate,
+    ProjectUpdate,
+    ProjectList,
+    ProjectState,
+)
 from app.models.auth import User
 from app.core.dependencies import get_current_user
 

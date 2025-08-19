@@ -1,7 +1,6 @@
 """Main Gradio application for Azure DevOps AI Agent."""
 
 import logging
-import os
 import sys
 from pathlib import Path
 
@@ -22,11 +21,13 @@ load_dotenv()
 # Configure logging
 logging.basicConfig(
     level=logging.INFO if settings.debug else logging.WARNING,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler('frontend.log') if not settings.debug else logging.NullHandler()
-    ]
+        logging.FileHandler("frontend.log")
+        if not settings.debug
+        else logging.NullHandler(),
+    ],
 )
 
 logger = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 def create_main_interface() -> gr.Blocks:
     """Create the main application interface.
-    
+
     Returns:
         Gradio Blocks interface
     """
@@ -181,23 +182,20 @@ def create_main_interface() -> gr.Blocks:
         }
     }
     """
-    
+
     # Add Application Insights JavaScript SDK
     app_insights_js = telemetry.get_javascript_snippet()
     if app_insights_js:
         custom_css += f"\n/* Application Insights */\n{app_insights_js}"
-    
+
     with gr.Blocks(
         title="Azure DevOps AI Agent",
         theme=gr.themes.Soft(
-            primary_hue="blue",
-            secondary_hue="gray",
-            neutral_hue="gray"
+            primary_hue="blue", secondary_hue="gray", neutral_hue="gray"
         ),
         css=custom_css,
-        head=app_insights_js
+        head=app_insights_js,
     ) as app:
-        
         # Application header
         with gr.Row():
             with gr.Column():
@@ -207,17 +205,17 @@ def create_main_interface() -> gr.Blocks:
                     <p>Intelligent assistant for Azure DevOps project management</p>
                 </div>
                 """)
-        
+
         # Authentication state and interface switching
-        auth_status = gr.State(value=auth_state.is_authenticated())
-        
+        gr.State(value=auth_state.is_authenticated())
+
         # Conditional interface rendering based on authentication
-        with gr.Column(visible=not auth_state.is_authenticated()) as login_section:
-            login_interface = create_login_interface()
-        
-        with gr.Column(visible=auth_state.is_authenticated()) as chat_section:
-            chat_interface = create_chat_interface()
-        
+        with gr.Column(visible=not auth_state.is_authenticated()):
+            create_login_interface()
+
+        with gr.Column(visible=auth_state.is_authenticated()):
+            create_chat_interface()
+
         # Footer
         with gr.Row():
             gr.HTML("""
@@ -237,7 +235,7 @@ def create_main_interface() -> gr.Blocks:
                 </p>
             </div>
             """)
-        
+
         # Track page view
         def track_app_load():
             """Track application load."""
@@ -247,15 +245,15 @@ def create_main_interface() -> gr.Blocks:
                     url=settings.frontend_url,
                     properties={
                         "environment": settings.environment,
-                        "authenticated": auth_state.is_authenticated()
-                    }
+                        "authenticated": auth_state.is_authenticated(),
+                    },
                 )
             except Exception as e:
                 logger.error(f"Failed to track page view: {e}")
-        
+
         # Load event handler
         app.load(fn=track_app_load)
-    
+
     return app
 
 
@@ -267,37 +265,35 @@ def main():
         logger.info(f"Frontend URL: {settings.frontend_url}")
         logger.info(f"Backend URL: {settings.backend_url}")
         logger.info(f"Telemetry enabled: {settings.enable_telemetry}")
-        
+
         # Track application startup
         telemetry.track_event(
             "app_startup",
-            properties={
-                "environment": settings.environment,
-                "version": "1.0.0"
-            }
+            properties={"environment": settings.environment, "version": "1.0.0"},
         )
-        
+
         # Create and launch the interface
         app = create_main_interface()
-        
+
         # Launch configuration
         launch_kwargs = {
             "server_name": "0.0.0.0",  # Allow external connections
             "server_port": 7860,
             "show_api": False,  # Hide API docs in production
             "share": settings.environment == "development",  # Only share in dev
-            "inbrowser": settings.environment == "development",  # Only open browser in dev
+            "inbrowser": settings.environment
+            == "development",  # Only open browser in dev
             "favicon_path": None,  # Could add custom favicon
             "ssl_verify": settings.require_https,
             "auth": None,  # We handle auth internally
             "max_threads": 10,
-            "show_error": settings.debug
+            "show_error": settings.debug,
         }
-        
+
         logger.info(f"Launching Gradio app on port {launch_kwargs['server_port']}")
-        
+
         app.launch(**launch_kwargs)
-        
+
     except KeyboardInterrupt:
         logger.info("Application stopped by user")
         telemetry.track_event("app_shutdown", properties={"reason": "user_interrupt"})
