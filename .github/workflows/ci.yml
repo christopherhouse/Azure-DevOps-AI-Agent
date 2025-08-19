@@ -217,6 +217,7 @@ jobs:
           type=ref,event=pr
           type=sha,prefix={{branch}}-
           type=raw,value=latest,enable={{is_default_branch}}
+          type=raw,value=run-${{ github.run_id }}
           
     - name: Extract metadata for frontend
       id: meta-frontend
@@ -228,6 +229,7 @@ jobs:
           type=ref,event=pr
           type=sha,prefix={{branch}}-
           type=raw,value=latest,enable={{is_default_branch}}
+          type=raw,value=run-${{ github.run_id }}
           
     - name: Build and push backend image
       uses: docker/build-push-action@v5
@@ -310,8 +312,10 @@ jobs:
         git log ${{ steps.get-latest-tag.outputs.latest_tag }}..HEAD --pretty=format:"- %s (%h)" >> release-notes.md
         echo "" >> release-notes.md
         echo "## Container Images" >> release-notes.md
-        echo "- Backend: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}\`" >> release-notes.md
-        echo "- Frontend: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}\`" >> release-notes.md
+        echo "- Backend: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:run-${{ github.run_id }}\`" >> release-notes.md
+        echo "- Frontend: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:run-${{ github.run_id }}\`" >> release-notes.md
+        echo "" >> release-notes.md
+        echo "**Workflow Run ID**: ${{ github.run_id }}" >> release-notes.md
         
     - name: Create release
       uses: actions/create-release@v1
