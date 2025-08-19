@@ -54,7 +54,7 @@ jobs:
         az deployment group validate \
           --resource-group ${{ env.AZURE_RESOURCE_GROUP_DEV }} \
           --template-file infra/main.bicep \
-          --parameters infra/parameters/dev.bicepparam
+          --parameters infra/parameters/main.dev.bicepparam
           
         # Check for any linting issues
         az bicep lint --file infra/main.bicep
@@ -141,7 +141,7 @@ jobs:
         deployment_output=$(az deployment group create \
           --resource-group ${{ env.AZURE_RESOURCE_GROUP_DEV }} \
           --template-file infra/main.bicep \
-          --parameters infra/parameters/dev.bicepparam \
+          --parameters infra/parameters/main.dev.bicepparam \
           --query 'properties.outputs' \
           --output json)
         
@@ -247,7 +247,7 @@ jobs:
         deployment_output=$(az deployment group create \
           --resource-group ${{ env.AZURE_RESOURCE_GROUP_PROD }} \
           --template-file infra/main.bicep \
-          --parameters infra/parameters/prod.bicepparam \
+          --parameters infra/parameters/main.prod.bicepparam \
           --query 'properties.outputs' \
           --output json)
         

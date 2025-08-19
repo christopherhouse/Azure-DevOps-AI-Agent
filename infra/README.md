@@ -1,99 +1,84 @@
-# Infrastructure Documentation
+# Azure DevOps AI Agent Infrastructure
 
-This directory contains Infrastructure as Code (IaC) templates for deploying the Azure DevOps AI Agent solution to Azure.
+This directory contains the Infrastructure as Code (IaC) for the Azure DevOps AI Agent using Bicep templates and Azure Verified Modules (AVM).
 
 ## Overview
 
-The infrastructure is defined using Azure Bicep templates and follows Azure Well-Architected Framework principles. The deployment creates all necessary Azure resources for hosting the containerized application.
+The infrastructure deployment uses **Azure Verified Modules (AVM)** exclusively for all supported Azure resource types. AVM provides Microsoft-verified, tested, and supported Bicep modules that follow consistent patterns and best practices.
 
-## Architecture Components
+## Architecture
 
-### Core Services
-- **Azure Container Apps**: Hosts frontend and backend applications
-- **Azure Container Registry**: Stores container images
-- **Azure OpenAI**: Provides AI capabilities via GPT-4
-- **Azure Key Vault**: Secures secrets and certificates
-- **Application Insights**: Monitors application performance
-- **Log Analytics**: Centralized logging and analytics
+### Core Components
 
-### Supporting Services
-- **Managed Identity**: Secure access to Azure resources
-- **Resource Groups**: Logical resource organization
-- **RBAC**: Role-based access control
+- **Azure Container Apps Environment**: Hosts the frontend and backend applications
+- **Azure Container Registry**: Stores container images with managed identity authentication
+- **Azure OpenAI Service**: Provides GPT-4 AI capabilities for the agent
+- **Azure Key Vault**: Securely stores secrets and certificates
+- **Application Insights**: Application performance monitoring and telemetry
+- **Log Analytics Workspace**: Centralized logging and analytics
+- **User-Assigned Managed Identity**: Secure authentication between Azure services
 
-## Environments
+### Network Security
 
-### Development (dev)
-- **Purpose**: Development and testing
-- **Cost Optimization**: Smaller SKUs, fewer replicas
-- **Features**: Basic monitoring, 30-day log retention
-
-### Production (prod)
-- **Purpose**: Production workloads
-- **High Availability**: Zone redundancy, multiple replicas
-- **Features**: Enhanced monitoring, 90-day log retention, premium SKUs
+- Private registry authentication using managed identity
+- Key Vault integration for secret management
+- Role-based access control (RBAC) for least-privilege access
+- Diagnostic settings configured for all resources with category groups
 
 ## File Structure
 
 ```
 infra/
-├── main.bicep              # Main infrastructure template
+├── main.bicep                          # Main deployment template using AVM modules
+├── main-original.bicep                 # Original template (backup)
 ├── parameters/
-│   ├── dev.bicepparam     # Development environment parameters
-│   └── prod.bicepparam    # Production environment parameters
-├── modules/               # Custom Bicep modules (if needed)
-└── README.md             # This file
+│   ├── main.dev.bicepparam            # Development environment parameters
+│   └── main.prod.bicepparam           # Production environment parameters
+└── README.md                          # This file
 ```
 
-## Prerequisites
+## Azure Verified Modules Used
 
-### Required Tools
-- **Azure CLI**: Version 2.50.0 or later
-- **Bicep CLI**: Version 0.20.0 or later
-- **PowerShell**: Version 7.0 or later (optional)
+| Resource Type | AVM Module | Version |
+|---------------|------------|---------|
+| Managed Identity | `avm/res/managed-identity/user-assigned-identity` | 0.4.0 |
+| Log Analytics | `avm/res/operational-insights/workspace` | 0.11.1 |
+| Application Insights | `avm/res/insights/component` | 0.6.0 |
+| Container Registry | `avm/res/container-registry/registry` | 0.9.1 |
+| Key Vault | `avm/res/key-vault/vault` | 0.12.1 |
+| Azure OpenAI | `avm/res/cognitive-services/account` | 0.10.1 |
+| Container Apps Environment | `avm/res/app/managed-environment` | 0.10.0 |
+| Container Apps | `avm/res/app/container-app` | 0.12.0 |
 
-### Required Permissions
-- **Subscription Contributor**: To create and manage resources
-- **User Access Administrator**: To assign RBAC roles
+All modules use the latest stable versions and are configured with:
+- Diagnostic settings using category groups (recommended best practice)
+- Proper resource tagging
+- Managed identity authentication
+- RBAC assignments for secure access
 
-### Required Information
-- Azure DevOps organization URL
-- Microsoft Entra ID tenant ID and client ID
-- Custom domain name (for production)
+## Deployment
 
-## Deployment Instructions
+### Prerequisites
 
-### 1. Prepare Environment
+- Azure CLI with Bicep extension
+- Azure subscription with appropriate permissions
+- Resource group created for the target environment
+
+### Local Validation
 
 ```bash
-# Login to Azure
-az login
+# Lint the main template
+az bicep lint --file main.bicep
 
-# Set subscription
-az account set --subscription "Your Subscription Name"
+# Build the template to validate syntax
+az bicep build --file main.bicep
 
-# Install/update Bicep
-az bicep install
-az bicep upgrade
+# Validate parameter files
+az bicep build-params --file parameters/main.dev.bicepparam
+az bicep build-params --file parameters/main.prod.bicepparam
 ```
 
-### 2. Validate Templates
-
-```bash
-# Validate development environment
-az deployment group validate \
-  --resource-group rg-azure-devops-agent-dev \
-  --template-file main.bicep \
-  --parameters parameters/dev.bicepparam
-
-# Validate production environment
-az deployment group validate \
-  --resource-group rg-azure-devops-agent-prod \
-  --template-file main.bicep \
-  --parameters parameters/prod.bicepparam
-```
-
-### 3. Deploy to Development
+### Development Environment
 
 ```bash
 # Create resource group
@@ -102,15 +87,14 @@ az group create \
   --location eastus \
   --tags environment=dev project=azure-devops-agent
 
-# Deploy infrastructure
+# Deploy to development
 az deployment group create \
   --resource-group rg-azure-devops-agent-dev \
   --template-file main.bicep \
-  --parameters parameters/dev.bicepparam \
-  --name "infra-deployment-$(date +%Y%m%d-%H%M%S)"
+  --parameters parameters/main.dev.bicepparam
 ```
 
-### 4. Deploy to Production
+### Production Environment
 
 ```bash
 # Create resource group
@@ -119,17 +103,43 @@ az group create \
   --location eastus \
   --tags environment=prod project=azure-devops-agent
 
-# Deploy infrastructure
+# Deploy to production
 az deployment group create \
   --resource-group rg-azure-devops-agent-prod \
   --template-file main.bicep \
-  --parameters parameters/prod.bicepparam \
-  --name "infra-deployment-$(date +%Y%m%d-%H%M%S)"
+  --parameters parameters/main.prod.bicepparam
 ```
 
-## Post-Deployment Configuration
+## CI/CD Integration
 
-### 1. Configure Secrets in Key Vault
+The GitHub Actions workflow (`.github/workflows/infrastructure.yml`) is configured to:
+
+1. **Validate**: Lint and validate templates against target resource groups
+2. **Security Scan**: Run Checkov security analysis on generated ARM templates
+3. **Deploy Dev**: Deploy to development environment automatically on main branch changes
+4. **Deploy Prod**: Deploy to production with manual approval and blue-green deployment strategy
+
+## Configuration
+
+### Environment-Specific Settings
+
+| Setting | Development | Production |
+|---------|-------------|------------|
+| SKU Tier | Standard | Premium |
+| Min Replicas | 1 | 2 |
+| Max Replicas | 3 | 10 |
+| CPU | 0.5 | 1.0 |
+| Memory | 1Gi | 2Gi |
+| Log Retention | 30 days | 90 days |
+| Zone Redundancy | Disabled | Enabled |
+| Purge Protection | Disabled | Enabled |
+
+### Required Secrets
+
+The following secrets must be manually added to Key Vault after deployment:
+
+- `azure-openai-key`: OpenAI service access key
+- `entra-client-secret`: Microsoft Entra ID application secret
 
 ```bash
 # Set Azure OpenAI API key
@@ -143,50 +153,32 @@ az keyvault secret set \
   --vault-name azdo-ai-agent-dev-kv \
   --name entra-client-secret \
   --value "your-entra-client-secret"
-
-# Set Azure DevOps PAT (if needed)
-az keyvault secret set \
-  --vault-name azdo-ai-agent-dev-kv \
-  --name azure-devops-pat \
-  --value "your-azure-devops-pat"
 ```
 
-### 2. Update Container Images
+## Security Features
+
+- **Managed Identity**: All inter-service authentication uses managed identities
+- **RBAC**: Least-privilege access with specific role assignments:
+  - `AcrPull`: Container registry access
+  - `Key Vault Secrets User`: Key vault secret access
+  - `Cognitive Services User`: OpenAI service access
+- **Private Networking**: Optional private endpoints for enhanced security
+- **Diagnostic Logging**: Comprehensive logging for security monitoring
+- **Secret Management**: All sensitive data stored in Key Vault
+
+## Monitoring & Observability
+
+- **Application Insights**: Application performance monitoring
+- **Log Analytics**: Centralized logging and query capabilities
+- **Diagnostic Settings**: All resources configured with category groups for optimal log collection
+- **Health Checks**: Container app health monitoring
 
 ```bash
-# Get Container Registry login server
-ACR_LOGIN_SERVER=$(az acr show \
-  --name azdoaiagentdevacr \
-  --resource-group rg-azure-devops-agent-dev \
-  --query loginServer \
-  --output tsv)
+# Check backend health
+curl https://azdo-ai-agent-dev-backend.proudsand-12345.eastus.azurecontainerapps.io/health
 
-# Update backend container app
-az containerapp update \
-  --resource-group rg-azure-devops-agent-dev \
-  --name azdo-ai-agent-dev-backend \
-  --image ${ACR_LOGIN_SERVER}/backend:latest
-
-# Update frontend container app
-az containerapp update \
-  --resource-group rg-azure-devops-agent-dev \
-  --name azdo-ai-agent-dev-frontend \
-  --image ${ACR_LOGIN_SERVER}/frontend:latest
-```
-
-### 3. Configure DNS (Production Only)
-
-```bash
-# Get Container App FQDN
-FRONTEND_FQDN=$(az containerapp show \
-  --resource-group rg-azure-devops-agent-prod \
-  --name azdo-ai-agent-prod-frontend \
-  --query properties.configuration.ingress.fqdn \
-  --output tsv)
-
-echo "Configure CNAME record:"
-echo "Name: azdo-ai-agent (or your preferred subdomain)"
-echo "Value: ${FRONTEND_FQDN}"
+# Check frontend accessibility
+curl https://azdo-ai-agent-dev-frontend.proudsand-12345.eastus.azurecontainerapps.io
 ```
 
 ## Resource Naming Convention
@@ -202,48 +194,6 @@ Examples:
 - azdoaiagentdevacr (Container Registry, no hyphens)
 ```
 
-## Monitoring and Observability
-
-### Application Insights
-
-- **Development**: Basic monitoring, 30-day retention
-- **Production**: Advanced monitoring, 90-day retention
-- **Custom Metrics**: Application-specific performance indicators
-- **Alerts**: Configured for critical performance thresholds
-
-### Log Analytics
-
-- **Structured Logging**: JSON-formatted application logs
-- **Query Examples**: Common Kusto queries for troubleshooting
-- **Dashboards**: Pre-built monitoring dashboards
-
-### Health Checks
-
-```bash
-# Check backend health
-curl https://azdo-ai-agent-dev-backend.proudsand-12345.eastus.azurecontainerapps.io/health
-
-# Check frontend accessibility
-curl https://azdo-ai-agent-dev-frontend.proudsand-12345.eastus.azurecontainerapps.io
-```
-
-## Security Configuration
-
-### Network Security
-- **HTTPS Only**: All traffic encrypted in transit
-- **Private Networking**: Internal communication between services
-- **Azure Front Door**: (Optional) DDoS protection and WAF
-
-### Identity and Access
-- **Managed Identity**: Used for all Azure resource access
-- **RBAC**: Principle of least privilege
-- **Key Vault**: Centralized secret management
-
-### Compliance
-- **Data Encryption**: At rest and in transit
-- **Audit Logging**: All resource access logged
-- **Backup**: Automated backup of critical data
-
 ## Cost Optimization
 
 ### Development Environment
@@ -258,8 +208,36 @@ curl https://azdo-ai-agent-dev-frontend.proudsand-12345.eastus.azurecontainerapp
 - **Storage**: Premium redundancy with backup
 - **Estimated Cost**: $200-500/month
 
-### Cost Management
+## Troubleshooting
+
+### Common Issues
+
+1. **Module Version Conflicts**: Ensure you're using the latest stable AVM module versions
+2. **Parameter File Path**: Verify parameter files reference `../main.bicep` correctly
+3. **RBAC Permissions**: Ensure deployment identity has sufficient permissions for role assignments
+4. **Resource Naming**: Verify resource names meet Azure naming requirements and are globally unique
+
+### Useful Commands
+
 ```bash
+# Check AVM module versions
+az bicep list-versions --module-path br/public:avm/res/app/container-app
+
+# Validate deployment without executing
+az deployment group validate \
+  --resource-group <resource-group> \
+  --template-file main.bicep \
+  --parameters parameters/main.dev.bicepparam
+
+# View deployment operations
+az deployment group list --resource-group <resource-group>
+
+# Check container app logs
+az containerapp logs show \
+  --resource-group rg-azure-devops-agent-dev \
+  --name azdo-ai-agent-dev-backend \
+  --follow
+
 # Monitor costs by resource group
 az consumption usage list \
   --start-date 2024-01-01 \
@@ -268,54 +246,21 @@ az consumption usage list \
   --query "[?resourceGroup=='rg-azure-devops-agent-dev']"
 ```
 
-## Troubleshooting
+## Contributing
 
-### Common Issues
+When making infrastructure changes:
 
-1. **Deployment Failures**
-   ```bash
-   # Check deployment status
-   az deployment group show \
-     --resource-group rg-azure-devops-agent-dev \
-     --name your-deployment-name
-   ```
+1. **Always use AVM modules** when available for any Azure resource type
+2. Check for updated AVM module versions periodically
+3. Test changes in development environment first
+4. Update parameter files for both environments
+5. Ensure diagnostic settings are configured for new resources
+6. Update this documentation for any architectural changes
 
-2. **Container App Issues**
-   ```bash
-   # Check container app logs
-   az containerapp logs show \
-     --resource-group rg-azure-devops-agent-dev \
-     --name azdo-ai-agent-dev-backend \
-     --follow
-   ```
+## Additional Resources
 
-3. **Access Issues**
-   ```bash
-   # Check managed identity permissions
-   az role assignment list \
-     --assignee $(az identity show \
-       --resource-group rg-azure-devops-agent-dev \
-       --name azdo-ai-agent-dev-mi \
-       --query principalId \
-       --output tsv)
-   ```
-
-### Support Resources
-
-- [Azure Container Apps Documentation](https://docs.microsoft.com/en-us/azure/container-apps/)
-- [Azure Bicep Documentation](https://docs.microsoft.com/en-us/azure/azure-resource-manager/bicep/)
-- [Azure OpenAI Service Documentation](https://docs.microsoft.com/en-us/azure/cognitive-services/openai/)
+- [Azure Verified Modules (AVM)](https://aka.ms/AVM)
+- [Bicep Registry Modules](https://github.com/Azure/bicep-registry-modules)
+- [Azure Container Apps Documentation](https://learn.microsoft.com/azure/container-apps/)
+- [Azure OpenAI Service Documentation](https://learn.microsoft.com/azure/ai-services/openai/)
 - [Azure DevOps REST API](https://docs.microsoft.com/en-us/rest/api/azure/devops/)
-
-## Maintenance
-
-### Regular Tasks
-- **Security Updates**: Monthly review of security recommendations
-- **Cost Review**: Quarterly cost optimization review
-- **Performance Review**: Monthly performance analysis
-- **Backup Verification**: Weekly backup validation
-
-### Upgrade Procedures
-- **Infrastructure Updates**: Use blue-green deployment pattern
-- **Container Updates**: Automated via CI/CD pipeline
-- **Service Updates**: Planned maintenance windows

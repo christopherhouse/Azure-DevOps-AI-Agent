@@ -1,5 +1,5 @@
 // Main infrastructure deployment template for Azure DevOps AI Agent
-// This template uses Azure Verified Modules where possible
+// This template uses Azure Verified Modules (AVM) for all supported resource types
 
 targetScope = 'resourceGroup'
 
@@ -95,92 +95,123 @@ var environmentConfig = {
 
 var config = environmentConfig[environment]
 
-// Managed Identity
-resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
-  name: resourceNames.managedIdentity
-  location: location
-  tags: tags
+// Managed Identity using AVM
+module managedIdentity 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.0' = {
+  name: 'managedIdentityDeployment'
+  params: {
+    name: resourceNames.managedIdentity
+    location: location
+    tags: tags
+  }
 }
 
-// Log Analytics Workspace
-resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
-  name: resourceNames.logAnalytics
-  location: location
-  tags: tags
-  properties: {
-    sku: {
-      name: 'PerGB2018'
-    }
-    retentionInDays: environment == 'prod' ? 90 : 30
+// Log Analytics Workspace using AVM
+module logAnalytics 'br/public:avm/res/operational-insights/workspace:0.11.1' = {
+  name: 'logAnalyticsDeployment'
+  params: {
+    name: resourceNames.logAnalytics
+    location: location
+    tags: tags
+    dataRetention: environment == 'prod' ? 90 : 30
     features: {
       enableLogAccessUsingOnlyResourcePermissions: true
     }
+    diagnosticSettings: [
+      {
+        name: 'default'
+        logCategoriesAndGroups: [
+          {
+            categoryGroup: 'allLogs'
+          }
+        ]
+        metricCategories: [
+          {
+            category: 'AllMetrics'
+          }
+        ]
+      }
+    ]
   }
 }
 
-// Application Insights
-resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = {
-  name: resourceNames.applicationInsights
-  location: location
-  tags: tags
-  kind: 'web'
-  properties: {
-    Application_Type: 'web'
-    WorkspaceResourceId: logAnalytics.id
-    IngestionMode: 'LogAnalytics'
+// Application Insights using AVM
+module applicationInsights 'br/public:avm/res/insights/component:0.6.0' = {
+  name: 'applicationInsightsDeployment'
+  params: {
+    name: resourceNames.applicationInsights
+    location: location
+    tags: tags
+    kind: 'web'
+    workspaceResourceId: logAnalytics.outputs.resourceId
     publicNetworkAccessForIngestion: 'Enabled'
     publicNetworkAccessForQuery: 'Enabled'
+    diagnosticSettings: [
+      {
+        name: 'default'
+        logCategoriesAndGroups: [
+          {
+            categoryGroup: 'allLogs'
+          }
+        ]
+        metricCategories: [
+          {
+            category: 'AllMetrics'
+          }
+        ]
+        workspaceResourceId: logAnalytics.outputs.resourceId
+      }
+    ]
   }
 }
 
-// Azure Container Registry
-resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
-  name: resourceNames.containerRegistry
-  location: location
-  tags: tags
-  sku: {
-    name: config.sku == 'Premium' ? 'Premium' : 'Standard'
-  }
-  properties: {
-    adminUserEnabled: false
-    networkRuleSet: {
-      defaultAction: 'Allow'
-    }
-    policies: {
-      quarantinePolicy: {
-        status: 'disabled'
-      }
-      trustPolicy: {
-        type: 'Notary'
-        status: 'disabled'
-      }
-      retentionPolicy: {
-        days: 30
-        status: 'enabled'
-      }
-    }
+// Azure Container Registry using AVM
+module containerRegistry 'br/public:avm/res/container-registry/registry:0.9.1' = {
+  name: 'containerRegistryDeployment'
+  params: {
+    name: resourceNames.containerRegistry
+    location: location
+    tags: tags
+    acrSku: config.sku == 'Premium' ? 'Premium' : 'Standard'
+    acrAdminUserEnabled: false
+    networkRuleSetDefaultAction: 'Allow'
+    quarantinePolicyStatus: 'disabled'
+    retentionPolicyStatus: 'enabled'
+    retentionPolicyDays: 30
+    trustPolicyStatus: 'disabled'
     publicNetworkAccess: 'Enabled'
     zoneRedundancy: environment == 'prod' ? 'Enabled' : 'Disabled'
-  }
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${managedIdentity.id}': {}
+    managedIdentities: {
+      userAssignedResourceIds: [
+        managedIdentity.outputs.resourceId
+      ]
     }
+    diagnosticSettings: [
+      {
+        name: 'default'
+        logCategoriesAndGroups: [
+          {
+            categoryGroup: 'allLogs'
+          }
+        ]
+        metricCategories: [
+          {
+            category: 'AllMetrics'
+          }
+        ]
+        workspaceResourceId: logAnalytics.outputs.resourceId
+      }
+    ]
   }
 }
 
-// Key Vault
-resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' = {
-  name: resourceNames.keyVault
-  location: location
-  tags: tags
-  properties: {
-    sku: {
-      family: 'A'
-      name: 'standard'
-    }
-    tenantId: subscription().tenantId
+// Key Vault using AVM
+module keyVault 'br/public:avm/res/key-vault/vault:0.12.1' = {
+  name: 'keyVaultDeployment'
+  params: {
+    name: resourceNames.keyVault
+    location: location
+    tags: tags
+    sku: 'standard'
     enableRbacAuthorization: true
     enableSoftDelete: true
     enablePurgeProtection: environment == 'prod'
@@ -189,308 +220,290 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' = {
       defaultAction: 'Allow'
       bypass: 'AzureServices'
     }
+    diagnosticSettings: [
+      {
+        name: 'default'
+        logCategoriesAndGroups: [
+          {
+            categoryGroup: 'allLogs'
+          }
+        ]
+        metricCategories: [
+          {
+            category: 'AllMetrics'
+          }
+        ]
+        workspaceResourceId: logAnalytics.outputs.resourceId
+      }
+    ]
   }
 }
 
-// Azure OpenAI Service
-resource openAI 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
-  name: resourceNames.openAI
-  location: location
-  tags: tags
-  kind: 'OpenAI'
-  sku: {
-    name: config.openAISku
-  }
-  properties: {
+// Azure OpenAI Service using AVM
+module openAI 'br/public:avm/res/cognitive-services/account:0.10.1' = {
+  name: 'openAIDeployment'
+  params: {
+    name: resourceNames.openAI
+    location: location
+    tags: tags
+    kind: 'OpenAI'
+    sku: config.openAISku
     customSubDomainName: resourceNames.openAI
     networkAcls: {
       defaultAction: 'Allow'
     }
     publicNetworkAccess: 'Enabled'
     disableLocalAuth: false
-  }
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${managedIdentity.id}': {}
+    managedIdentities: {
+      userAssignedResourceIds: [
+        managedIdentity.outputs.resourceId
+      ]
     }
-  }
-}
-
-// GPT-4 Model Deployment
-resource gpt4Deployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = {
-  parent: openAI
-  name: 'gpt-4'
-  properties: {
-    model: {
-      format: 'OpenAI'
-      name: 'gpt-4'
-      version: '0613'
-    }
-    raiPolicyName: 'Microsoft.Default'
-  }
-  sku: {
-    name: 'Standard'
-    capacity: environment == 'prod' ? 20 : 10
-  }
-}
-
-// Container Apps Environment
-resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2023-05-01' = {
-  name: resourceNames.containerAppsEnvironment
-  location: location
-  tags: tags
-  properties: {
-    appLogsConfiguration: {
-      destination: 'log-analytics'
-      logAnalyticsConfiguration: {
-        customerId: logAnalytics.properties.customerId
-        sharedKey: logAnalytics.listKeys().primarySharedKey
+    deployments: [
+      {
+        name: 'gpt-4'
+        model: {
+          format: 'OpenAI'
+          name: 'gpt-4'
+          version: '0613'
+        }
+        raiPolicyName: 'Microsoft.Default'
+        sku: {
+          name: 'Standard'
+          capacity: environment == 'prod' ? 20 : 10
+        }
       }
-    }
+    ]
+    diagnosticSettings: [
+      {
+        name: 'default'
+        logCategoriesAndGroups: [
+          {
+            categoryGroup: 'allLogs'
+          }
+        ]
+        metricCategories: [
+          {
+            category: 'AllMetrics'
+          }
+        ]
+        workspaceResourceId: logAnalytics.outputs.resourceId
+      }
+    ]
+  }
+}
+
+// Container Apps Environment using AVM
+module containerAppsEnvironment 'br/public:avm/res/app/managed-environment:0.10.0' = {
+  name: 'containerAppsEnvironmentDeployment'
+  params: {
+    name: resourceNames.containerAppsEnvironment
+    location: location
+    tags: tags
+    logAnalyticsWorkspaceResourceId: logAnalytics.outputs.resourceId
     zoneRedundant: environment == 'prod'
   }
 }
 
-// Backend Container App
-resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
-  name: resourceNames.backendApp
-  location: location
-  tags: tags
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${managedIdentity.id}': {}
-    }
-  }
-  properties: {
-    managedEnvironmentId: containerAppsEnvironment.id
-    configuration: {
-      activeRevisionsMode: 'Single'
-      ingress: {
-        external: true
-        targetPort: 8000
-        allowInsecure: false
-        traffic: [
-          {
-            weight: 100
-            latestRevision: true
-          }
-        ]
-      }
-      registries: [
-        {
-          server: containerRegistry.properties.loginServer
-          identity: managedIdentity.id
-        }
+// Backend Container App using AVM
+module backendApp 'br/public:avm/res/app/container-app:0.12.0' = {
+  name: 'backendAppDeployment'
+  params: {
+    name: resourceNames.backendApp
+    location: location
+    tags: tags
+    environmentResourceId: containerAppsEnvironment.outputs.resourceId
+    managedIdentities: {
+      userAssignedResourceIds: [
+        managedIdentity.outputs.resourceId
       ]
-      secrets: [
+    }
+    activeRevisionsMode: 'Single'
+    ingressExternal: true
+    ingressTargetPort: 8000
+    ingressAllowInsecure: false
+    trafficWeight: 100
+    trafficLatestRevision: true
+    registries: [
+      {
+        server: containerRegistry.outputs.loginServer
+        identity: managedIdentity.outputs.resourceId
+      }
+    ]
+    secrets: {
+      secureList: [
         {
           name: 'azure-openai-key'
-          keyVaultUrl: '${keyVault.properties.vaultUri}secrets/azure-openai-key'
-          identity: managedIdentity.id
+          keyVaultUrl: '${keyVault.outputs.uri}secrets/azure-openai-key'
+          identity: managedIdentity.outputs.resourceId
         }
         {
           name: 'entra-client-secret'
-          keyVaultUrl: '${keyVault.properties.vaultUri}secrets/entra-client-secret'
-          identity: managedIdentity.id
+          keyVaultUrl: '${keyVault.outputs.uri}secrets/entra-client-secret'
+          identity: managedIdentity.outputs.resourceId
         }
       ]
     }
-    template: {
-      containers: [
-        {
-          name: 'backend'
-          image: backendImage
-          resources: {
-            cpu: json(config.cpu)
-            memory: config.memory
-          }
-          env: [
-            {
-              name: 'AZURE_OPENAI_ENDPOINT'
-              value: openAI.properties.endpoint
-            }
-            {
-              name: 'AZURE_OPENAI_KEY'
-              secretRef: 'azure-openai-key'
-            }
-            {
-              name: 'AZURE_OPENAI_DEPLOYMENT_NAME'
-              value: gpt4Deployment.name
-            }
-            {
-              name: 'AZURE_DEVOPS_ORGANIZATION'
-              value: azureDevOpsOrganization
-            }
-            {
-              name: 'AZURE_TENANT_ID'
-              value: entraIdTenantId
-            }
-            {
-              name: 'AZURE_CLIENT_ID'
-              value: entraIdClientId
-            }
-            {
-              name: 'AZURE_CLIENT_SECRET'
-              secretRef: 'entra-client-secret'
-            }
-            {
-              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-              value: applicationInsights.properties.ConnectionString
-            }
-            {
-              name: 'ENVIRONMENT'
-              value: environment
-            }
-          ]
+    containers: [
+      {
+        name: 'backend'
+        image: backendImage
+        resources: {
+          cpu: config.cpu
+          memory: config.memory
         }
-      ]
-      scale: {
-        minReplicas: config.replicaCount.min
-        maxReplicas: config.replicaCount.max
-        rules: [
+        env: [
           {
-            name: 'http-scaling'
-            http: {
-              metadata: {
-                concurrentRequests: '30'
-              }
-            }
+            name: 'AZURE_OPENAI_ENDPOINT'
+            value: openAI.outputs.endpoint
+          }
+          {
+            name: 'AZURE_OPENAI_KEY'
+            secretRef: 'azure-openai-key'
+          }
+          {
+            name: 'AZURE_OPENAI_DEPLOYMENT_NAME'
+            value: 'gpt-4'
+          }
+          {
+            name: 'AZURE_DEVOPS_ORGANIZATION'
+            value: azureDevOpsOrganization
+          }
+          {
+            name: 'AZURE_TENANT_ID'
+            value: entraIdTenantId
+          }
+          {
+            name: 'AZURE_CLIENT_ID'
+            value: entraIdClientId
+          }
+          {
+            name: 'AZURE_CLIENT_SECRET'
+            secretRef: 'entra-client-secret'
+          }
+          {
+            name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+            value: applicationInsights.outputs.connectionString
+          }
+          {
+            name: 'ENVIRONMENT'
+            value: environment
           }
         ]
       }
-    }
+    ]
+    scaleMinReplicas: config.replicaCount.min
+    scaleMaxReplicas: config.replicaCount.max
   }
 }
 
-// Frontend Container App
-resource frontendApp 'Microsoft.App/containerApps@2023-05-01' = {
-  name: resourceNames.frontendApp
-  location: location
-  tags: tags
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${managedIdentity.id}': {}
-    }
-  }
-  properties: {
-    managedEnvironmentId: containerAppsEnvironment.id
-    configuration: {
-      activeRevisionsMode: 'Single'
-      ingress: {
-        external: true
-        targetPort: 7860
-        allowInsecure: false
-        traffic: [
-          {
-            weight: 100
-            latestRevision: true
-          }
-        ]
-      }
-      registries: [
-        {
-          server: containerRegistry.properties.loginServer
-          identity: managedIdentity.id
-        }
+// Frontend Container App using AVM
+module frontendApp 'br/public:avm/res/app/container-app:0.12.0' = {
+  name: 'frontendAppDeployment'
+  params: {
+    name: resourceNames.frontendApp
+    location: location
+    tags: tags
+    environmentResourceId: containerAppsEnvironment.outputs.resourceId
+    managedIdentities: {
+      userAssignedResourceIds: [
+        managedIdentity.outputs.resourceId
       ]
-      secrets: [
+    }
+    activeRevisionsMode: 'Single'
+    ingressExternal: true
+    ingressTargetPort: 7860
+    ingressAllowInsecure: false
+    trafficWeight: 100
+    trafficLatestRevision: true
+    registries: [
+      {
+        server: containerRegistry.outputs.loginServer
+        identity: managedIdentity.outputs.resourceId
+      }
+    ]
+    secrets: {
+      secureList: [
         {
           name: 'entra-client-secret'
-          keyVaultUrl: '${keyVault.properties.vaultUri}secrets/entra-client-secret'
-          identity: managedIdentity.id
+          keyVaultUrl: '${keyVault.outputs.uri}secrets/entra-client-secret'
+          identity: managedIdentity.outputs.resourceId
         }
       ]
     }
-    template: {
-      containers: [
-        {
-          name: 'frontend'
-          image: frontendImage
-          resources: {
-            cpu: json(config.cpu)
-            memory: config.memory
-          }
-          env: [
-            {
-              name: 'BACKEND_URL'
-              value: 'https://${backendApp.properties.configuration.ingress.fqdn}'
-            }
-            {
-              name: 'AZURE_TENANT_ID'
-              value: entraIdTenantId
-            }
-            {
-              name: 'AZURE_CLIENT_ID'
-              value: entraIdClientId
-            }
-            {
-              name: 'AZURE_CLIENT_SECRET'
-              secretRef: 'entra-client-secret'
-            }
-            {
-              name: 'ENVIRONMENT'
-              value: environment
-            }
-          ]
+    containers: [
+      {
+        name: 'frontend'
+        image: frontendImage
+        resources: {
+          cpu: config.cpu
+          memory: config.memory
         }
-      ]
-      scale: {
-        minReplicas: config.replicaCount.min
-        maxReplicas: config.replicaCount.max
-        rules: [
+        env: [
           {
-            name: 'http-scaling'
-            http: {
-              metadata: {
-                concurrentRequests: '50'
-              }
-            }
+            name: 'BACKEND_URL'
+            value: 'https://${backendApp.outputs.fqdn}'
+          }
+          {
+            name: 'AZURE_TENANT_ID'
+            value: entraIdTenantId
+          }
+          {
+            name: 'AZURE_CLIENT_ID'
+            value: entraIdClientId
+          }
+          {
+            name: 'AZURE_CLIENT_SECRET'
+            secretRef: 'entra-client-secret'
+          }
+          {
+            name: 'ENVIRONMENT'
+            value: environment
           }
         ]
       }
-    }
+    ]
+    scaleMinReplicas: config.replicaCount.min
+    scaleMaxReplicas: config.replicaCount.max
   }
 }
 
 // RBAC Assignments for Managed Identity
 resource acrPullRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(containerRegistry.id, managedIdentity.id, 'AcrPull')
-  scope: containerRegistry
+  name: guid(resourceGroup().id, managedIdentity.name, 'AcrPull')
+  scope: resourceGroup()
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d') // AcrPull
-    principalId: managedIdentity.properties.principalId
+    principalId: managedIdentity.outputs.principalId
     principalType: 'ServicePrincipal'
   }
 }
 
 resource keyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(keyVault.id, managedIdentity.id, 'KeyVaultSecretsUser')
-  scope: keyVault
+  name: guid(resourceGroup().id, managedIdentity.name, 'KeyVaultSecretsUser')
+  scope: resourceGroup()
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6') // Key Vault Secrets User
-    principalId: managedIdentity.properties.principalId
+    principalId: managedIdentity.outputs.principalId
     principalType: 'ServicePrincipal'
   }
 }
 
 resource cognitiveServicesUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(openAI.id, managedIdentity.id, 'CognitiveServicesUser')
-  scope: openAI
+  name: guid(resourceGroup().id, managedIdentity.name, 'CognitiveServicesUser')
+  scope: resourceGroup()
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'a97b65f3-24c7-4388-baec-2e87135dc908') // Cognitive Services User
-    principalId: managedIdentity.properties.principalId
+    principalId: managedIdentity.outputs.principalId
     principalType: 'ServicePrincipal'
   }
 }
 
 // Outputs
-output frontendUrl string = 'https://${frontendApp.properties.configuration.ingress.fqdn}'
-output backendUrl string = 'https://${backendApp.properties.configuration.ingress.fqdn}'
-output containerRegistryLoginServer string = containerRegistry.properties.loginServer
-output keyVaultName string = keyVault.name
-output applicationInsightsConnectionString string = applicationInsights.properties.ConnectionString
-output managedIdentityClientId string = managedIdentity.properties.clientId
-output openAIEndpoint string = openAI.properties.endpoint
+output frontendUrl string = 'https://${frontendApp.outputs.fqdn}'
+output backendUrl string = 'https://${backendApp.outputs.fqdn}'
+output containerRegistryLoginServer string = containerRegistry.outputs.loginServer
+output keyVaultName string = keyVault.outputs.name
+output applicationInsightsConnectionString string = applicationInsights.outputs.connectionString
+output managedIdentityClientId string = managedIdentity.outputs.clientId
+output openAIEndpoint string = openAI.outputs.endpoint
