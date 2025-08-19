@@ -53,6 +53,14 @@ This repository contains a full-stack solution for an AI-powered Azure DevOps ad
 6. **All code quality checks must pass before committing any changes**
 7. **All code quality checks must pass before completing work on any issue**
 
+**CI/CD Quality Gate Requirements:**
+- `ruff check src/` - must pass (linting)
+- `ruff format --check src/` - must pass (formatting verification)
+- `mypy src/backend/app --ignore-missing-imports` - must pass (type checking)
+- `bandit -r src/backend/app` - must pass (security scan)
+- All tests in `pytest` - must pass with 90%+ coverage
+- **CRITICAL**: If any quality tool fails in CI, the entire build fails and must be fixed before merge
+
 ### 2. Frontend Development (Gradio)
 
 **Technology Stack:**
