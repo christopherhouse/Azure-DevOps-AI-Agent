@@ -1,8 +1,9 @@
 """Application configuration management."""
 
 from typing import Optional
+
 from pydantic import Field
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -57,12 +58,12 @@ class Settings(BaseSettings):
         default=60, description="JWT expiration time in minutes"
     )
 
-    class Config:
-        """Pydantic configuration."""
-
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",  # Ignore extra fields during testing
+    )
 
 
 # Global settings instance
@@ -74,9 +75,13 @@ except Exception as e:
     # Try to load from test environment file first
     import os
 
-    if os.path.exists(".env.test"):
+    # Look for .env.test in the repository root (../../../../.env.test from src/backend/app/core/)
+    test_env_path = os.path.join(
+        os.path.dirname(__file__), "..", "..", "..", "..", ".env.test"
+    )
+    if os.path.exists(test_env_path):
         try:
-            settings = Settings(_env_file=".env.test")  # type: ignore
+            settings = Settings(_env_file=test_env_path)  # type: ignore
         except Exception:
             # If test env file doesn't work, provide helpful error
             raise RuntimeError(
