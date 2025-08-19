@@ -1,0 +1,63 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environment": {
+      "value": "prod"
+    },
+    "location": {
+      "value": "eastus"
+    },
+    "appNamePrefix": {
+      "value": "azdo-ai-agent"
+    },
+    "azureDevOpsOrganization": {
+      "value": "https://dev.azure.com/your-prod-org"
+    },
+    "entraIdTenantId": {
+      "value": "your-tenant-id-here"
+    },
+    "entraIdClientId": {
+      "value": "your-client-id-here"
+    },
+    "frontendImage": {
+      "value": "nginx:latest"
+    },
+    "backendImage": {
+      "value": "nginx:latest"
+    },
+    "containerAppsEnvironmentName": {
+      "value": "azdo-ai-agent-prod-env"
+    },
+    "openAIName": {
+      "value": "azdo-ai-agent-prod-openai"
+    },
+    "containerRegistryName": {
+      "value": "azdoaiagentprodacr"
+    },
+    "keyVaultName": {
+      "value": "azdo-ai-agent-prod-kv"
+    },
+    "applicationInsightsName": {
+      "value": "azdo-ai-agent-prod-ai"
+    },
+    "logAnalyticsName": {
+      "value": "azdo-ai-agent-prod-la"
+    },
+    "managedIdentityName": {
+      "value": "azdo-ai-agent-prod-mi"
+    },
+    "tags": {
+      "value": {
+        "Environment": "Production",
+        "Application": "Azure DevOps AI Agent",
+        "Owner": "Product Team",
+        "CostCenter": "Engineering",
+        "CreatedBy": "Bicep",
+        "Project": "Azure DevOps AI Agent",
+        "BusinessUnit": "Platform",
+        "DataClassification": "Internal"
+      }
+    }
+  }
+}
