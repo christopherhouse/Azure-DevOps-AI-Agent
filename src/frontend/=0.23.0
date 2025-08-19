@@ -1,0 +1,64 @@
+Defaulting to user installation because normal site-packages is not writeable
+Collecting pytest
+  Using cached pytest-8.4.1-py3-none-any.whl.metadata (7.7 kB)
+Collecting pytest-asyncio
+  Downloading pytest_asyncio-1.1.0-py3-none-any.whl.metadata (4.1 kB)
+Collecting pytest-cov
+  Downloading pytest_cov-6.2.1-py3-none-any.whl.metadata (30 kB)
+Collecting pytest-mock
+  Downloading pytest_mock-3.14.1-py3-none-any.whl.metadata (3.9 kB)
+Collecting mypy
+  Downloading mypy-1.17.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.2 kB)
+Collecting types-requests
+  Downloading types_requests-2.32.4.20250809-py3-none-any.whl.metadata (2.0 kB)
+Collecting bandit
+  Downloading bandit-1.8.6-py3-none-any.whl.metadata (6.9 kB)
+Collecting responses
+  Downloading responses-0.25.8-py3-none-any.whl.metadata (47 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 47.2/47.2 kB 11.6 MB/s eta 0:00:00
+Collecting iniconfig>=1 (from pytest)
+  Using cached iniconfig-2.1.0-py3-none-any.whl.metadata (2.7 kB)
+Requirement already satisfied: packaging>=20 in /usr/lib/python3/dist-packages (from pytest) (24.0)
+Collecting pluggy<2,>=1.5 (from pytest)
+  Using cached pluggy-1.6.0-py3-none-any.whl.metadata (4.8 kB)
+Requirement already satisfied: pygments>=2.7.2 in /usr/lib/python3/dist-packages (from pytest) (2.17.2)
+Collecting coverage>=7.5 (from coverage[toml]>=7.5->pytest-cov)
+  Downloading coverage-7.10.4-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (8.9 kB)
+Requirement already satisfied: typing_extensions>=4.6.0 in /home/runner/.local/lib/python3.12/site-packages (from mypy) (4.14.1)
+Collecting mypy_extensions>=1.0.0 (from mypy)
+  Downloading mypy_extensions-1.1.0-py3-none-any.whl.metadata (1.1 kB)
+Collecting pathspec>=0.9.0 (from mypy)
+  Downloading pathspec-0.12.1-py3-none-any.whl.metadata (21 kB)
+Requirement already satisfied: urllib3>=2 in /usr/lib/python3/dist-packages (from types-requests) (2.0.7)
+Requirement already satisfied: PyYAML>=5.3.1 in /usr/lib/python3/dist-packages (from bandit) (6.0.1)
+Collecting stevedore>=1.20.0 (from bandit)
+  Downloading stevedore-5.4.1-py3-none-any.whl.metadata (2.3 kB)
+Requirement already satisfied: rich in /usr/lib/python3/dist-packages (from bandit) (13.7.1)
+Requirement already satisfied: requests<3.0,>=2.30.0 in /usr/lib/python3/dist-packages (from responses) (2.31.0)
+Collecting pbr>=2.0.0 (from stevedore>=1.20.0->bandit)
+  Downloading pbr-7.0.0-py2.py3-none-any.whl.metadata (1.4 kB)
+Requirement already satisfied: markdown-it-py>=2.2.0 in /usr/lib/python3/dist-packages (from rich->bandit) (3.0.0)
+Requirement already satisfied: mdurl~=0.1 in /usr/lib/python3/dist-packages (from markdown-it-py>=2.2.0->rich->bandit) (0.1.2)
+Requirement already satisfied: setuptools in /usr/lib/python3/dist-packages (from pbr>=2.0.0->stevedore>=1.20.0->bandit) (68.1.2)
+Using cached pytest-8.4.1-py3-none-any.whl (365 kB)
+Downloading pytest_asyncio-1.1.0-py3-none-any.whl (15 kB)
+Downloading pytest_cov-6.2.1-py3-none-any.whl (24 kB)
+Downloading pytest_mock-3.14.1-py3-none-any.whl (9.9 kB)
+Downloading mypy-1.17.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (12.7 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 12.7/12.7 MB 146.0 MB/s eta 0:00:00
+Downloading types_requests-2.32.4.20250809-py3-none-any.whl (20 kB)
+Downloading bandit-1.8.6-py3-none-any.whl (133 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 133.8/133.8 kB 46.1 MB/s eta 0:00:00
+Downloading responses-0.25.8-py3-none-any.whl (34 kB)
+Downloading coverage-7.10.4-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (251 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 251.2/251.2 kB 79.1 MB/s eta 0:00:00
+Using cached iniconfig-2.1.0-py3-none-any.whl (6.0 kB)
+Downloading mypy_extensions-1.1.0-py3-none-any.whl (5.0 kB)
+Downloading pathspec-0.12.1-py3-none-any.whl (31 kB)
+Using cached pluggy-1.6.0-py3-none-any.whl (20 kB)
+Downloading stevedore-5.4.1-py3-none-any.whl (49 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 49.5/49.5 kB 19.5 MB/s eta 0:00:00
+Downloading pbr-7.0.0-py2.py3-none-any.whl (125 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 125.1/125.1 kB 22.5 MB/s eta 0:00:00
+Installing collected packages: types-requests, responses, pluggy, pbr, pathspec, mypy_extensions, iniconfig, coverage, stevedore, pytest, mypy, pytest-mock, pytest-cov, pytest-asyncio, bandit
+Successfully installed bandit-1.8.6 coverage-7.10.4 iniconfig-2.1.0 mypy-1.17.1 mypy_extensions-1.1.0 pathspec-0.12.1 pbr-7.0.0 pluggy-1.6.0 pytest-8.4.1 pytest-asyncio-1.1.0 pytest-cov-6.2.1 pytest-mock-3.14.1 responses-0.25.8 stevedore-5.4.1 types-requests-2.32.4.20250809

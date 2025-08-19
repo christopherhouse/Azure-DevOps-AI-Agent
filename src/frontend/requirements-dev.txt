@@ -13,5 +13,5 @@ ruff>=0.1.0
 bandit>=1.7.0
 
 # Testing utilities
-httpx-mock>=0.5.0
+pytest-httpx>=0.30.0
 responses>=0.23.0
