@@ -54,7 +54,34 @@ jobs:
         
     - name: Run Bandit security scan
       run: |
+        echo "Running Bandit security scan..."
         bandit -r src/backend/app -f json -o bandit-report.json
+        echo "Bandit scan completed successfully - no security issues found!"
+        
+    - name: Display Bandit results on failure
+      if: failure()
+      run: |
+        echo "❌ Bandit security scan failed!"
+        echo "📋 Security issues found:"
+        if [ -f bandit-report.json ]; then
+          # Show human-readable output
+          echo "=== BANDIT SECURITY ISSUES ==="
+          bandit -r src/backend/app -f screen || true
+          echo ""
+          echo "=== DETAILED JSON REPORT ==="
+          cat bandit-report.json | head -50
+          echo "... (see full report in artifacts)"
+        else
+          echo "No bandit report generated - check bandit installation"
+        fi
+        echo ""
+        echo "🔧 To fix these issues:"
+        echo "  1. Review the security findings above"
+        echo "  2. Fix legitimate security issues in the code"
+        echo "  3. Add '# nosec' comments for false positives"
+        echo "  4. Update .bandit configuration if needed"
+        echo ""
+        echo "📚 Documentation: https://bandit.readthedocs.io/en/latest/"
         
     - name: Upload Bandit results
       uses: actions/upload-artifact@v4
