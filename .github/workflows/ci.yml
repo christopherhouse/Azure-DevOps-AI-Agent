@@ -327,6 +327,7 @@ jobs:
       uses: aquasecurity/trivy-action@master
       with:
         image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:run-${{ github.run_id }}
+
         format: 'sarif'
         output: 'frontend-trivy-results.sarif'
         
