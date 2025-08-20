@@ -40,13 +40,11 @@ async def get_projects(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve projects",
-        )
+        ) from e
 
 
 @router.post("", response_model=Project, status_code=status.HTTP_201_CREATED)
-async def create_project(
-    project: ProjectCreate, current_user: User = Depends(get_current_user)
-):
+async def create_project(project: ProjectCreate, current_user: User = Depends(get_current_user)):
     """
     Create a new project.
 
@@ -72,7 +70,7 @@ async def create_project(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create project",
-        )
+        ) from e
 
 
 @router.get("/{project_id}", response_model=Project)
@@ -85,9 +83,7 @@ async def get_project(project_id: str, current_user: User = Depends(get_current_
     try:
         # TODO: Implement actual Azure DevOps API integration
         # For now, return a 404
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
 
     except HTTPException:
         raise
@@ -96,7 +92,7 @@ async def get_project(project_id: str, current_user: User = Depends(get_current_
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve project",
-        )
+        ) from e
 
 
 @router.patch("/{project_id}", response_model=Project)
@@ -113,9 +109,7 @@ async def update_project(
     try:
         # TODO: Implement actual Azure DevOps API integration
         # For now, return a 404
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
 
     except HTTPException:
         raise
@@ -124,13 +118,11 @@ async def update_project(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update project",
-        )
+        ) from e
 
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_project(
-    project_id: str, current_user: User = Depends(get_current_user)
-):
+async def delete_project(project_id: str, current_user: User = Depends(get_current_user)):
     """
     Delete a project.
 
@@ -139,9 +131,7 @@ async def delete_project(
     try:
         # TODO: Implement actual Azure DevOps API integration
         # For now, return a 404
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
 
     except HTTPException:
         raise
@@ -150,4 +140,4 @@ async def delete_project(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete project",
-        )
+        ) from e

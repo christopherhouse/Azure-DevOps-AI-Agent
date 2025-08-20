@@ -12,12 +12,8 @@ class ChatMessage(BaseModel):
     id: str | None = Field(default=None, description="Message ID")
     role: str = Field(description="Message role (user, assistant, system)")
     content: str = Field(description="Message content")
-    timestamp: datetime = Field(
-        default_factory=datetime.utcnow, description="Message timestamp"
-    )
-    metadata: dict[str, Any] | None = Field(
-        default=None, description="Additional metadata"
-    )
+    timestamp: datetime = Field(default_factory=datetime.utcnow, description="Message timestamp")
+    metadata: dict[str, Any] | None = Field(default=None, description="Additional metadata")
 
 
 class ChatRequest(BaseModel):
@@ -34,9 +30,7 @@ class ChatRequest(BaseModel):
 
     message: str = Field(description="User message")
     conversation_id: str | None = Field(default=None, description="Conversation ID")
-    context: dict[str, Any] | None = Field(
-        default=None, description="Context information"
-    )
+    context: dict[str, Any] | None = Field(default=None, description="Context information")
 
 
 class ChatResponse(BaseModel):
@@ -57,12 +51,8 @@ class ChatResponse(BaseModel):
 
     message: str = Field(description="AI response message")
     conversation_id: str = Field(description="Conversation ID")
-    suggestions: list[str] | None = Field(
-        default=None, description="Suggested follow-up actions"
-    )
-    metadata: dict[str, Any] | None = Field(
-        default=None, description="Response metadata"
-    )
+    suggestions: list[str] | None = Field(default=None, description="Suggested follow-up actions")
+    metadata: dict[str, Any] | None = Field(default=None, description="Response metadata")
 
 
 class Conversation(BaseModel):
@@ -73,12 +63,8 @@ class Conversation(BaseModel):
     id: str = Field(description="Conversation ID")
     user_id: str = Field(description="User ID")
     title: str | None = Field(default=None, description="Conversation title")
-    created_at: datetime = Field(
-        default_factory=datetime.utcnow, description="Creation timestamp"
-    )
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
     updated_at: datetime = Field(
         default_factory=datetime.utcnow, description="Last update timestamp"
     )
-    messages: list[ChatMessage] = Field(
-        default_factory=list, description="Conversation messages"
-    )
+    messages: list[ChatMessage] = Field(default_factory=list, description="Conversation messages")

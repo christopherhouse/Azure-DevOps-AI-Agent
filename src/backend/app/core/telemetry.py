@@ -16,9 +16,7 @@ def setup_telemetry() -> trace.Tracer | None:
     """Set up OpenTelemetry tracing with Azure Monitor."""
 
     if not settings.applicationinsights_connection_string:
-        logger.warning(
-            "Application Insights connection string not configured - telemetry disabled"
-        )
+        logger.warning("Application Insights connection string not configured - telemetry disabled")
         return None
 
     try:
@@ -35,9 +33,7 @@ def setup_telemetry() -> trace.Tracer | None:
             )
             logger.info("Azure Monitor OpenTelemetry configured successfully")
         except ImportError:
-            logger.warning(
-                "Azure Monitor OpenTelemetry not available - using basic tracing"
-            )
+            logger.warning("Azure Monitor OpenTelemetry not available - using basic tracing")
 
         # Set up auto-instrumentation for FastAPI and requests
         FastAPIInstrumentor.instrument()

@@ -43,9 +43,7 @@ class AuthenticationService:
                         authority=f"https://login.microsoftonline.com/{self.tenant_id}",
                     )
                 else:
-                    logger.warning(
-                        "Mock tenant ID detected - MSAL authentication disabled"
-                    )
+                    logger.warning("Mock tenant ID detected - MSAL authentication disabled")
             except Exception as e:
                 logger.error(f"Failed to initialize MSAL: {e}")
         return self._msal_app
@@ -72,9 +70,7 @@ class AuthenticationService:
             # Extract user information
             user_info = {
                 "sub": unverified_payload.get("sub"),
-                "email": unverified_payload.get(
-                    "email", unverified_payload.get("unique_name")
-                ),
+                "email": unverified_payload.get("email", unverified_payload.get("unique_name")),
                 "name": unverified_payload.get("name"),
                 "preferred_username": unverified_payload.get("preferred_username"),
             }
@@ -98,9 +94,7 @@ class AuthenticationService:
             "iss": "azure-devops-ai-backend",
         }
 
-        encoded_jwt = jwt.encode(
-            to_encode, self.jwt_secret, algorithm=self.jwt_algorithm
-        )
+        encoded_jwt = jwt.encode(to_encode, self.jwt_secret, algorithm=self.jwt_algorithm)
 
         return Token(
             access_token=encoded_jwt,
@@ -111,9 +105,7 @@ class AuthenticationService:
     async def verify_token(self, token: str) -> User | None:
         """Verify JWT token and return user."""
         try:
-            payload = jwt.decode(
-                token, self.jwt_secret, algorithms=[self.jwt_algorithm]
-            )
+            payload = jwt.decode(token, self.jwt_secret, algorithms=[self.jwt_algorithm])
 
             user_id = payload.get("sub")
             if user_id is None:

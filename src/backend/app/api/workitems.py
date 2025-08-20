@@ -16,9 +16,7 @@ router = APIRouter()
 async def get_work_items(
     project_id: str = Path(description="Project ID"),
     skip: int = Query(0, ge=0, description="Number of work items to skip"),
-    limit: int = Query(
-        100, ge=1, le=1000, description="Number of work items to return"
-    ),
+    limit: int = Query(100, ge=1, le=1000, description="Number of work items to return"),
     work_item_type: str | None = Query(None, description="Filter by work item type"),
     state: str | None = Query(None, description="Filter by work item state"),
     current_user: User = Depends(get_current_user),
@@ -39,7 +37,7 @@ async def get_work_items(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve work items",
-        )
+        ) from e
 
 
 @router.post(
@@ -80,7 +78,7 @@ async def create_work_item(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create work item",
-        )
+        ) from e
 
 
 @router.get("/workitems/{work_item_id}", response_model=WorkItem)
@@ -96,9 +94,7 @@ async def get_work_item(
     try:
         # TODO: Implement actual Azure DevOps API integration
         # For now, return a 404
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Work item not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Work item not found")
 
     except HTTPException:
         raise
@@ -107,7 +103,7 @@ async def get_work_item(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve work item",
-        )
+        ) from e
 
 
 @router.patch("/workitems/{work_item_id}", response_model=WorkItem)
@@ -124,9 +120,7 @@ async def update_work_item(
     try:
         # TODO: Implement actual Azure DevOps API integration
         # For now, return a 404
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Work item not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Work item not found")
 
     except HTTPException:
         raise
@@ -135,7 +129,7 @@ async def update_work_item(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update work item",
-        )
+        ) from e
 
 
 @router.delete("/workitems/{work_item_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -151,9 +145,7 @@ async def delete_work_item(
     try:
         # TODO: Implement actual Azure DevOps API integration
         # For now, return a 404
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Work item not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Work item not found")
 
     except HTTPException:
         raise
@@ -162,4 +154,4 @@ async def delete_work_item(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete work item",
-        )
+        ) from e

@@ -39,7 +39,7 @@ async def login(request: LoginRequest):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Authentication service error",
-        )
+        ) from e
 
 
 @router.get("/me", response_model=User)
@@ -73,4 +73,4 @@ async def refresh_token(current_user: User = Depends(get_current_user)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Token refresh failed",
-        )
+        ) from e

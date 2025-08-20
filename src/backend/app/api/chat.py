@@ -13,9 +13,7 @@ router = APIRouter()
 
 
 @router.post("/message", response_model=ChatResponse)
-async def send_message(
-    request: ChatRequest, current_user: User = Depends(get_current_user)
-):
+async def send_message(request: ChatRequest, current_user: User = Depends(get_current_user)):
     """
     Send a message to the AI agent.
 
@@ -43,7 +41,7 @@ async def send_message(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to process message",
-        )
+        ) from e
 
 
 @router.get("/conversations", response_model=list[Conversation])
@@ -63,13 +61,11 @@ async def get_conversations(current_user: User = Depends(get_current_user)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve conversations",
-        )
+        ) from e
 
 
 @router.get("/conversations/{conversation_id}", response_model=Conversation)
-async def get_conversation(
-    conversation_id: str, current_user: User = Depends(get_current_user)
-):
+async def get_conversation(conversation_id: str, current_user: User = Depends(get_current_user)):
     """
     Get a specific conversation.
 
@@ -78,9 +74,7 @@ async def get_conversation(
     try:
         # TODO: Implement actual conversation retrieval
         # For now, return a 404
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
 
     except HTTPException:
         raise
@@ -89,4 +83,4 @@ async def get_conversation(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve conversation",
-        )
+        ) from e
