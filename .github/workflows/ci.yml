@@ -292,28 +292,42 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Determine branch name
-      id: branch
-      run: |
-        if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-          echo "branch=main" >> $GITHUB_OUTPUT
-        elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
-          echo "branch=develop" >> $GITHUB_OUTPUT
-        else
-          echo "branch=$(echo ${{ github.ref }} | sed 's/refs\/heads\///')" >> $GITHUB_OUTPUT
-        fi
-        
+    - name: Extract metadata for backend scan
+      id: meta-backend-scan
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=raw,value=run-${{ github.run_id }}
+          
+    - name: Extract metadata for frontend scan
+      id: meta-frontend-scan
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=raw,value=run-${{ github.run_id }}
+      
     - name: Run Trivy vulnerability scanner - Backend
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ steps.branch.outputs.branch }}-${{ github.sha }}
+        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:run-${{ github.run_id }}
         format: 'sarif'
         output: 'backend-trivy-results.sarif'
         
     - name: Run Trivy vulnerability scanner - Frontend
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ steps.branch.outputs.branch }}-${{ github.sha }}
+        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:run-${{ github.run_id }}
+
         format: 'sarif'
         output: 'frontend-trivy-results.sarif'
         
