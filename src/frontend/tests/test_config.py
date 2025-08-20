@@ -115,7 +115,7 @@ class TestSettings:
     def test_missing_required_env_vars(self):
         """Test that missing required environment variables raise an error."""
         with patch.dict(os.environ, {}, clear=True):
-            with pytest.raises(Exception):
+            with pytest.raises((RuntimeError, ValueError)):
                 Settings()
 
     def test_application_insights_config(self):

@@ -88,10 +88,10 @@ class BackendAPIClient:
             logger.error(
                 f"HTTP error sending chat message: {e.response.status_code} - {e.response.text}"
             )
-            raise APIError(f"Chat API error: {e.response.status_code}")
+            raise APIError(f"Chat API error: {e.response.status_code}") from e
         except Exception as e:
             logger.error(f"Error sending chat message: {e}")
-            raise APIError(f"Failed to send chat message: {e}")
+            raise APIError(f"Failed to send chat message: {e}") from e
 
     async def get_conversations(self, limit: int = 20) -> list[dict[str, Any]]:
         """Get user's conversation history.
@@ -120,10 +120,10 @@ class BackendAPIClient:
 
         except HTTPStatusError as e:
             logger.error(f"HTTP error getting conversations: {e.response.status_code}")
-            raise APIError(f"Conversations API error: {e.response.status_code}")
+            raise APIError(f"Conversations API error: {e.response.status_code}") from e
         except Exception as e:
             logger.error(f"Error getting conversations: {e}")
-            raise APIError(f"Failed to get conversations: {e}")
+            raise APIError(f"Failed to get conversations: {e}") from e
 
     async def get_conversation(self, conversation_id: str) -> dict[str, Any]:
         """Get a specific conversation with its message history.
@@ -148,10 +148,10 @@ class BackendAPIClient:
 
         except HTTPStatusError as e:
             logger.error(f"HTTP error getting conversation: {e.response.status_code}")
-            raise APIError(f"Conversation API error: {e.response.status_code}")
+            raise APIError(f"Conversation API error: {e.response.status_code}") from e
         except Exception as e:
             logger.error(f"Error getting conversation: {e}")
-            raise APIError(f"Failed to get conversation: {e}")
+            raise APIError(f"Failed to get conversation: {e}") from e
 
     async def health_check(self) -> dict[str, Any]:
         """Check backend API health status.
@@ -172,10 +172,10 @@ class BackendAPIClient:
 
         except HTTPStatusError as e:
             logger.error(f"Backend health check failed: {e.response.status_code}")
-            raise APIError(f"Backend health check failed: {e.response.status_code}")
+            raise APIError(f"Backend health check failed: {e.response.status_code}") from e
         except Exception as e:
             logger.error(f"Backend health check error: {e}")
-            raise APIError(f"Backend health check failed: {e}")
+            raise APIError(f"Backend health check failed: {e}") from e
 
     async def get_user_profile(self) -> dict[str, Any]:
         """Get authenticated user's profile information.
@@ -196,10 +196,10 @@ class BackendAPIClient:
 
         except HTTPStatusError as e:
             logger.error(f"HTTP error getting user profile: {e.response.status_code}")
-            raise APIError(f"Profile API error: {e.response.status_code}")
+            raise APIError(f"Profile API error: {e.response.status_code}") from e
         except Exception as e:
             logger.error(f"Error getting user profile: {e}")
-            raise APIError(f"Failed to get user profile: {e}")
+            raise APIError(f"Failed to get user profile: {e}") from e
 
     def set_access_token(self, access_token: str) -> None:
         """Update the access token for API requests.

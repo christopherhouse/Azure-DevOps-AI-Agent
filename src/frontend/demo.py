@@ -203,7 +203,7 @@ def create_demo_interface():
                         """
 # Example telemetry tracking
 - Page Views: main_app, login_page
-- User Actions: login_attempt, send_message  
+- User Actions: login_attempt, send_message
 - API Calls: /chat/message, /projects
 - Exceptions: auth_error, api_timeout
 - Performance: load_time, response_time
@@ -216,8 +216,8 @@ def create_demo_interface():
             gr.HTML("""
             <div style="text-align: center; padding: 2rem; color: #605e5c; border-top: 1px solid #e1e5e9; margin-top: 2rem;">
                 <p>
-                    🔒 Secured with Microsoft Entra ID | 
-                    📊 Powered by Azure OpenAI | 
+                    🔒 Secured with Microsoft Entra ID |
+                    📊 Powered by Azure OpenAI |
                     🛠️ Built with Gradio & FastAPI
                 </p>
                 <p>
