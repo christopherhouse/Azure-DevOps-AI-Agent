@@ -1,7 +1,9 @@
 """Azure DevOps AI Agent Backend API."""
 
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
@@ -32,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan manager."""
     # Startup
     logger.info("Starting Azure DevOps AI Agent Backend")
@@ -73,7 +75,7 @@ app.add_middleware(RequestLoggingMiddleware)
 # Add exception handlers
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)  # type: ignore
 app.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore
-app.add_exception_handler(Exception, general_exception_handler)  # type: ignore
+app.add_exception_handler(Exception, general_exception_handler)
 
 # Include API routes
 app.include_router(auth.router, prefix="/api/auth", tags=["authentication"])
@@ -84,7 +86,7 @@ app.include_router(workitems.router, prefix="/api", tags=["workitems"])
 
 # Health check endpoints
 @app.get("/health")
-async def health_check():
+async def health_check() -> dict[str, Any]:
     """Health check endpoint."""
     return {
         "status": "healthy",
@@ -95,7 +97,7 @@ async def health_check():
 
 
 @app.get("/")
-async def root():
+async def root() -> dict[str, Any]:
     """Root endpoint."""
     return {
         "message": "Azure DevOps AI Agent Backend API",

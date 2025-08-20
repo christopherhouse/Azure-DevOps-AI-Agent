@@ -13,7 +13,9 @@ router = APIRouter()
 
 
 @router.post("/message", response_model=ChatResponse)
-async def send_message(request: ChatRequest, current_user: User = Depends(get_current_user)):
+async def send_message(
+    request: ChatRequest, current_user: User = Depends(get_current_user)
+) -> ChatResponse:
     """
     Send a message to the AI agent.
 
@@ -45,7 +47,7 @@ async def send_message(request: ChatRequest, current_user: User = Depends(get_cu
 
 
 @router.get("/conversations", response_model=list[Conversation])
-async def get_conversations(current_user: User = Depends(get_current_user)):
+async def get_conversations(current_user: User = Depends(get_current_user)) -> list[Conversation]:
     """
     Get user's conversations.
 
@@ -65,7 +67,9 @@ async def get_conversations(current_user: User = Depends(get_current_user)):
 
 
 @router.get("/conversations/{conversation_id}", response_model=Conversation)
-async def get_conversation(conversation_id: str, current_user: User = Depends(get_current_user)):
+async def get_conversation(
+    conversation_id: str, current_user: User = Depends(get_current_user)
+) -> Conversation:
     """
     Get a specific conversation.
 

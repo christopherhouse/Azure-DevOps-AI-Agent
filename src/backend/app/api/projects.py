@@ -23,7 +23,7 @@ async def get_projects(
     skip: int = Query(0, ge=0, description="Number of projects to skip"),
     limit: int = Query(100, ge=1, le=1000, description="Number of projects to return"),
     current_user: User = Depends(get_current_user),
-):
+) -> ProjectList:
     """
     Get projects.
 
@@ -44,7 +44,9 @@ async def get_projects(
 
 
 @router.post("", response_model=Project, status_code=status.HTTP_201_CREATED)
-async def create_project(project: ProjectCreate, current_user: User = Depends(get_current_user)):
+async def create_project(
+    project: ProjectCreate, current_user: User = Depends(get_current_user)
+) -> Project:
     """
     Create a new project.
 
@@ -74,7 +76,7 @@ async def create_project(project: ProjectCreate, current_user: User = Depends(ge
 
 
 @router.get("/{project_id}", response_model=Project)
-async def get_project(project_id: str, current_user: User = Depends(get_current_user)):
+async def get_project(project_id: str, current_user: User = Depends(get_current_user)) -> Project:
     """
     Get a specific project.
 
@@ -100,7 +102,7 @@ async def update_project(
     project_id: str,
     project_update: ProjectUpdate,
     current_user: User = Depends(get_current_user),
-):
+) -> Project:
     """
     Update a project.
 
@@ -122,7 +124,7 @@ async def update_project(
 
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_project(project_id: str, current_user: User = Depends(get_current_user)):
+async def delete_project(project_id: str, current_user: User = Depends(get_current_user)) -> None:
     """
     Delete a project.
 
