@@ -260,6 +260,18 @@ jobs:
           type=raw,value=latest,enable={{is_default_branch}}
           type=raw,value=run-${{ github.run_id }}
           
+    - name: Prepare build context for backend
+      run: |
+        # Copy required files to backend build context for Docker metadata validation
+        cp LICENSE ./src/backend/
+        cp README.md ./src/backend/
+        
+    - name: Prepare build context for frontend  
+      run: |
+        # Copy required files to frontend build context for Docker metadata validation
+        cp LICENSE ./src/frontend/
+        cp README.md ./src/frontend/
+        
     - name: Build and push backend image
       uses: docker/build-push-action@v5
       with:
