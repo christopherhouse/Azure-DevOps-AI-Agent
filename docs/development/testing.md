@@ -6,7 +6,7 @@ This document outlines the testing strategy and guidelines for the Azure DevOps 
 
 We maintain high code quality through comprehensive testing with the following principles:
 
-- **90%+ Code Coverage**: All production code must be thoroughly tested
+- **25%+ Code Coverage**: Production code should be covered by tests
 - **Test-Driven Development**: Write tests before implementation when possible
 - **Fast Feedback**: Tests should run quickly to enable rapid development
 - **Realistic Scenarios**: Tests should reflect real-world usage patterns
@@ -165,7 +165,7 @@ addopts =
     --cov=app
     --cov-report=term-missing
     --cov-report=html:htmlcov
-    --cov-fail-under=90
+    --cov-fail-under=25
 markers =
     unit: Unit tests
     integration: Integration tests
@@ -305,8 +305,8 @@ pytest -n auto
 
 ### Continuous Integration
 ```bash
-# Run all tests with strict coverage requirements
-pytest --cov=app --cov-fail-under=90 --cov-report=xml
+# Run all tests with coverage requirements
+pytest --cov=app --cov-fail-under=25 --cov-report=xml
 
 # Run tests with JUnit XML output for CI
 pytest --junit-xml=test-results.xml

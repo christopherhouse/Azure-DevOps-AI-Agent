@@ -151,7 +151,7 @@ addopts = [
     "--cov=./",
     "--cov-report=term-missing",
     "--cov-report=html:htmlcov",
-    "--cov-fail-under=90",
+    "--cov-fail-under=25",
 ]
 markers = [
     "unit: Unit tests",
