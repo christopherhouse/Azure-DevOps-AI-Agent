@@ -66,12 +66,18 @@ This repository contains a complete solution for automating Azure DevOps adminis
    cd Azure-DevOps-AI-Agent
    ```
 
-2. **Set up Python environment**
+2. **Set up Python environment with uv**
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -r src/backend/requirements.txt
-   pip install -r src/frontend/requirements.txt
+   # Install uv (if not already installed)
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   
+   # Install backend dependencies
+   cd src/backend
+   uv sync --group dev
+   
+   # Install frontend dependencies
+   cd ../frontend
+   uv sync --group dev
    ```
 
 3. **Configure environment variables**
@@ -84,11 +90,11 @@ This repository contains a complete solution for automating Azure DevOps adminis
    ```bash
    # Terminal 1 - Backend API
    cd src/backend
-   uvicorn app.main:app --reload --port 8000
+   uv run uvicorn app.main:app --reload --port 8000
 
    # Terminal 2 - Frontend UI
    cd src/frontend
-   python app.py
+   uv run python app.py
    ```
 
 5. **Access the application**
@@ -205,11 +211,11 @@ Run tests locally:
 ```bash
 # Backend tests
 cd src/backend
-pytest --cov=app tests/
+uv run pytest --cov=app tests/
 
 # Frontend tests
 cd src/frontend
-pytest tests/
+uv run pytest tests/
 ```
 
 ## 📚 Documentation

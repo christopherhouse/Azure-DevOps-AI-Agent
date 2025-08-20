@@ -26,37 +26,40 @@ jobs:
       with:
         python-version: '3.11'
         
-    - name: Cache pip dependencies
-      uses: actions/cache@v3
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
       with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-          
+        enable-cache: true
+        cache-dependency-glob: "src/**/uv.lock"
+        
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install ruff mypy bandit pytest pytest-cov
-        pip install -r src/backend/requirements.txt
-        pip install -r src/frontend/requirements.txt
+        # Install backend dependencies
+        cd src/backend
+        uv sync --group dev
+        
+        # Install frontend dependencies
+        cd ../frontend
+        uv sync --group dev
         
     - name: Run Ruff linting
       run: |
-        ruff check src/
+        cd src/backend && uv run ruff check app/
+        cd ../frontend && uv run ruff check .
         
     - name: Run Ruff formatting check
       run: |
-        ruff format --check src/
+        cd src/backend && uv run ruff format --check app/
+        cd ../frontend && uv run ruff format --check .
         
     - name: Run MyPy type checking
       run: |
-        mypy src/backend/app --ignore-missing-imports
+        cd src/backend && uv run mypy app --ignore-missing-imports
         
     - name: Run Bandit security scan
       run: |
         echo "Running Bandit security scan..."
-        bandit -r src/backend/app -f json -o bandit-report.json
+        cd src/backend && uv run bandit -r app -f json -o bandit-report.json
         echo "Bandit scan completed successfully - no security issues found!"
         
     - name: Display Bandit results on failure
@@ -64,10 +67,10 @@ jobs:
       run: |
         echo "❌ Bandit security scan failed!"
         echo "📋 Security issues found:"
-        if [ -f bandit-report.json ]; then
+        if [ -f src/backend/bandit-report.json ]; then
           # Show human-readable output
           echo "=== BANDIT SECURITY ISSUES ==="
-          bandit -r src/backend/app -f screen || true
+          cd src/backend && uv run bandit -r app -f screen || true
           echo ""
           echo "=== DETAILED JSON REPORT ==="
           cat bandit-report.json | head -50
@@ -89,7 +92,7 @@ jobs:
       if: always()
       with:
         name: bandit-results
-        path: bandit-report.json
+        path: src/backend/bandit-report.json
 
   test-backend:
     name: Test Backend
@@ -117,24 +120,21 @@ jobs:
       with:
         python-version: '3.11'
         
-    - name: Cache pip dependencies
-      uses: actions/cache@v3
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
       with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+        enable-cache: true
+        cache-dependency-glob: "src/backend/uv.lock"
           
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -r src/backend/requirements.txt
-        pip install -r src/backend/requirements-dev.txt
+        cd src/backend
+        uv sync --group dev
         
     - name: Run backend tests
       run: |
         cd src/backend
-        pytest tests/ --cov=app --cov-report=xml --cov-report=html --junitxml=test-results.xml
+        uv run pytest tests/ --cov=app --cov-report=xml --cov-report=html --junitxml=test-results.xml
         
     - name: Upload test results
       uses: actions/upload-artifact@v4
@@ -171,24 +171,21 @@ jobs:
       with:
         python-version: '3.11'
         
-    - name: Cache pip dependencies
-      uses: actions/cache@v3
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
       with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+        enable-cache: true
+        cache-dependency-glob: "src/frontend/uv.lock"
           
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -r src/frontend/requirements.txt
-        pip install -r src/frontend/requirements-dev.txt
+        cd src/frontend
+        uv sync --group dev
         
     - name: Run frontend tests
       run: |
         cd src/frontend
-        pytest tests/ --cov=app --cov-report=xml --cov-report=html --junitxml=test-results.xml
+        uv run pytest tests/ --cov=. --cov-report=xml --cov-report=html --junitxml=test-results.xml
         
     - name: Upload test results
       uses: actions/upload-artifact@v4
