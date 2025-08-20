@@ -335,7 +335,7 @@ jobs:
         echo "✅ Frontend image verified"
         
     - name: Run Trivy vulnerability scanner - Backend
-      uses: aquasecurity/trivy-action@master
+      uses: aquasecurity/trivy-action@v0.32.0
       with:
         image-ref: ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}/backend:run-${{ github.run_id }}
         format: 'sarif'
@@ -343,20 +343,26 @@ jobs:
         severity: 'CRITICAL,HIGH,MEDIUM'
         
     - name: Run Trivy vulnerability scanner - Frontend
-      uses: aquasecurity/trivy-action@master
+      uses: aquasecurity/trivy-action@v0.32.0
       with:
         image-ref: ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}/frontend:run-${{ github.run_id }}
         format: 'sarif'
         output: 'frontend-trivy-results.sarif'
         severity: 'CRITICAL,HIGH,MEDIUM'
         
-    - name: Upload Trivy scan results to GitHub Security tab
+    - name: Upload Backend Trivy scan results to GitHub Security tab
       uses: github/codeql-action/upload-sarif@v3
-      if: always()
+      if: always() && hashFiles('backend-trivy-results.sarif') != ''
       with:
-        sarif_file: |
-          backend-trivy-results.sarif
-          frontend-trivy-results.sarif
+        sarif_file: backend-trivy-results.sarif
+        category: 'trivy-backend'
+        
+    - name: Upload Frontend Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      if: always() && hashFiles('frontend-trivy-results.sarif') != ''
+      with:
+        sarif_file: frontend-trivy-results.sarif
+        category: 'trivy-frontend'
         
     - name: Upload Trivy scan results as artifacts
       uses: actions/upload-artifact@v4
