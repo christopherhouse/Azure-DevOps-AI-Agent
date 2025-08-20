@@ -27,9 +27,7 @@ def create_demo_interface():
 
     with gr.Blocks(
         title="Azure DevOps AI Agent - Demo",
-        theme=gr.themes.Soft(
-            primary_hue="blue", secondary_hue="gray", neutral_hue="gray"
-        ),
+        theme=gr.themes.Soft(primary_hue="blue", secondary_hue="gray", neutral_hue="gray"),
         css="""
         .demo-header {
             background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
@@ -69,9 +67,7 @@ def create_demo_interface():
                 with gr.Column(scale=1):
                     gr.Markdown("### Login Form")
                     gr.Button("Sign in with Microsoft", variant="primary", size="lg")
-                    gr.Markdown(
-                        "*Status: Ready to authenticate*", elem_classes=["status-info"]
-                    )
+                    gr.Markdown("*Status: Ready to authenticate*", elem_classes=["status-info"])
 
                 with gr.Column(scale=2):
                     gr.Markdown("### Features")
@@ -193,9 +189,7 @@ def create_demo_interface():
                         "⚠️ **Backend Status**: Not Connected (Expected)",
                         elem_classes=["status-warning"],
                     )
-                    gr.Markdown(
-                        "🔒 **Authentication**: Demo Mode", elem_classes=["status-info"]
-                    )
+                    gr.Markdown("🔒 **Authentication**: Demo Mode", elem_classes=["status-info"])
 
                 with gr.Column():
                     gr.Markdown("### Telemetry Events")

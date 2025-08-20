@@ -81,9 +81,7 @@ def create_login_interface() -> gr.Blocks:
             )
 
             # Login button
-            login_btn = gr.Button(
-                "Sign in with Microsoft", variant="primary", size="lg", scale=1
-            )
+            login_btn = gr.Button("Sign in with Microsoft", variant="primary", size="lg", scale=1)
 
             # Status messages
             status_msg = gr.Markdown(visible=False)
@@ -129,9 +127,7 @@ def create_login_interface() -> gr.Blocks:
                     error = query_params.get("error", [None])[0]
 
                     if error:
-                        error_desc = query_params.get(
-                            "error_description", ["Unknown error"]
-                        )[0]
+                        error_desc = query_params.get("error_description", ["Unknown error"])[0]
                         logger.error(f"OAuth error: {error} - {error_desc}")
                         return False, f"Authentication failed: {error_desc}"
 

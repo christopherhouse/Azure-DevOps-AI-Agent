@@ -131,8 +131,5 @@ class TestSettings:
         ):
             settings = Settings()
 
-            assert (
-                settings.applicationinsights_connection_string
-                == "InstrumentationKey=test-key"
-            )
+            assert settings.applicationinsights_connection_string == "InstrumentationKey=test-key"
             assert settings.enable_telemetry is True

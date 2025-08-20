@@ -50,9 +50,7 @@ class EntraIDAuthService:
             logger.error(f"Failed to generate auth URL: {e}")
             raise AuthenticationError(f"Failed to generate auth URL: {e}") from e
 
-    def exchange_code_for_token(
-        self, code: str, state: str | None = None
-    ) -> dict[str, Any]:
+    def exchange_code_for_token(self, code: str, state: str | None = None) -> dict[str, Any]:
         """Exchange authorization code for access token.
 
         Args:
@@ -110,9 +108,7 @@ class EntraIDAuthService:
                 logger.info(f"Successfully refreshed token for user {user_id}")
                 return result
             else:
-                logger.error(
-                    f"Failed to refresh token: {result.get('error_description')}"
-                )
+                logger.error(f"Failed to refresh token: {result.get('error_description')}")
                 return None
 
         except Exception as e:
@@ -130,9 +126,7 @@ class EntraIDAuthService:
         """
         try:
             # Decode token without verification for now (in production, verify signature)
-            decoded_token = jwt.decode(
-                access_token, options={"verify_signature": False}
-            )
+            decoded_token = jwt.decode(access_token, options={"verify_signature": False})
 
             # Basic validation
             if decoded_token.get("aud") != settings.azure_client_id:
@@ -165,8 +159,7 @@ class EntraIDAuthService:
 
             user_info = {
                 "user_id": decoded_token.get("sub"),
-                "email": decoded_token.get("email")
-                or decoded_token.get("preferred_username"),
+                "email": decoded_token.get("email") or decoded_token.get("preferred_username"),
                 "name": decoded_token.get("name"),
                 "given_name": decoded_token.get("given_name"),
                 "family_name": decoded_token.get("family_name"),
@@ -205,9 +198,7 @@ class EntraIDAuthService:
             User ID or None if extraction fails
         """
         try:
-            decoded_token = jwt.decode(
-                access_token, options={"verify_signature": False}
-            )
+            decoded_token = jwt.decode(access_token, options={"verify_signature": False})
             return decoded_token.get("sub")
         except Exception:
             return None

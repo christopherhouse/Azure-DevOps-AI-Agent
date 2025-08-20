@@ -101,17 +101,13 @@ class ChatSession:
                 message=user_message,
                 conversation_id=self.conversation_id,
                 context={
-                    "user_id": auth_state.user_info.get("user_id")
-                    if auth_state.user_info
-                    else None
+                    "user_id": auth_state.user_info.get("user_id") if auth_state.user_info else None
                 },
             )
 
             # Extract response data
             response_data = response.get("data", {})
-            ai_response = response_data.get(
-                "response", "Sorry, I couldn't process your request."
-            )
+            ai_response = response_data.get("response", "Sorry, I couldn't process your request.")
             self.conversation_id = response_data.get("conversation_id")
 
             # Add AI response to history
@@ -198,12 +194,8 @@ def create_chat_interface() -> gr.Blocks:
 
                     # Action buttons
                     with gr.Row():
-                        clear_btn = gr.Button(
-                            "Clear Chat", variant="secondary", size="sm"
-                        )
-                        refresh_btn = gr.Button(
-                            "Refresh Status", variant="secondary", size="sm"
-                        )
+                        clear_btn = gr.Button("Clear Chat", variant="secondary", size="sm")
+                        refresh_btn = gr.Button("Refresh Status", variant="secondary", size="sm")
 
                 with gr.Column(scale=1):
                     # Example prompts
@@ -223,9 +215,7 @@ def create_chat_interface() -> gr.Blocks:
                         ]
 
                         for example in examples:
-                            btn = gr.Button(
-                                example, variant="secondary", size="sm", scale=1
-                            )
+                            btn = gr.Button(example, variant="secondary", size="sm", scale=1)
                             example_btns.append(btn)
 
             # Initialize chat session

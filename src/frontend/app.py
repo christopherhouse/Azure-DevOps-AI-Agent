@@ -24,9 +24,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler("frontend.log")
-        if not settings.debug
-        else logging.NullHandler(),
+        logging.FileHandler("frontend.log") if not settings.debug else logging.NullHandler(),
     ],
 )
 
@@ -190,9 +188,7 @@ def create_main_interface() -> gr.Blocks:
 
     with gr.Blocks(
         title="Azure DevOps AI Agent",
-        theme=gr.themes.Soft(
-            primary_hue="blue", secondary_hue="gray", neutral_hue="gray"
-        ),
+        theme=gr.themes.Soft(primary_hue="blue", secondary_hue="gray", neutral_hue="gray"),
         css=custom_css,
         head=app_insights_js,
     ) as app:
@@ -281,8 +277,7 @@ def main():
             "server_port": 7860,
             "show_api": False,  # Hide API docs in production
             "share": settings.environment == "development",  # Only share in dev
-            "inbrowser": settings.environment
-            == "development",  # Only open browser in dev
+            "inbrowser": settings.environment == "development",  # Only open browser in dev
             "favicon_path": None,  # Could add custom favicon
             "ssl_verify": settings.require_https,
             "auth": None,  # We handle auth internally
