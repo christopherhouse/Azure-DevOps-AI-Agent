@@ -16,9 +16,7 @@ class TestEntraIDAuthService:
         with patch("services.auth_service.settings") as mock_settings:
             mock_settings.azure_client_id = "test-client-id"
             mock_settings.azure_client_secret = "test-client-secret"
-            mock_settings.authority_url = (
-                "https://login.microsoftonline.com/test-tenant"
-            )
+            mock_settings.authority_url = "https://login.microsoftonline.com/test-tenant"
             mock_settings.scopes_list = ["openid", "profile"]
             mock_settings.redirect_uri = "http://localhost:7860/auth/callback"
 
@@ -34,12 +32,8 @@ class TestEntraIDAuthService:
 
     def test_get_auth_url_success(self, auth_service):
         """Test successful auth URL generation."""
-        mock_url = (
-            "https://login.microsoftonline.com/test-tenant/oauth2/v2.0/authorize?..."
-        )
-        auth_service.client_app.get_authorization_request_url = Mock(
-            return_value=mock_url
-        )
+        mock_url = "https://login.microsoftonline.com/test-tenant/oauth2/v2.0/authorize?..."
+        auth_service.client_app.get_authorization_request_url = Mock(return_value=mock_url)
 
         result = auth_service.get_auth_url("test-state")
 
@@ -69,9 +63,7 @@ class TestEntraIDAuthService:
             return_value=mock_token_result
         )
 
-        with patch.object(
-            auth_service, "_extract_user_id", return_value="test-user-id"
-        ):
+        with patch.object(auth_service, "_extract_user_id", return_value="test-user-id"):
             result = auth_service.exchange_code_for_token("test-code", "test-state")
 
         assert result == mock_token_result
@@ -140,9 +132,7 @@ class TestEntraIDAuthService:
             "groups": ["group1"],
         }
 
-        with patch.object(
-            auth_service, "validate_token", return_value=mock_token_payload
-        ):
+        with patch.object(auth_service, "validate_token", return_value=mock_token_payload):
             result = auth_service.get_user_info("test-token")
 
         assert result["user_id"] == "test-user-id"
@@ -161,9 +151,7 @@ class TestEntraIDAuthService:
             "refresh_token": "new-refresh-token",
         }
 
-        auth_service.client_app.acquire_token_by_refresh_token = Mock(
-            return_value=new_token_result
-        )
+        auth_service.client_app.acquire_token_by_refresh_token = Mock(return_value=new_token_result)
 
         result = auth_service.refresh_token("test-user")
 

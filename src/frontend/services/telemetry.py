@@ -201,9 +201,7 @@ class TelemetryClient:
                 break
 
         if not instrumentation_key:
-            logger.warning(
-                "Could not extract instrumentation key from connection string"
-            )
+            logger.warning("Could not extract instrumentation key from connection string")
             return ""
 
         return f"""
