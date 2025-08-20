@@ -1,6 +1,5 @@
 """Authentication models."""
 
-
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -12,9 +11,7 @@ class User(BaseModel):
     id: str = Field(description="User ID from Azure Entra ID")
     email: str = Field(description="User email")
     name: str = Field(description="User display name")
-    preferred_username: str | None = Field(
-        default=None, description="Preferred username"
-    )
+    preferred_username: str | None = Field(default=None, description="Preferred username")
 
 
 class Token(BaseModel):

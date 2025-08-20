@@ -100,7 +100,5 @@ async def root():
     return {
         "message": "Azure DevOps AI Agent Backend API",
         "version": settings.app_version,
-        "docs_url": "/docs"
-        if settings.debug
-        else "Documentation disabled in production",
+        "docs_url": "/docs" if settings.debug else "Documentation disabled in production",
     }

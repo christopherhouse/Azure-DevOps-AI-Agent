@@ -38,16 +38,12 @@ class ProjectCreate(BaseModel):
     )
 
     name: str = Field(description="Project name", min_length=1, max_length=64)
-    description: str | None = Field(
-        default=None, description="Project description", max_length=255
-    )
+    description: str | None = Field(default=None, description="Project description", max_length=255)
     visibility: ProjectVisibility = Field(
         default=ProjectVisibility.PRIVATE, description="Project visibility"
     )
     source_control_type: str = Field(default="Git", description="Source control type")
-    template_type_id: str | None = Field(
-        default=None, description="Process template ID"
-    )
+    template_type_id: str | None = Field(default=None, description="Process template ID")
 
 
 class ProjectUpdate(BaseModel):
@@ -57,12 +53,8 @@ class ProjectUpdate(BaseModel):
         json_schema_extra={"example": {"description": "Updated project description"}}
     )
 
-    name: str | None = Field(
-        default=None, description="Project name", min_length=1, max_length=64
-    )
-    description: str | None = Field(
-        default=None, description="Project description", max_length=255
-    )
+    name: str | None = Field(default=None, description="Project name", min_length=1, max_length=64)
+    description: str | None = Field(default=None, description="Project description", max_length=255)
 
 
 class Project(BaseModel):
@@ -89,12 +81,8 @@ class Project(BaseModel):
     state: ProjectState = Field(description="Project state")
     visibility: ProjectVisibility = Field(description="Project visibility")
     revision: int | None = Field(default=None, description="Project revision")
-    last_update_time: datetime | None = Field(
-        default=None, description="Last update time"
-    )
-    capabilities: dict[str, Any] | None = Field(
-        default=None, description="Project capabilities"
-    )
+    last_update_time: datetime | None = Field(default=None, description="Last update time")
+    capabilities: dict[str, Any] | None = Field(default=None, description="Project capabilities")
 
 
 class ProjectList(BaseModel):

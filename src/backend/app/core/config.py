@@ -1,6 +1,5 @@
 """Application configuration management."""
 
-
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -21,9 +20,7 @@ class Settings(BaseSettings):
     # Authentication - Azure Entra ID
     azure_tenant_id: str = Field(description="Azure tenant ID")
     azure_client_id: str = Field(description="Azure client ID")
-    azure_client_secret: str | None = Field(
-        default=None, description="Azure client secret"
-    )
+    azure_client_secret: str | None = Field(default=None, description="Azure client secret")
 
     # Azure DevOps
     azure_devops_organization: str | None = Field(
@@ -40,9 +37,7 @@ class Settings(BaseSettings):
     otel_service_name: str = Field(
         default="azure-devops-ai-backend", description="OpenTelemetry service name"
     )
-    otel_service_version: str = Field(
-        default="1.0.0", description="OpenTelemetry service version"
-    )
+    otel_service_version: str = Field(default="1.0.0", description="OpenTelemetry service version")
 
     # CORS
     allowed_origins: list[str] = Field(
@@ -53,9 +48,7 @@ class Settings(BaseSettings):
     # Security
     jwt_secret_key: str = Field(description="JWT secret key")
     jwt_algorithm: str = Field(default="HS256", description="JWT algorithm")
-    jwt_expire_minutes: int = Field(
-        default=60, description="JWT expiration time in minutes"
-    )
+    jwt_expire_minutes: int = Field(default=60, description="JWT expiration time in minutes")
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -75,20 +68,18 @@ except Exception as e:
     import os
 
     # Look for .env.test in the repository root (../../../../.env.test from src/backend/app/core/)
-    test_env_path = os.path.join(
-        os.path.dirname(__file__), "..", "..", "..", "..", ".env.test"
-    )
+    test_env_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".env.test")
     if os.path.exists(test_env_path):
         try:
             settings = Settings(_env_file=test_env_path)  # type: ignore
-        except Exception:
+        except Exception as e2:
             # If test env file doesn't work, provide helpful error
             raise RuntimeError(
                 "Required configuration missing. Please set the following environment variables: "
                 "AZURE_TENANT_ID, AZURE_CLIENT_ID, JWT_SECRET_KEY. "
                 "For testing purposes, copy .env.example to .env or .env.test with appropriate values. "
                 f"Original error: {e}"
-            )
+            ) from e2
     else:
         # In production, all required environment variables must be set
         raise RuntimeError(
@@ -96,4 +87,4 @@ except Exception as e:
             "AZURE_TENANT_ID, AZURE_CLIENT_ID, JWT_SECRET_KEY. "
             "For testing purposes, create a .env file with these values. "
             f"Original error: {e}"
-        )
+        ) from e

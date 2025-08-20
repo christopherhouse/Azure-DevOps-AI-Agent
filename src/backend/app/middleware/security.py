@@ -34,9 +34,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         process_time = time.time() - start_time
 
         # Log response
-        logger.info(
-            f"Response: {response.status_code} - Processing time: {process_time:.3f}s"
-        )
+        logger.info(f"Response: {response.status_code} - Processing time: {process_time:.3f}s")
 
         # Add processing time header
         response.headers["X-Process-Time"] = str(process_time)
@@ -59,8 +57,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         # Add HSTS header for HTTPS
         if request.url.scheme == "https":
-            response.headers["Strict-Transport-Security"] = (
-                "max-age=31536000; includeSubDomains"
-            )
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
         return response

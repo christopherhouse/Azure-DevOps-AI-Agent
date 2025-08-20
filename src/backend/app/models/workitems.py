@@ -44,9 +44,7 @@ class WorkItemCreate(BaseModel):
 
     title: str = Field(description="Work item title", min_length=1, max_length=255)
     work_item_type: WorkItemType = Field(description="Work item type")
-    description: str | None = Field(
-        default=None, description="Work item description"
-    )
+    description: str | None = Field(default=None, description="Work item description")
     assigned_to: str | None = Field(default=None, description="Assigned user email")
     priority: int | None = Field(default=2, description="Priority (1-4)", ge=1, le=4)
     tags: list[str] | None = Field(default=None, description="Work item tags")
@@ -57,22 +55,16 @@ class WorkItemUpdate(BaseModel):
     """Work item update request model."""
 
     model_config = ConfigDict(
-        json_schema_extra={
-            "example": {"state": "Active", "assigned_to": "user@example.com"}
-        }
+        json_schema_extra={"example": {"state": "Active", "assigned_to": "user@example.com"}}
     )
 
     title: str | None = Field(
         default=None, description="Work item title", min_length=1, max_length=255
     )
-    description: str | None = Field(
-        default=None, description="Work item description"
-    )
+    description: str | None = Field(default=None, description="Work item description")
     assigned_to: str | None = Field(default=None, description="Assigned user email")
     state: WorkItemState | None = Field(default=None, description="Work item state")
-    priority: int | None = Field(
-        default=None, description="Priority (1-4)", ge=1, le=4
-    )
+    priority: int | None = Field(default=None, description="Priority (1-4)", ge=1, le=4)
     tags: list[str] | None = Field(default=None, description="Work item tags")
 
 
@@ -98,15 +90,11 @@ class WorkItem(BaseModel):
     title: str = Field(description="Work item title")
     work_item_type: str = Field(description="Work item type")
     state: str = Field(description="Work item state")
-    description: str | None = Field(
-        default=None, description="Work item description"
-    )
+    description: str | None = Field(default=None, description="Work item description")
     assigned_to: str | None = Field(default=None, description="Assigned user")
     created_by: str | None = Field(default=None, description="Created by user")
     created_date: datetime | None = Field(default=None, description="Creation date")
-    changed_date: datetime | None = Field(
-        default=None, description="Last change date"
-    )
+    changed_date: datetime | None = Field(default=None, description="Last change date")
     priority: int | None = Field(default=None, description="Priority")
     tags: list[str] | None = Field(default=None, description="Work item tags")
     url: HttpUrl | None = Field(default=None, description="Work item URL")
