@@ -1,10 +1,10 @@
 """Application Insights telemetry integration."""
 
-import logging
 import json
-from typing import Dict, Any, Optional
-from datetime import datetime
+import logging
 import uuid
+from datetime import datetime
+from typing import Any
 
 from config import settings
 
@@ -28,8 +28,8 @@ class TelemetryClient:
     def track_event(
         self,
         name: str,
-        properties: Optional[Dict[str, Any]] = None,
-        measurements: Optional[Dict[str, float]] = None,
+        properties: dict[str, Any] | None = None,
+        measurements: dict[str, float] | None = None,
     ) -> None:
         """Track a custom event.
 
@@ -60,8 +60,8 @@ class TelemetryClient:
     def track_page_view(
         self,
         name: str,
-        url: Optional[str] = None,
-        properties: Optional[Dict[str, Any]] = None,
+        url: str | None = None,
+        properties: dict[str, Any] | None = None,
     ) -> None:
         """Track a page view.
 
@@ -88,7 +88,7 @@ class TelemetryClient:
             logger.error(f"Failed to track page view '{name}': {e}")
 
     def track_exception(
-        self, exception: Exception, properties: Optional[Dict[str, Any]] = None
+        self, exception: Exception, properties: dict[str, Any] | None = None
     ) -> None:
         """Track an exception.
 
@@ -116,8 +116,8 @@ class TelemetryClient:
     def track_user_action(
         self,
         action: str,
-        user_id: Optional[str] = None,
-        properties: Optional[Dict[str, Any]] = None,
+        user_id: str | None = None,
+        properties: dict[str, Any] | None = None,
     ) -> None:
         """Track a user action.
 
@@ -136,7 +136,7 @@ class TelemetryClient:
         method: str,
         status_code: int,
         duration_ms: float,
-        properties: Optional[Dict[str, Any]] = None,
+        properties: dict[str, Any] | None = None,
     ) -> None:
         """Track an API call.
 
@@ -162,8 +162,8 @@ class TelemetryClient:
         self,
         message_type: str,  # 'user' or 'assistant'
         message_length: int,
-        conversation_id: Optional[str] = None,
-        user_id: Optional[str] = None,
+        conversation_id: str | None = None,
+        user_id: str | None = None,
     ) -> None:
         """Track a chat message.
 
@@ -206,12 +206,12 @@ class TelemetryClient:
             )
             return ""
 
-        return """
+        return f"""
         <script type="text/javascript">
         !function(T,l,y){{var S=T.location,k="script",D="instrumentationKey",C="ingestionendpoint",I="disableExceptionTracking",E="ai.device.",b="toLowerCase",w="crossOrigin",N="POST",e="appInsightsSDK",t=y.name||"appInsights";(y.name||T[e])&&(T[e]=t);var n=T[t]||function(d){{var g=!1,f=!1,m={{initialize:!0,queue:[],sv:"5",version:2,config:d}};function v(e,t){{var n={{}},a="Browser";return n[E+"id"]=a[b](),n[E+"type"]=a,n["ai.cloud.role"]=d.namePrefix||"",n["ai.internal.sdkVersion"]="javascript:snippet_"+(m.sv||m.version),n}}var h=d.url||y.src;if(h){{m.queue.push((function(){{var a=T.createElement(k);a.src=h;var e=T.getElementsByTagName(k)[0];e.parentNode.insertBefore(a,e)}}))}};function a(e){{m.queue.push((function(){{m[e].apply(m,arguments)}}))}}var r=["track","trackEvent","trackException","trackMetric","trackPageView","trackTrace","trackDependencyData"];r.push("flush"),r.forEach((function(e){{m[e]=function(){{a(e)}}}}));var s=!1;var o=m,p=function(e){{m=e}};return o.queue&&o.queue.length>0&&(o.track=function(){{o.queue.push((function(){{o.track.apply(o,arguments)}}));}},s=!0),o.initialize=function(e){{var t=e.config||{{}};t[D]=e[D],t.endpointUrl=e.endpointUrl||e.config.endpointUrl,e.queue&&e.queue.length>0&&(o.queue.push.apply(o.queue,e.queue),o.queue=[]),p(appInsights.loadAppInsights(t)),o.trackPageView({{}})}},o}}({{
         config:{{
         instrumentationKey: "{instrumentation_key}",
-        connectionString: "{connection_string}",
+        connectionString: "{self.connection_string}",
         enableAutoRouteTracking: true,
         disableAjaxTracking: false,
         disableFetchTracking: false,
@@ -230,10 +230,7 @@ class TelemetryClient:
         }}
         }});
         </script>
-        """.format(
-            instrumentation_key=instrumentation_key,
-            connection_string=self.connection_string,
-        )
+        """
 
 
 # Global telemetry client

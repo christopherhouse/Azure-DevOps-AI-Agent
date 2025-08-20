@@ -1,9 +1,10 @@
 """Tests for the authentication service."""
 
-import pytest
 from unittest.mock import Mock, patch
 
-from services.auth_service import EntraIDAuthService, AuthenticationError
+import pytest
+
+from services.auth_service import AuthenticationError, EntraIDAuthService
 
 
 class TestEntraIDAuthService:
