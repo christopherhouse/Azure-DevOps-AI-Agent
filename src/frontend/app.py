@@ -46,7 +46,7 @@ def create_main_interface() -> gr.Blocks:
         max-width: 1400px !important;
         margin: 0 auto;
     }
-    
+
     /* Header styles */
     .app-header {
         background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
@@ -56,19 +56,19 @@ def create_main_interface() -> gr.Blocks:
         margin-bottom: 2rem;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
-    
+
     .app-header h1 {
         margin: 0;
         font-size: 2.5rem;
         font-weight: 600;
     }
-    
+
     .app-header p {
         margin: 0.5rem 0 0 0;
         font-size: 1.1rem;
         opacity: 0.9;
     }
-    
+
     /* Chat interface styles */
     .chat-container {
         background: white;
@@ -77,7 +77,7 @@ def create_main_interface() -> gr.Blocks:
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         border: 1px solid #e1e5e9;
     }
-    
+
     /* Login interface styles */
     .login-container {
         max-width: 500px;
@@ -88,20 +88,20 @@ def create_main_interface() -> gr.Blocks:
         box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
         border: 1px solid #e1e5e9;
     }
-    
+
     .login-container h1 {
         text-align: center;
         color: #323130;
         margin-bottom: 0.5rem;
     }
-    
+
     .login-container h3 {
         text-align: center;
         color: #605e5c;
         margin-bottom: 2rem;
         font-weight: 400;
     }
-    
+
     /* Button styles */
     .primary-button {
         background: #0078d4 !important;
@@ -112,13 +112,13 @@ def create_main_interface() -> gr.Blocks:
         border-radius: 6px !important;
         transition: all 0.2s ease !important;
     }
-    
+
     .primary-button:hover {
         background: #106ebe !important;
         transform: translateY(-1px);
         box-shadow: 0 4px 8px rgba(0, 120, 212, 0.3) !important;
     }
-    
+
     /* Status indicator styles */
     .status-connected {
         background: #dff6dd !important;
@@ -128,7 +128,7 @@ def create_main_interface() -> gr.Blocks:
         border-radius: 6px !important;
         font-weight: 500 !important;
     }
-    
+
     .status-error {
         background: #fde7e9 !important;
         border: 1px solid #d13438 !important;
@@ -137,7 +137,7 @@ def create_main_interface() -> gr.Blocks:
         border-radius: 6px !important;
         font-weight: 500 !important;
     }
-    
+
     /* Example prompts */
     .example-prompts {
         background: #f8f9fa;
@@ -146,12 +146,12 @@ def create_main_interface() -> gr.Blocks:
         margin: 1rem 0;
         border: 1px solid #e1e5e9;
     }
-    
+
     .example-prompts h4 {
         margin-top: 0;
         color: #323130;
     }
-    
+
     /* Footer */
     .app-footer {
         text-align: center;
@@ -161,22 +161,22 @@ def create_main_interface() -> gr.Blocks:
         border-top: 1px solid #e1e5e9;
         margin-top: 3rem;
     }
-    
+
     /* Responsive design */
     @media (max-width: 768px) {
         .gradio-container {
             padding: 1rem;
         }
-        
+
         .app-header h1 {
             font-size: 2rem;
         }
-        
+
         .login-container {
             margin: 1rem;
             padding: 2rem;
         }
-        
+
         .chat-container {
             padding: 1rem;
         }
@@ -221,13 +221,13 @@ def create_main_interface() -> gr.Blocks:
             gr.HTML("""
             <div class="app-footer">
                 <p>
-                    🔒 Secured with Microsoft Entra ID | 
-                    📊 Powered by Azure OpenAI | 
+                    🔒 Secured with Microsoft Entra ID |
+                    📊 Powered by Azure OpenAI |
                     🛠️ Built with Gradio & FastAPI
                 </p>
                 <p>
                     <small>
-                        For support, please contact your system administrator or 
+                        For support, please contact your system administrator or
                         <a href="https://github.com/christopherhouse/Azure-DevOps-AI-Agent" target="_blank">
                             visit our GitHub repository
                         </a>

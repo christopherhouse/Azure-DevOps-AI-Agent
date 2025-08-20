@@ -95,7 +95,7 @@ except Exception as e:
                 "AZURE_TENANT_ID, AZURE_CLIENT_ID. "
                 "For testing purposes, copy .env.example to .env or .env.test with appropriate values. "
                 f"Original error: {e}"
-            )
+            ) from None
     else:
         # In production, all required environment variables must be set
         raise RuntimeError(
@@ -103,4 +103,4 @@ except Exception as e:
             "AZURE_TENANT_ID, AZURE_CLIENT_ID. "
             "For testing purposes, create a .env file with these values. "
             f"Original error: {e}"
-        )
+        ) from None

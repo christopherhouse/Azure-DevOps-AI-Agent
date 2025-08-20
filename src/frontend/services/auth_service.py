@@ -48,7 +48,7 @@ class EntraIDAuthService:
             return auth_url
         except Exception as e:
             logger.error(f"Failed to generate auth URL: {e}")
-            raise AuthenticationError(f"Failed to generate auth URL: {e}")
+            raise AuthenticationError(f"Failed to generate auth URL: {e}") from e
 
     def exchange_code_for_token(
         self, code: str, state: str | None = None
@@ -84,7 +84,7 @@ class EntraIDAuthService:
 
         except Exception as e:
             logger.error(f"Token exchange error: {e}")
-            raise AuthenticationError(f"Token exchange failed: {e}")
+            raise AuthenticationError(f"Token exchange failed: {e}") from e
 
     def refresh_token(self, user_id: str) -> dict[str, Any] | None:
         """Refresh access token using refresh token.
@@ -143,13 +143,13 @@ class EntraIDAuthService:
 
         except jwt.ExpiredSignatureError:
             logger.error("Token has expired")
-            raise AuthenticationError("Token has expired")
+            raise AuthenticationError("Token has expired") from None
         except jwt.InvalidTokenError as e:
             logger.error(f"Invalid token: {e}")
-            raise AuthenticationError(f"Invalid token: {e}")
+            raise AuthenticationError(f"Invalid token: {e}") from e
         except Exception as e:
             logger.error(f"Token validation error: {e}")
-            raise AuthenticationError(f"Token validation failed: {e}")
+            raise AuthenticationError(f"Token validation failed: {e}") from e
 
     def get_user_info(self, access_token: str) -> dict[str, Any]:
         """Extract user information from access token.
@@ -180,7 +180,7 @@ class EntraIDAuthService:
 
         except Exception as e:
             logger.error(f"Failed to get user info: {e}")
-            raise AuthenticationError(f"Failed to get user info: {e}")
+            raise AuthenticationError(f"Failed to get user info: {e}") from e
 
     def logout(self, user_id: str) -> None:
         """Logout user and clear cached tokens.
