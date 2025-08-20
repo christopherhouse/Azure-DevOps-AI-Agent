@@ -292,17 +292,28 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
+    - name: Determine branch name
+      id: branch
+      run: |
+        if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          echo "branch=main" >> $GITHUB_OUTPUT
+        elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+          echo "branch=develop" >> $GITHUB_OUTPUT
+        else
+          echo "branch=$(echo ${{ github.ref }} | sed 's/refs\/heads\///')" >> $GITHUB_OUTPUT
+        fi
+        
     - name: Run Trivy vulnerability scanner - Backend
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}
+        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ steps.branch.outputs.branch }}-${{ github.sha }}
         format: 'sarif'
         output: 'backend-trivy-results.sarif'
         
     - name: Run Trivy vulnerability scanner - Frontend
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}
+        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ steps.branch.outputs.branch }}-${{ github.sha }}
         format: 'sarif'
         output: 'frontend-trivy-results.sarif'
         
