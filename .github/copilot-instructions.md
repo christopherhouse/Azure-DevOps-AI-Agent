@@ -1,309 +1,111 @@
-# Azure DevOps AI Agent - Copilot Instructions
+# Copilot Coding Instructions
 
-This document provides comprehensive instructions for developing the Azure DevOps AI Agent repository. Follow these guidelines to ensure consistency, quality, and adherence to best practices.
+These instructions guide GitHub Copilot when generating code, infrastructure, or workflows in this repository. Always follow these rules.
 
-## Project Overview
+---
 
-This repository contains a full-stack solution for an AI-powered Azure DevOps administrative agent:
+## Python (Backend)
 
-- **Frontend**: Web chat interface built with Gradio
-- **Backend**: Python FastAPI with Semantic Kernel and Azure OpenAI integration
-- **Infrastructure**: Azure Container Apps, Container Registry, and supporting services
-- **Authentication**: Microsoft Entra ID integration
-- **Deployment**: GitHub Actions with containerized deployment
+- Always target **Python 3.11+**.  
+- Use **async/await** for FastAPI endpoints and service calls.  
+- Always include **type hints**.  
+- Use **Pydantic models** for request/response validation.  
+- Generate **docstrings** and inline comments for non-trivial logic.  
+- Structure code with **dependency injection** for services/config.  
+- Use `httpx.AsyncClient` for async API calls.  
+- Never suggest hardcoded secrets → always assume **Azure Managed Identity** or **Key Vault**.  
 
-## Repository Structure
+---
 
-```
-/
-├── .github/           # GitHub Actions workflows and templates
-├── docs/             # Documentation and guides
-├── infra/            # Infrastructure as Code (Bicep)
-├── src/              # Source code
-│   ├── frontend/     # Gradio frontend application
-│   ├── backend/      # FastAPI backend application
-│   └── shared/       # Shared utilities and models
-└── README.md         # Project overview and setup guide
-```
+## FastAPI + Semantic Kernel
 
-## Development Workflow
+- Default to **FastAPI async endpoints** with OpenAPI annotations.  
+- Use **Semantic Kernel plugins** for Azure DevOps operations (projects, work items, repos, pipelines).  
+- Always implement **error handling and logging**.  
+- Default to **OpenTelemetry logging** with **Application Insights**.  
 
-### 1. Quality Tools and Standards
+---
 
-**Python Development Standards:**
-- Use **Python 3.11+** for all applications
-- Follow **PEP 8** style guidelines
-- Use **type hints** throughout the codebase
-- Maintain **90%+ test coverage**
+## Frontend (Gradio)
 
-**Quality Tools (use latest stable versions):**
-- **Linting**: `ruff` for fast Python linting and formatting
-- **Type Checking**: `mypy` for static type analysis
-- **Testing**: `pytest` with `pytest-cov` for coverage
-- **Security**: `bandit` for security vulnerability scanning
-- **Dependency Management**: `uv` for Python package and version management
-- **Pre-commit**: Use `pre-commit` hooks for automated quality checks
+- Generate **modular UI components**, not monolithic apps.  
+- Use **Gradio state management** for user sessions.  
+- Always integrate **Microsoft Entra ID authentication (PKCE)**.  
+- Provide **clear error messages** and **loading states**.  
 
-**Quality Workflow:**
-1. Run `ruff check` and `ruff format` before committing
-2. Execute `mypy` for type checking
-3. Run `pytest` with coverage reporting
-4. Perform `bandit` security scan
-5. All checks must pass before creating pull requests
-6. **All code quality checks must pass before committing any changes**
-7. **All code quality checks must pass before completing work on any issue**
+---
 
-**CI/CD Quality Gate Requirements:**
-- `ruff check src/` - must pass (linting)
-- `ruff format --check src/` - must pass (formatting verification)
-- `mypy src/backend/app --ignore-missing-imports` - must pass (type checking)
-- `bandit -r src/backend/app` - must pass (security scan)
-- All tests in `pytest` - must pass with 90%+ coverage
-- **CRITICAL**: If any quality tool fails in CI, the entire build fails and must be fixed before merge
+## Infrastructure (Bicep)
 
-### 2. Frontend Development (Gradio)
+- Always use **Azure Verified Modules (AVM)** when available.  
+- Only create custom modules if AVM doesn’t exist.  
+- Default naming convention: `main.dev.bicepparam`, `main.prod.bicepparam`.  
+- Never store secrets in param files → assume **Key Vault references**.  
+- Always configure **diagnostic settings** with category groups.  
+- Always use **managed identity** for resource access.  
 
-**Technology Stack:**
-- **Framework**: Gradio (latest stable)
-- **Authentication**: Integration with Microsoft Entra ID
-- **Styling**: Custom CSS for professional appearance
-- **State Management**: Gradio state management patterns
+---
 
-**Frontend Guidelines:**
-- Create modular, reusable UI components
-- Implement responsive design principles
-- Handle authentication state and token refresh
-- Provide clear user feedback and error messages
-- Use Gradio's built-in security features
+## Docker
 
-### 3. Backend Development (FastAPI + Semantic Kernel)
+- Use **multi-stage builds** with `python:3.11-slim` base.  
+- Always run as a **non-root user**.  
+- Optimize for **small image size**.  
+- Include security scanning steps in CI/CD.  
 
-**Technology Stack:**
-- **Framework**: FastAPI (latest stable)
-- **AI Framework**: Microsoft Semantic Kernel
-- **Azure Integration**: Azure OpenAI, Azure DevOps REST APIs
-- **Authentication**: Microsoft Authentication Library (MSAL)
-- **Logging**: OpenTelemetry with Application Insights
+---
 
-**Backend Guidelines:**
-- Implement async/await patterns throughout
-- Use dependency injection for services and configurations
-- Create comprehensive API documentation with OpenAPI/Swagger
-- Implement proper error handling and logging
-- Use Pydantic models for request/response validation
-- Follow REST API best practices
+## GitHub Actions (CI/CD)
 
-**Semantic Kernel Integration:**
-- Create plugins for Azure DevOps operations (projects, work items, repos, pipelines)
-- Implement proper prompt engineering and function calling
-- Use Azure OpenAI with managed identity authentication
-- Implement conversation memory and context management
+- Always generate workflows in `.github/workflows/`.  
+- Separate workflows for:  
+  - `ci.yml` → lint, test, build, push  
+  - `deploy-dev.yml` → dev deploy  
+  - `deploy-prod.yml` → prod deploy  
+  - `infrastructure.yml` → IaC deploy  
+- Use **GitHub OIDC → Azure federated identity** (never secrets in workflow files).  
+- Fail builds if lint, type-check, tests, or security scans fail.  
 
-### 4. Infrastructure as Code (Bicep)
+---
 
-**Infrastructure Guidelines:**
-- **ALWAYS use Azure Verified Modules (AVM)** when available for any Azure resource type (latest stable versions)
-- AVM modules are the Microsoft-verified and tested modules that provide consistent patterns and best practices
-- Only create custom Bicep resources when no AVM module exists for that resource type
-- Create separate parameter files for dev and prod environments using the naming convention: `main.dev.bicepparam` and `main.prod.bicepparam`
-- Store no secrets in parameter files (use Key Vault references)
-- Implement proper tagging and naming conventions
-- Use managed identity for all Azure resource authentication
-- Configure diagnostic settings for all resources that support them, favoring category groups over individual categories
+## Quality Tools
 
-**Required Azure Resources:**
-- Azure Container Apps Environment
-- Azure Container Registry
-- Azure OpenAI Service
-- Application Insights
-- Log Analytics Workspace
-- Azure Key Vault
-- Microsoft Entra ID App Registrations
+- Lint & format: `ruff`  
+- Type check: `mypy`  
+- Tests: `pytest` with coverage (≥90% backend, ≥70% frontend)  
+- Security: `bandit` + dependency scans  
+- Always generate code that **passes all quality tools**.  
 
-**File Structure:**
-```
-infra/
-├── main.bicep                      # Main deployment template using AVM modules
-├── modules/                        # Custom Bicep modules only when AVM doesn't exist
-├── parameters/
-│   ├── main.dev.bicepparam        # Development environment parameters
-│   └── main.prod.bicepparam       # Production environment parameters
-└── README.md                       # Infrastructure documentation
-```
+---
 
-### 5. Containerization
+## Security Defaults
 
-**Docker Guidelines:**
-- Use multi-stage builds for optimization
-- Use official Python base images (python:3.11-slim)
-- Implement proper security scanning in build process
-- Use non-root users in containers
-- Optimize for small image sizes
+- Frontend auth: Entra ID (PKCE).  
+- Backend auth: Validate Entra ID tokens + RBAC.  
+- All service-to-service calls must be **authenticated**.  
+- Encrypt all data in transit (HTTPS).  
+- Always use **Azure Key Vault** for secrets.  
 
-**Container Structure:**
-- **Frontend Container**: Gradio application with Entra ID integration
-- **Backend Container**: FastAPI application with Semantic Kernel
+---
 
-### 6. GitHub Actions CI/CD
+## Reliability & Performance
 
-**Workflow Structure:**
-```
-.github/
-├── workflows/
-│   ├── ci.yml               # Build, test, and publish containers
-│   ├── deploy-dev.yml       # Deploy to development environment
-│   ├── deploy-prod.yml      # Deploy to production environment
-│   └── infrastructure.yml   # Deploy infrastructure changes
-└── templates/               # Reusable workflow templates
-```
+- Use **retry logic with exponential backoff** for external calls.  
+- Use **circuit breaker patterns** for Azure DevOps API calls.  
+- Implement **caching** for frequently accessed data.  
+- Assume target response times:  
+  - API < 2s  
+  - Frontend load < 3s  
 
-**CI/CD Pipeline:**
-1. **Build Stage**: Lint, test, build, and push containers to GHCR
-2. **Deploy Stage**: Promote containers from GHCR to Azure Container Registry
-3. **Infrastructure**: Deploy Bicep templates with proper validation
+---
 
-### 7. Security Requirements
+## Documentation
 
-**Authentication & Authorization:**
-- Frontend: Microsoft Entra ID integration with PKCE flow
-- Backend: Validate Entra ID tokens and implement proper RBAC
-- All inter-service communication must be authenticated
+- Always generate/update OpenAPI docs for APIs.  
+- Provide **README updates** when adding features.  
+- Add inline comments for non-trivial sections.  
 
-**Data Protection:**
-- All data encrypted at rest and in transit
-- Use HTTPS/TLS for all communications
-- Implement proper secret management with Azure Key Vault
-- Use managed identity for Azure resource access
+---
 
-**Security Scanning:**
-- Container vulnerability scanning in CI/CD
-- Dependency vulnerability scanning with tools like `safety`
-- Static code analysis with `bandit`
-- Regular security reviews of authentication flows
-
-### 8. Testing Strategy
-
-**Testing Levels:**
-- **Unit Tests**: Test individual functions and classes (90%+ coverage)
-- **Integration Tests**: Test service interactions and API endpoints
-- **End-to-End Tests**: Test complete user workflows
-- **Security Tests**: Test authentication and authorization flows
-
-**Testing Tools:**
-- `pytest` for test framework
-- `pytest-asyncio` for async testing
-- `httpx` for API testing
-- `pytest-mock` for mocking
-- `pytest-cov` for coverage reporting
-
-### 9. Documentation Requirements
-
-**Documentation Structure:**
-```
-docs/
-├── development/
-│   ├── setup.md             # Local development setup
-│   ├── testing.md           # Testing guidelines
-│   └── deployment.md        # Deployment procedures
-├── architecture/
-│   ├── overview.md          # System architecture
-│   ├── security.md          # Security design
-│   └── azure-resources.md   # Azure resource documentation
-├── authentication/
-│   ├── entra-setup.md       # Entra ID configuration
-│   ├── frontend-auth.md     # Frontend authentication guide
-│   └── backend-auth.md      # Backend authentication guide
-└── api/
-    └── endpoints.md         # API documentation
-```
-
-**Documentation Standards:**
-- Keep README.md updated with latest features and setup instructions
-- Document all public APIs with OpenAPI/Swagger
-- Maintain architecture decision records (ADRs)
-- Update documentation with each significant feature addition
-
-### 10. Environment Management
-
-**Development Environment:**
-- Use environment variables for configuration
-- Provide comprehensive local development setup instructions
-- Use development containers (devcontainer) when beneficial
-- Ensure easy onboarding for new developers
-
-**Production Environment:**
-- Implement proper monitoring and alerting
-- Use Application Insights for telemetry
-- Implement health checks for all services
-- Follow Azure Well-Architected principles (optimized for cost)
-
-### 11. Azure DevOps Integration
-
-**Required Capabilities:**
-- Project management (create, update, delete projects)
-- Work item management (create, update, query work items)
-- Repository management (create repos, manage permissions)
-- Pipeline management (create, trigger, monitor pipelines)
-- User and permission management
-
-**Implementation Guidelines:**
-- Use Azure DevOps REST APIs for all operations
-- Implement proper error handling and retry logic
-- Cache frequently accessed data appropriately
-- Provide clear user feedback for all operations
-
-### 12. Reliability and Performance
-
-**Performance Requirements:**
-- API response times < 2 seconds for most operations
-- Frontend loading times < 3 seconds
-- Implement proper caching strategies
-- Use async patterns to prevent blocking operations
-
-**Reliability Patterns:**
-- Implement circuit breaker patterns for external API calls
-- Use retry logic with exponential backoff
-- Implement proper health checks and monitoring
-- Design for graceful degradation
-
-## Code Review Guidelines
-
-**Before Creating Pull Requests:**
-1. Ensure all quality tools pass (ruff, mypy, pytest, bandit)
-2. Update relevant documentation
-3. Add or update tests for new functionality
-4. Verify infrastructure changes in development environment
-5. Test authentication flows thoroughly
-
-**Pull Request Requirements:**
-- Clear description of changes and rationale
-- Link to related issues or work items
-- Screenshots for UI changes
-- Performance impact assessment for significant changes
-- Security review for authentication/authorization changes
-
-## Context7 MCP Server Usage
-
-This repository is configured with the Context7 MCP server for accessing latest documentation. Use it to:
-
-1. **Research Latest Library Versions**: Query for latest stable releases
-2. **Validate Implementation Patterns**: Check current best practices
-3. **Troubleshoot Issues**: Find solutions for common problems
-4. **Architecture Decisions**: Research recommended patterns and implementations
-
-**Example Queries:**
-- Latest FastAPI features and best practices
-- Semantic Kernel implementation patterns
-- Azure Verified Module documentation
-- Gradio authentication integration examples
-
-## Getting Started
-
-1. **Clone the repository**
-2. **Set up development environment** (see docs/development/setup.md)
-3. **Run quality tools** to ensure everything works
-4. **Create feature branch** from main
-5. **Follow development workflow** outlined above
-6. **Submit pull request** with proper documentation
-
-Remember: This project prioritizes quality, security, and maintainability. Take time to implement features correctly rather than rushing to completion.
+⚠️ **Reminder for Copilot**:  
+Always generate **secure, type-safe, async, modular, and production-ready code** aligned with Azure Well-Architected principles.  
