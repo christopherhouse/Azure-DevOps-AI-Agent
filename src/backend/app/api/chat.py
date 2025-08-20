@@ -1,11 +1,12 @@
 """Chat and AI endpoints."""
 
 import logging
-from typing import List
-from fastapi import APIRouter, HTTPException, status, Depends
-from app.models.chat import ChatRequest, ChatResponse, Conversation
-from app.models.auth import User
+
+from fastapi import APIRouter, Depends, HTTPException, status
+
 from app.core.dependencies import get_current_user
+from app.models.auth import User
+from app.models.chat import ChatRequest, ChatResponse, Conversation
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -45,7 +46,7 @@ async def send_message(
         )
 
 
-@router.get("/conversations", response_model=List[Conversation])
+@router.get("/conversations", response_model=list[Conversation])
 async def get_conversations(current_user: User = Depends(get_current_user)):
     """
     Get user's conversations.

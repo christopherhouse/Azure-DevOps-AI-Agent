@@ -1,16 +1,18 @@
 """Project management endpoints."""
 
 import logging
-from fastapi import APIRouter, HTTPException, status, Depends, Query
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+
+from app.core.dependencies import get_current_user
+from app.models.auth import User
 from app.models.projects import (
     Project,
     ProjectCreate,
-    ProjectUpdate,
     ProjectList,
     ProjectState,
+    ProjectUpdate,
 )
-from app.models.auth import User
-from app.core.dependencies import get_current_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

@@ -2,10 +2,14 @@
 
 import logging
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
+
+# Import API routes
+from app.api import auth, chat, projects, workitems
 
 # Import configuration and telemetry
 from app.core.config import settings
@@ -13,14 +17,11 @@ from app.core.telemetry import setup_telemetry
 
 # Import middleware
 from app.middleware.error_handlers import (
+    general_exception_handler,
     http_exception_handler,
     validation_exception_handler,
-    general_exception_handler,
 )
 from app.middleware.security import RequestLoggingMiddleware, SecurityHeadersMiddleware
-
-# Import API routes
-from app.api import auth, chat, projects, workitems
 
 # Configure logging
 logging.basicConfig(

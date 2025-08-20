@@ -1,17 +1,18 @@
 """OpenTelemetry configuration for Application Insights integration."""
 
 import logging
-from typing import Optional
+
 from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
+from opentelemetry.sdk.trace import TracerProvider
+
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 
-def setup_telemetry() -> Optional[trace.Tracer]:
+def setup_telemetry() -> trace.Tracer | None:
     """Set up OpenTelemetry tracing with Azure Monitor."""
 
     if not settings.applicationinsights_connection_string:

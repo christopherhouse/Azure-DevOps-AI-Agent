@@ -1,11 +1,12 @@
 """Work item management endpoints."""
 
 import logging
-from typing import Optional
-from fastapi import APIRouter, HTTPException, status, Depends, Query, Path
-from app.models.workitems import WorkItem, WorkItemCreate, WorkItemUpdate, WorkItemList
-from app.models.auth import User
+
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+
 from app.core.dependencies import get_current_user
+from app.models.auth import User
+from app.models.workitems import WorkItem, WorkItemCreate, WorkItemList, WorkItemUpdate
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -18,8 +19,8 @@ async def get_work_items(
     limit: int = Query(
         100, ge=1, le=1000, description="Number of work items to return"
     ),
-    work_item_type: Optional[str] = Query(None, description="Filter by work item type"),
-    state: Optional[str] = Query(None, description="Filter by work item state"),
+    work_item_type: str | None = Query(None, description="Filter by work item type"),
+    state: str | None = Query(None, description="Filter by work item state"),
     current_user: User = Depends(get_current_user),
 ):
     """
