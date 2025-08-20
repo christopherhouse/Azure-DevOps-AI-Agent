@@ -1,9 +1,17 @@
-# Minimal Backend Dockerfile for CI Compatibility
+# Optimized Backend Dockerfile for faster CI builds
 FROM python:3.11-slim
 
-# Set environment variables
+# Set environment variables for optimal Python performance
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies in a single layer
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get clean
 
 # Create non-root user
 RUN groupadd --gid 1000 appuser && \
@@ -12,12 +20,15 @@ RUN groupadd --gid 1000 appuser && \
 # Set working directory
 WORKDIR /app
 
-# Copy requirements and install dependencies
+# Copy requirements first for better Docker layer caching
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+
+# Install Python dependencies with optimizations
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY . .
+COPY --chown=appuser:appuser . .
 
 # Switch to non-root user
 USER appuser
