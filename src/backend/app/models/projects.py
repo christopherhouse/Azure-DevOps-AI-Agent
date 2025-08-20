@@ -1,9 +1,10 @@
 """Azure DevOps project models."""
 
-from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, Field, HttpUrl, ConfigDict
 from datetime import datetime
 from enum import Enum
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 
 
 class ProjectVisibility(str, Enum):
@@ -37,14 +38,14 @@ class ProjectCreate(BaseModel):
     )
 
     name: str = Field(description="Project name", min_length=1, max_length=64)
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None, description="Project description", max_length=255
     )
     visibility: ProjectVisibility = Field(
         default=ProjectVisibility.PRIVATE, description="Project visibility"
     )
     source_control_type: str = Field(default="Git", description="Source control type")
-    template_type_id: Optional[str] = Field(
+    template_type_id: str | None = Field(
         default=None, description="Process template ID"
     )
 
@@ -56,10 +57,10 @@ class ProjectUpdate(BaseModel):
         json_schema_extra={"example": {"description": "Updated project description"}}
     )
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None, description="Project name", min_length=1, max_length=64
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None, description="Project description", max_length=255
     )
 
@@ -83,15 +84,15 @@ class Project(BaseModel):
 
     id: str = Field(description="Project ID")
     name: str = Field(description="Project name")
-    description: Optional[str] = Field(default=None, description="Project description")
-    url: Optional[HttpUrl] = Field(default=None, description="Project URL")
+    description: str | None = Field(default=None, description="Project description")
+    url: HttpUrl | None = Field(default=None, description="Project URL")
     state: ProjectState = Field(description="Project state")
     visibility: ProjectVisibility = Field(description="Project visibility")
-    revision: Optional[int] = Field(default=None, description="Project revision")
-    last_update_time: Optional[datetime] = Field(
+    revision: int | None = Field(default=None, description="Project revision")
+    last_update_time: datetime | None = Field(
         default=None, description="Last update time"
     )
-    capabilities: Optional[Dict[str, Any]] = Field(
+    capabilities: dict[str, Any] | None = Field(
         default=None, description="Project capabilities"
     )
 
@@ -116,5 +117,5 @@ class ProjectList(BaseModel):
         }
     )
 
-    projects: List[Project] = Field(description="List of projects")
+    projects: list[Project] = Field(description="List of projects")
     count: int = Field(description="Total count of projects")

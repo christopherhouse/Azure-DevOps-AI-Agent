@@ -1,14 +1,16 @@
 """Authentication service."""
 
-import jwt
 import logging
-from typing import Optional, Dict, Any
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
+import jwt
+from fastapi import HTTPException, status
 from jwt.exceptions import DecodeError, InvalidTokenError
 from msal import ConfidentialClientApplication
-from fastapi import HTTPException, status
+
 from app.core.config import settings
-from app.models.auth import User, Token
+from app.models.auth import Token, User
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +31,7 @@ class AuthenticationService:
         self._msal_app = None
 
     @property
-    def msal_app(self) -> Optional[ConfidentialClientApplication]:
+    def msal_app(self) -> ConfidentialClientApplication | None:
         """Get MSAL app instance, initialized lazily."""
         if self._msal_app is None and self.client_secret:
             try:
@@ -48,7 +50,7 @@ class AuthenticationService:
                 logger.error(f"Failed to initialize MSAL: {e}")
         return self._msal_app
 
-    async def validate_azure_token(self, token: str) -> Optional[Dict[str, Any]]:
+    async def validate_azure_token(self, token: str) -> dict[str, Any] | None:
         """Validate Azure Entra ID token."""
         try:
             # In a real implementation, you would validate the token against Azure
@@ -83,16 +85,16 @@ class AuthenticationService:
             logger.error(f"Token validation failed: {e}")
             return None
 
-    def create_access_token(self, user_data: Dict[str, Any]) -> Token:
+    def create_access_token(self, user_data: dict[str, Any]) -> Token:
         """Create a JWT access token."""
-        expire = datetime.now(timezone.utc) + timedelta(minutes=self.jwt_expire_minutes)
+        expire = datetime.now(UTC) + timedelta(minutes=self.jwt_expire_minutes)
 
         to_encode = {
             "sub": user_data.get("sub"),
             "email": user_data.get("email"),
             "name": user_data.get("name"),
             "exp": expire,
-            "iat": datetime.now(timezone.utc),
+            "iat": datetime.now(UTC),
             "iss": "azure-devops-ai-backend",
         }
 
@@ -106,7 +108,7 @@ class AuthenticationService:
             expires_in=self.jwt_expire_minutes * 60,
         )
 
-    async def verify_token(self, token: str) -> Optional[User]:
+    async def verify_token(self, token: str) -> User | None:
         """Verify JWT token and return user."""
         try:
             payload = jwt.decode(
@@ -128,7 +130,7 @@ class AuthenticationService:
             logger.error(f"JWT verification failed: {e}")
             return None
 
-    async def get_user_from_azure_token(self, azure_token: str) -> Optional[User]:
+    async def get_user_from_azure_token(self, azure_token: str) -> User | None:
         """Get user information from Azure token."""
         user_info = await self.validate_azure_token(azure_token)
         if not user_info:
@@ -141,7 +143,7 @@ class AuthenticationService:
             preferred_username=user_info.get("preferred_username"),
         )
 
-    async def authenticate_user(self, azure_token: str) -> Optional[Token]:
+    async def authenticate_user(self, azure_token: str) -> Token | None:
         """Authenticate user with Azure token and return JWT."""
         user_info = await self.validate_azure_token(azure_token)
         if not user_info:

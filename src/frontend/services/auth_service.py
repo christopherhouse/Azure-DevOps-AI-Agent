@@ -1,10 +1,10 @@
 """Authentication service for Microsoft Entra ID integration."""
 
 import logging
-from typing import Optional, Dict, Any
+from typing import Any
 
-import msal
 import jwt
+import msal
 
 from config import settings
 
@@ -29,7 +29,7 @@ class EntraIDAuthService:
         )
         self._token_cache = {}
 
-    def get_auth_url(self, state: Optional[str] = None) -> str:
+    def get_auth_url(self, state: str | None = None) -> str:
         """Generate authentication URL for OAuth flow.
 
         Args:
@@ -51,8 +51,8 @@ class EntraIDAuthService:
             raise AuthenticationError(f"Failed to generate auth URL: {e}")
 
     def exchange_code_for_token(
-        self, code: str, state: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, code: str, state: str | None = None
+    ) -> dict[str, Any]:
         """Exchange authorization code for access token.
 
         Args:
@@ -86,7 +86,7 @@ class EntraIDAuthService:
             logger.error(f"Token exchange error: {e}")
             raise AuthenticationError(f"Token exchange failed: {e}")
 
-    def refresh_token(self, user_id: str) -> Optional[Dict[str, Any]]:
+    def refresh_token(self, user_id: str) -> dict[str, Any] | None:
         """Refresh access token using refresh token.
 
         Args:
@@ -119,7 +119,7 @@ class EntraIDAuthService:
             logger.error(f"Token refresh error: {e}")
             return None
 
-    def validate_token(self, access_token: str) -> Dict[str, Any]:
+    def validate_token(self, access_token: str) -> dict[str, Any]:
         """Validate access token and extract user information.
 
         Args:
@@ -151,7 +151,7 @@ class EntraIDAuthService:
             logger.error(f"Token validation error: {e}")
             raise AuthenticationError(f"Token validation failed: {e}")
 
-    def get_user_info(self, access_token: str) -> Dict[str, Any]:
+    def get_user_info(self, access_token: str) -> dict[str, Any]:
         """Extract user information from access token.
 
         Args:
@@ -195,7 +195,7 @@ class EntraIDAuthService:
         except Exception as e:
             logger.error(f"Logout error: {e}")
 
-    def _extract_user_id(self, access_token: str) -> Optional[str]:
+    def _extract_user_id(self, access_token: str) -> str | None:
         """Extract user ID from access token.
 
         Args:

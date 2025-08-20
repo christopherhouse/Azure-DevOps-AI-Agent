@@ -1,6 +1,6 @@
 """Configuration management for the frontend application."""
 
-from typing import Optional
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -17,18 +17,18 @@ class Settings(BaseSettings):
     # Microsoft Entra ID configuration
     azure_tenant_id: str = Field(..., alias="AZURE_TENANT_ID")
     azure_client_id: str = Field(..., alias="AZURE_CLIENT_ID")
-    azure_client_secret: Optional[str] = Field(
+    azure_client_secret: str | None = Field(
         default=None, alias="AZURE_CLIENT_SECRET"
     )
-    azure_authority: Optional[str] = Field(default=None, alias="AZURE_AUTHORITY")
-    azure_redirect_uri: Optional[str] = Field(default=None, alias="AZURE_REDIRECT_URI")
+    azure_authority: str | None = Field(default=None, alias="AZURE_AUTHORITY")
+    azure_redirect_uri: str | None = Field(default=None, alias="AZURE_REDIRECT_URI")
     azure_scopes: str = Field(
         default="openid profile User.Read https://app.vssps.visualstudio.com/user_impersonation",
         alias="AZURE_SCOPES",
     )
 
     # Application Insights configuration
-    applicationinsights_connection_string: Optional[str] = Field(
+    applicationinsights_connection_string: str | None = Field(
         default=None, alias="APPLICATIONINSIGHTS_CONNECTION_STRING"
     )
     enable_telemetry: bool = Field(default=True, alias="ENABLE_TELEMETRY")

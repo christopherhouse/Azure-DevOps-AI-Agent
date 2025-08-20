@@ -1,12 +1,12 @@
 """Authentication components for Gradio interface."""
 
 import logging
-from typing import Optional, Tuple, Dict, Any
-from urllib.parse import urlparse, parse_qs
+from typing import Any
+from urllib.parse import parse_qs, urlparse
 
 import gradio as gr
 
-from services.auth_service import auth_service, AuthenticationError
+from services.auth_service import AuthenticationError, auth_service
 
 logger = logging.getLogger(__name__)
 
@@ -16,10 +16,10 @@ class AuthState:
 
     def __init__(self):
         self.authenticated = False
-        self.user_info: Optional[Dict[str, Any]] = None
-        self.access_token: Optional[str] = None
+        self.user_info: dict[str, Any] | None = None
+        self.access_token: str | None = None
 
-    def login(self, access_token: str, user_info: Dict[str, Any]) -> None:
+    def login(self, access_token: str, user_info: dict[str, Any]) -> None:
         """Set authenticated state."""
         self.authenticated = True
         self.access_token = access_token
@@ -91,7 +91,7 @@ def create_login_interface() -> gr.Blocks:
             # Callback URL input (hidden, used for auth callback)
             callback_url = gr.Textbox(visible=False)
 
-            def initiate_login() -> Tuple[str, bool]:
+            def initiate_login() -> tuple[str, bool]:
                 """Start the OAuth login flow."""
                 try:
                     _ = auth_service.get_auth_url()
@@ -107,7 +107,7 @@ def create_login_interface() -> gr.Blocks:
                         True,
                     )
 
-            def handle_auth_callback(url: str) -> Tuple[bool, str]:
+            def handle_auth_callback(url: str) -> tuple[bool, str]:
                 """Handle the OAuth callback and complete authentication.
 
                 Args:

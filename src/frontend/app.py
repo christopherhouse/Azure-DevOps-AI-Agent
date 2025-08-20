@@ -10,9 +10,9 @@ sys.path.insert(0, str(Path(__file__).parent))
 import gradio as gr
 from dotenv import load_dotenv
 
-from config import settings
 from components.auth import auth_state, create_login_interface
 from components.chat import create_chat_interface
+from config import settings
 from services.telemetry import telemetry
 
 # Load environment variables

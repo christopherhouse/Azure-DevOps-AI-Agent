@@ -1,10 +1,11 @@
 """FastAPI dependencies."""
 
-from typing import Optional
+
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from app.services.auth_service import auth_service
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
 from app.models.auth import User
+from app.services.auth_service import auth_service
 
 # Security scheme
 security = HTTPBearer()
@@ -33,10 +34,10 @@ async def get_current_active_user(
 
 
 async def get_optional_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(
+    credentials: HTTPAuthorizationCredentials | None = Depends(
         HTTPBearer(auto_error=False)
     ),
-) -> Optional[User]:
+) -> User | None:
     """Get current user if authenticated, otherwise None."""
     if credentials is None:
         return None

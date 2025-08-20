@@ -1,14 +1,13 @@
 """Chat interface components for the Gradio application."""
 
-import logging
-from typing import List, Tuple, Optional
 import asyncio
+import logging
 from datetime import datetime
 
 import gradio as gr
 
-from services.api_client import BackendAPIClient, APIError
 from components.auth import auth_state, require_authentication
+from services.api_client import APIError, BackendAPIClient
 
 logger = logging.getLogger(__name__)
 
@@ -16,12 +15,12 @@ logger = logging.getLogger(__name__)
 class ChatMessage:
     """Represents a chat message."""
 
-    def __init__(self, role: str, content: str, timestamp: Optional[datetime] = None):
+    def __init__(self, role: str, content: str, timestamp: datetime | None = None):
         self.role = role  # 'user' or 'assistant'
         self.content = content
         self.timestamp = timestamp or datetime.now()
 
-    def to_gradio_format(self) -> Tuple[str, str]:
+    def to_gradio_format(self) -> tuple[str, str]:
         """Convert to Gradio chat format.
 
         Returns:
@@ -37,9 +36,9 @@ class ChatSession:
     """Manages a chat session with message history."""
 
     def __init__(self):
-        self.messages: List[ChatMessage] = []
-        self.conversation_id: Optional[str] = None
-        self.api_client: Optional[BackendAPIClient] = None
+        self.messages: list[ChatMessage] = []
+        self.conversation_id: str | None = None
+        self.api_client: BackendAPIClient | None = None
 
     def initialize_api_client(self) -> None:
         """Initialize API client with current auth token."""
@@ -54,7 +53,7 @@ class ChatSession:
         self.messages.append(message)
         logger.info(f"Added {role} message to chat session")
 
-    def get_gradio_history(self) -> List[Tuple[str, str]]:
+    def get_gradio_history(self) -> list[tuple[str, str]]:
         """Get message history in Gradio chat format.
 
         Returns:
@@ -230,7 +229,7 @@ def create_chat_interface() -> gr.Blocks:
                             example_btns.append(btn)
 
             # Initialize chat session
-            def initialize_chat() -> Tuple[str, List]:
+            def initialize_chat() -> tuple[str, list]:
                 """Initialize chat session with authentication."""
                 try:
                     chat_session.initialize_api_client()
@@ -243,7 +242,7 @@ def create_chat_interface() -> gr.Blocks:
                     return f"❌ **Error** - {e}", []
 
             @require_authentication
-            def process_message(message: str, history: List) -> Tuple[str, List, str]:
+            def process_message(message: str, history: list) -> tuple[str, list, str]:
                 """Process user message and update chat.
 
                 Args:
@@ -279,7 +278,7 @@ def create_chat_interface() -> gr.Blocks:
                     new_history = history + [(message, error_response)]
                     return "", new_history, "❌ Error occurred"
 
-            def clear_chat() -> Tuple[List, str]:
+            def clear_chat() -> tuple[list, str]:
                 """Clear chat history."""
                 chat_session.clear_history()
                 return [], "✅ Chat cleared"

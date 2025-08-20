@@ -1,7 +1,7 @@
 """API client for backend communication."""
 
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Any
 
 import httpx
 from httpx import AsyncClient, HTTPStatusError
@@ -20,7 +20,7 @@ class APIError(Exception):
 class BackendAPIClient:
     """Client for communicating with the FastAPI backend."""
 
-    def __init__(self, access_token: Optional[str] = None):
+    def __init__(self, access_token: str | None = None):
         """Initialize the API client.
 
         Args:
@@ -30,7 +30,7 @@ class BackendAPIClient:
         self.access_token = access_token
         self.timeout = httpx.Timeout(30.0)
 
-    def _get_headers(self) -> Dict[str, str]:
+    def _get_headers(self) -> dict[str, str]:
         """Get HTTP headers for API requests.
 
         Returns:
@@ -50,9 +50,9 @@ class BackendAPIClient:
     async def send_chat_message(
         self,
         message: str,
-        conversation_id: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        conversation_id: str | None = None,
+        context: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Send a chat message to the AI agent.
 
         Args:
@@ -93,7 +93,7 @@ class BackendAPIClient:
             logger.error(f"Error sending chat message: {e}")
             raise APIError(f"Failed to send chat message: {e}")
 
-    async def get_conversations(self, limit: int = 20) -> List[Dict[str, Any]]:
+    async def get_conversations(self, limit: int = 20) -> list[dict[str, Any]]:
         """Get user's conversation history.
 
         Args:
@@ -125,7 +125,7 @@ class BackendAPIClient:
             logger.error(f"Error getting conversations: {e}")
             raise APIError(f"Failed to get conversations: {e}")
 
-    async def get_conversation(self, conversation_id: str) -> Dict[str, Any]:
+    async def get_conversation(self, conversation_id: str) -> dict[str, Any]:
         """Get a specific conversation with its message history.
 
         Args:
@@ -153,7 +153,7 @@ class BackendAPIClient:
             logger.error(f"Error getting conversation: {e}")
             raise APIError(f"Failed to get conversation: {e}")
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Check backend API health status.
 
         Returns:
@@ -177,7 +177,7 @@ class BackendAPIClient:
             logger.error(f"Backend health check error: {e}")
             raise APIError(f"Backend health check failed: {e}")
 
-    async def get_user_profile(self) -> Dict[str, Any]:
+    async def get_user_profile(self) -> dict[str, Any]:
         """Get authenticated user's profile information.
 
         Returns:

@@ -1,9 +1,9 @@
 """Work item models."""
 
-from typing import Optional, List
-from pydantic import BaseModel, Field, HttpUrl, ConfigDict
 from datetime import datetime
 from enum import Enum
+
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 
 
 class WorkItemType(str, Enum):
@@ -44,13 +44,13 @@ class WorkItemCreate(BaseModel):
 
     title: str = Field(description="Work item title", min_length=1, max_length=255)
     work_item_type: WorkItemType = Field(description="Work item type")
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None, description="Work item description"
     )
-    assigned_to: Optional[str] = Field(default=None, description="Assigned user email")
-    priority: Optional[int] = Field(default=2, description="Priority (1-4)", ge=1, le=4)
-    tags: Optional[List[str]] = Field(default=None, description="Work item tags")
-    parent_id: Optional[int] = Field(default=None, description="Parent work item ID")
+    assigned_to: str | None = Field(default=None, description="Assigned user email")
+    priority: int | None = Field(default=2, description="Priority (1-4)", ge=1, le=4)
+    tags: list[str] | None = Field(default=None, description="Work item tags")
+    parent_id: int | None = Field(default=None, description="Parent work item ID")
 
 
 class WorkItemUpdate(BaseModel):
@@ -62,18 +62,18 @@ class WorkItemUpdate(BaseModel):
         }
     )
 
-    title: Optional[str] = Field(
+    title: str | None = Field(
         default=None, description="Work item title", min_length=1, max_length=255
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None, description="Work item description"
     )
-    assigned_to: Optional[str] = Field(default=None, description="Assigned user email")
-    state: Optional[WorkItemState] = Field(default=None, description="Work item state")
-    priority: Optional[int] = Field(
+    assigned_to: str | None = Field(default=None, description="Assigned user email")
+    state: WorkItemState | None = Field(default=None, description="Work item state")
+    priority: int | None = Field(
         default=None, description="Priority (1-4)", ge=1, le=4
     )
-    tags: Optional[List[str]] = Field(default=None, description="Work item tags")
+    tags: list[str] | None = Field(default=None, description="Work item tags")
 
 
 class WorkItem(BaseModel):
@@ -98,20 +98,20 @@ class WorkItem(BaseModel):
     title: str = Field(description="Work item title")
     work_item_type: str = Field(description="Work item type")
     state: str = Field(description="Work item state")
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None, description="Work item description"
     )
-    assigned_to: Optional[str] = Field(default=None, description="Assigned user")
-    created_by: Optional[str] = Field(default=None, description="Created by user")
-    created_date: Optional[datetime] = Field(default=None, description="Creation date")
-    changed_date: Optional[datetime] = Field(
+    assigned_to: str | None = Field(default=None, description="Assigned user")
+    created_by: str | None = Field(default=None, description="Created by user")
+    created_date: datetime | None = Field(default=None, description="Creation date")
+    changed_date: datetime | None = Field(
         default=None, description="Last change date"
     )
-    priority: Optional[int] = Field(default=None, description="Priority")
-    tags: Optional[List[str]] = Field(default=None, description="Work item tags")
-    url: Optional[HttpUrl] = Field(default=None, description="Work item URL")
-    project_id: Optional[str] = Field(default=None, description="Project ID")
-    parent_id: Optional[int] = Field(default=None, description="Parent work item ID")
+    priority: int | None = Field(default=None, description="Priority")
+    tags: list[str] | None = Field(default=None, description="Work item tags")
+    url: HttpUrl | None = Field(default=None, description="Work item URL")
+    project_id: str | None = Field(default=None, description="Project ID")
+    parent_id: int | None = Field(default=None, description="Parent work item ID")
 
 
 class WorkItemList(BaseModel):
@@ -134,5 +134,5 @@ class WorkItemList(BaseModel):
         }
     )
 
-    work_items: List[WorkItem] = Field(description="List of work items")
+    work_items: list[WorkItem] = Field(description="List of work items")
     count: int = Field(description="Total count of work items")

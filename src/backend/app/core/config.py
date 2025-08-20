@@ -1,6 +1,5 @@
 """Application configuration management."""
 
-from typing import Optional
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -22,20 +21,20 @@ class Settings(BaseSettings):
     # Authentication - Azure Entra ID
     azure_tenant_id: str = Field(description="Azure tenant ID")
     azure_client_id: str = Field(description="Azure client ID")
-    azure_client_secret: Optional[str] = Field(
+    azure_client_secret: str | None = Field(
         default=None, description="Azure client secret"
     )
 
     # Azure DevOps
-    azure_devops_organization: Optional[str] = Field(
+    azure_devops_organization: str | None = Field(
         default=None, description="Azure DevOps organization"
     )
-    azure_devops_pat: Optional[str] = Field(
+    azure_devops_pat: str | None = Field(
         default=None, description="Azure DevOps Personal Access Token"
     )
 
     # OpenTelemetry / Application Insights
-    applicationinsights_connection_string: Optional[str] = Field(
+    applicationinsights_connection_string: str | None = Field(
         default=None, description="Application Insights connection string"
     )
     otel_service_name: str = Field(
