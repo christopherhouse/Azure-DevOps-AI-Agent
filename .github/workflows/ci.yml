@@ -292,17 +292,41 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
+    - name: Extract metadata for backend scan
+      id: meta-backend-scan
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=raw,value=run-${{ github.run_id }}
+          
+    - name: Extract metadata for frontend scan
+      id: meta-frontend-scan
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=raw,value=run-${{ github.run_id }}
+      
     - name: Run Trivy vulnerability scanner - Backend
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}
+        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:run-${{ github.run_id }}
         format: 'sarif'
         output: 'backend-trivy-results.sarif'
         
     - name: Run Trivy vulnerability scanner - Frontend
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}
+        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:run-${{ github.run_id }}
         format: 'sarif'
         output: 'frontend-trivy-results.sarif'
         
