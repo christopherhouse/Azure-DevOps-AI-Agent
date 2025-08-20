@@ -20,7 +20,7 @@ async def get_work_items(
     work_item_type: str | None = Query(None, description="Filter by work item type"),
     state: str | None = Query(None, description="Filter by work item state"),
     current_user: User = Depends(get_current_user),
-):
+) -> WorkItemList:
     """
     Get work items for a project.
 
@@ -49,7 +49,7 @@ async def create_work_item(
     work_item: WorkItemCreate,
     project_id: str = Path(description="Project ID"),
     current_user: User = Depends(get_current_user),
-):
+) -> WorkItem:
     """
     Create a new work item.
 
@@ -85,7 +85,7 @@ async def create_work_item(
 async def get_work_item(
     work_item_id: int = Path(description="Work item ID"),
     current_user: User = Depends(get_current_user),
-):
+) -> WorkItem:
     """
     Get a specific work item.
 
@@ -111,7 +111,7 @@ async def update_work_item(
     work_item_update: WorkItemUpdate,
     work_item_id: int = Path(description="Work item ID"),
     current_user: User = Depends(get_current_user),
-):
+) -> WorkItem:
     """
     Update a work item.
 
@@ -136,7 +136,7 @@ async def update_work_item(
 async def delete_work_item(
     work_item_id: int = Path(description="Work item ID"),
     current_user: User = Depends(get_current_user),
-):
+) -> None:
     """
     Delete a work item.
 

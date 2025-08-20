@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class AuthenticationService:
     """Authentication service for Azure Entra ID integration."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize authentication service."""
         self.tenant_id = settings.azure_tenant_id
         self.client_id = settings.azure_client_id
@@ -135,7 +135,7 @@ class AuthenticationService:
             preferred_username=user_info.get("preferred_username"),
         )
 
-    async def authenticate_user(self, azure_token: str) -> Token | None:
+    async def authenticate_user(self, azure_token: str) -> Token:
         """Authenticate user with Azure token and return JWT."""
         user_info = await self.validate_azure_token(azure_token)
         if not user_info:

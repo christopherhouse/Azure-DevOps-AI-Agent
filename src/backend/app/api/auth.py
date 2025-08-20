@@ -22,7 +22,7 @@ class LoginRequest(BaseModel):
 
 
 @router.post("/token", response_model=Token)
-async def login(request: LoginRequest):
+async def login(request: LoginRequest) -> Token:
     """
     Authenticate with Azure Entra ID token and get JWT.
 
@@ -43,7 +43,7 @@ async def login(request: LoginRequest):
 
 
 @router.get("/me", response_model=User)
-async def get_current_user_info(current_user: User = Depends(get_current_user)):
+async def get_current_user_info(current_user: User = Depends(get_current_user)) -> User:
     """
     Get current user information.
 
@@ -53,7 +53,7 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
 
 
 @router.post("/refresh", response_model=Token)
-async def refresh_token(current_user: User = Depends(get_current_user)):
+async def refresh_token(current_user: User = Depends(get_current_user)) -> Token:
     """
     Refresh JWT token.
 
