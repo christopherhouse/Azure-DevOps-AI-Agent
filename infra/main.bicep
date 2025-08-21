@@ -133,7 +133,7 @@ module containerRegistry 'br/public:avm/res/container-registry/registry:0.9.1' =
     name: resourceNames.containerRegistry
     location: location
     tags: tags
-    acrSku: config.sku == 'Premium' ? 'Premium' : 'Standard'
+    acrSku: config.acrSku == 'Premium' ? 'Premium' : 'Standard'
     acrAdminUserEnabled: false
     networkRuleSetDefaultAction: 'Allow'
     quarantinePolicyStatus: 'disabled'
@@ -141,7 +141,7 @@ module containerRegistry 'br/public:avm/res/container-registry/registry:0.9.1' =
     retentionPolicyDays: 30
     trustPolicyStatus: 'disabled'
     publicNetworkAccess: 'Enabled'
-    zoneRedundancy: environment == 'prod' ? 'Enabled' : 'Disabled'
+    zoneRedundancy: 'Disabled'
     managedIdentities: {
       userAssignedResourceIds: [
         managedIdentity.outputs.resourceId
