@@ -64,23 +64,11 @@ var resourceNames = {
 
 var environmentConfig = {
   dev: {
-    sku: 'Standard'
-    replicaCount: {
-      min: 1
-      max: 3
-    }
-    cpu: '0.5'
-    memory: '1Gi'
+    acrSku: 'Standard'
     openAISku: 'S0'
   }
   prod: {
-    sku: 'Premium'
-    replicaCount: {
-      min: 2
-      max: 10
-    }
-    cpu: '1.0'
-    memory: '2Gi'
+    acrSku: 'Standard'
     openAISku: 'S0'
   }
 }
@@ -105,24 +93,6 @@ module logAnalytics 'br/public:avm/res/operational-insights/workspace:0.11.1' = 
     location: location
     tags: tags
     dataRetention: environment == 'prod' ? 90 : 30
-    features: {
-      enableLogAccessUsingOnlyResourcePermissions: true
-    }
-    diagnosticSettings: [
-      {
-        name: 'default'
-        logCategoriesAndGroups: [
-          {
-            categoryGroup: 'allLogs'
-          }
-        ]
-        metricCategories: [
-          {
-            category: 'AllMetrics'
-          }
-        ]
-      }
-    ]
   }
 }
 
