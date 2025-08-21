@@ -433,15 +433,14 @@ jobs:
         echo "**Workflow Run ID**: ${{ github.run_id }}" >> release-notes.md
         
     - name: Create release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ github.run_number }}
-        release_name: Release v${{ github.run_number }}
+        name: Release v${{ github.run_number }}
         body_path: release-notes.md
         draft: false
         prerelease: false
+        token: ${{ secrets.GITHUB_TOKEN }}
 
   notify-completion:
     name: Notify Build Completion
