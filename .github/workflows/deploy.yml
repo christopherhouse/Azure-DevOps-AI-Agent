@@ -115,7 +115,16 @@ jobs:
         
     - name: Login to Azure Container Registry
       run: |
-        az acr login --name ${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}
+        # Extract registry name from login server FQDN (remove .azurecr.io suffix)
+        ACR_NAME=$(echo "${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}" | sed 's/\.azurecr\.io$//')
+        az acr login --name "${ACR_NAME}"
+        
+    - name: Extract ACR name for Container Apps
+      id: extract-acr-name
+      run: |
+        # Extract registry name from login server FQDN for use in Container Apps deployment
+        ACR_NAME=$(echo "${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}" | sed 's/\.azurecr\.io$//')
+        echo "acr-name=${ACR_NAME}" >> $GITHUB_OUTPUT
         
     - name: Copy images from GHCR to ACR
       run: |
@@ -145,7 +154,7 @@ jobs:
     - name: Deploy Backend Container App
       uses: azure/container-apps-deploy-action@v1
       with:
-        acrName: ${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}
+        acrName: ${{ steps.extract-acr-name.outputs.acr-name }}
         containerAppName: ${{ env.BACKEND_APP_NAME }}
         resourceGroup: ${{ env.AZURE_RESOURCE_GROUP }}
         imageToDeploy: ${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}/backend:${{ env.RELEASE_TAG }}
@@ -165,7 +174,7 @@ jobs:
     - name: Deploy Frontend Container App
       uses: azure/container-apps-deploy-action@v1
       with:
-        acrName: ${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}
+        acrName: ${{ steps.extract-acr-name.outputs.acr-name }}
         containerAppName: ${{ env.FRONTEND_APP_NAME }}
         resourceGroup: ${{ env.AZURE_RESOURCE_GROUP }}
         imageToDeploy: ${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}/frontend:${{ env.RELEASE_TAG }}
