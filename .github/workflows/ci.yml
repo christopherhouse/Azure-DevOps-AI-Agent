@@ -403,7 +403,7 @@ jobs:
     - name: Get latest tag
       id: get-latest-tag
       run: |
-        latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+        latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
         echo "latest_tag=${latest_tag}" >> $GITHUB_OUTPUT
         
     - name: Generate release notes
@@ -412,7 +412,16 @@ jobs:
         # Simple release notes generation
         echo "## Changes in this release" > release-notes.md
         echo "" >> release-notes.md
-        git log ${{ steps.get-latest-tag.outputs.latest_tag }}..HEAD --pretty=format:"- %s (%h)" >> release-notes.md
+        
+        # Generate commit list based on whether tags exist
+        if [[ -n "${{ steps.get-latest-tag.outputs.latest_tag }}" ]]; then
+          # Use tag range if previous tag exists
+          git log ${{ steps.get-latest-tag.outputs.latest_tag }}..HEAD --pretty=format:"- %s (%h)" >> release-notes.md
+        else
+          # Use all commits if no previous tags exist
+          git log --pretty=format:"- %s (%h)" >> release-notes.md
+        fi
+        
         echo "" >> release-notes.md
         echo "## Container Images" >> release-notes.md
         echo "- Backend: \`${{ env.REGISTRY }}/${{ env.REPO_LOWER }}/backend:run-${{ github.run_id }}\`" >> release-notes.md
