@@ -459,7 +459,9 @@ jobs:
       release_tag: v${{ github.run_number }}
       run_id: run-${{ github.run_id }}
     secrets:
-      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
   deploy-prod:
     name: Deploy to Production
     needs: [create-release, deploy-dev]
@@ -473,7 +475,9 @@ jobs:
       release_tag: v${{ github.run_number }}
       run_id: run-${{ github.run_id }}
     secrets:
-      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS_PROD }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID_PROD }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID_PROD }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID_PROD }}
 
   notify-completion:
     name: Notify Build and Deployment Completion

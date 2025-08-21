@@ -23,8 +23,14 @@ on:
         required: true
         type: string
     secrets:
-      AZURE_CREDENTIALS:
-        description: 'Azure credentials for authentication'
+      AZURE_CLIENT_ID:
+        description: 'Azure Client ID for authentication'
+        required: true
+      AZURE_TENANT_ID:
+        description: 'Azure Tenant ID for authentication'
+        required: true  
+      AZURE_SUBSCRIPTION_ID:
+        description: 'Azure Subscription ID for authentication'
         required: true
 
 env:
@@ -72,7 +78,9 @@ jobs:
     - name: Azure Login
       uses: azure/login@v2
       with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           
     - name: Deploy Infrastructure
       id: deploy-infra

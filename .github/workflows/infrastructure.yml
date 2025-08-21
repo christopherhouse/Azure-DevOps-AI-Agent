@@ -44,7 +44,9 @@ jobs:
     - name: Azure Login
       uses: azure/login@v2
       with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         
     - name: Validate Bicep templates
       run: |
@@ -121,9 +123,11 @@ jobs:
         azcliversion: latest
         
     - name: Azure Login
-      uses: azure/login@v1
+      uses: azure/login@v2
       with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         
     - name: Create Resource Group
       run: |
@@ -227,9 +231,11 @@ jobs:
         azcliversion: latest
         
     - name: Azure Login
-      uses: azure/login@v1
+      uses: azure/login@v2
       with:
-        creds: ${{ secrets.AZURE_CREDENTIALS_PROD }}
+        client-id: ${{ secrets.AZURE_CLIENT_ID_PROD }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID_PROD }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID_PROD }}
         
     - name: Create Resource Group
       run: |
@@ -333,9 +339,11 @@ jobs:
         azcliversion: latest
         
     - name: Azure Login
-      uses: azure/login@v1
+      uses: azure/login@v2
       with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         
     - name: Set environment variables
       run: |

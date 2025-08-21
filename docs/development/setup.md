@@ -286,6 +286,61 @@ az ad app create \
 - Validate all environment variables
 - Ensure all prerequisites are installed
 
+## GitHub Actions Setup
+
+For automated deployment and CI/CD pipelines, you'll need to configure GitHub repository secrets. The workflows use individual Azure credential parameters for enhanced security.
+
+### Required GitHub Secrets
+
+Configure these secrets in your GitHub repository (`Settings` → `Secrets and variables` → `Actions`):
+
+#### Development Environment
+- `AZURE_CLIENT_ID`: Application (client) ID from Azure App Registration
+- `AZURE_TENANT_ID`: Directory (tenant) ID from Azure Active Directory  
+- `AZURE_SUBSCRIPTION_ID`: Azure subscription ID for development resources
+
+#### Production Environment (Optional)
+- `AZURE_CLIENT_ID_PROD`: Production application (client) ID
+- `AZURE_TENANT_ID_PROD`: Production directory (tenant) ID
+- `AZURE_SUBSCRIPTION_ID_PROD`: Production subscription ID
+
+### Service Principal Setup
+
+Create a service principal with the required permissions:
+
+```bash
+# Create service principal
+az ad sp create-for-rbac \
+  --name "azure-devops-ai-agent-github" \
+  --role contributor \
+  --scopes /subscriptions/{subscription-id} \
+  --sdk-auth
+
+# Note: Use the output values for GitHub secrets:
+# - appId → AZURE_CLIENT_ID
+# - password → AZURE_CLIENT_SECRET (if using creds format)
+# - tenant → AZURE_TENANT_ID
+```
+
+### Workflow Authentication
+
+The GitHub Actions workflows now use the recommended individual parameter format instead of the deprecated `creds` JSON format for improved security:
+
+```yaml
+- name: Azure Login
+  uses: azure/login@v2
+  with:
+    client-id: ${{ secrets.AZURE_CLIENT_ID }}
+    tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+    subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+```
+
+This approach provides:
+- Enhanced security through individual parameter validation
+- Better error messages when credentials are missing
+- Compatibility with OpenID Connect (OIDC) authentication
+- Consistent authentication across all workflow jobs
+
 ## Next Steps
 
 After successful setup:
