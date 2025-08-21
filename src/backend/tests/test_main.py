@@ -1,29 +1,5 @@
 """Comprehensive tests for backend API."""
 
-import pytest
-from fastapi.testclient import TestClient
-from app.main import app
-
-
-@pytest.fixture
-def client():
-    """Test client fixture."""
-    return TestClient(app)
-
-
-@pytest.fixture
-def auth_token(client):
-    """Get authentication token for tests."""
-    response = client.post("/api/auth/token", json={"azure_token": "mock-token"})
-    assert response.status_code == 200
-    return response.json()["access_token"]
-
-
-@pytest.fixture
-def auth_headers(auth_token):
-    """Get authentication headers for tests."""
-    return {"Authorization": f"Bearer {auth_token}"}
-
 
 def test_health_check(client):
     """Test health check endpoint."""
@@ -66,9 +42,7 @@ def test_authentication_flow(client):
 
 def test_authentication_invalid_token(client):
     """Test authentication with invalid token."""
-    response = client.get(
-        "/api/auth/me", headers={"Authorization": "Bearer invalid-token"}
-    )
+    response = client.get("/api/auth/me", headers={"Authorization": "Bearer invalid-token"})
     # Should return 500 because our auth service doesn't handle invalid tokens gracefully
     # In production, this would be 401, but for this test we expect the server error
     assert response.status_code in [401, 500]
