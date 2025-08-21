@@ -106,6 +106,17 @@ These instructions guide GitHub Copilot when generating code, infrastructure, or
 - Add inline comments for non-trivial sections.  
 
 ---
+## Tools
+
+### context7
+context7 MCP server can be used to find updated documentation on tools, frameworks, best practices etc.  This
+tool will allow the agent to find the most relevant and up to date information about topics such as Bicep,
+Python, Gradio, Azure, Azure Verified Modules and other technologies used by this solution.
+
+### Azure
+The Azure MCP server allows the agent to connect to Azure and interact with resources.  This server
+can retrieve properties of Azure resources as well as execute select commands.
+---
 
 ⚠️ **Reminder for Copilot**:  
 Always generate **secure, type-safe, async, modular, and production-ready code** aligned with Azure Well-Architected principles.  
