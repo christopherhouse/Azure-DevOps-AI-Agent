@@ -227,13 +227,14 @@ module openAI 'br/public:avm/res/cognitive-services/account:0.10.1' = {
         model: {
           format: 'OpenAI'
           name: 'gpt-4'
-          version: '0613'
+          version: 'turbo-2024-04-09'
         }
-        raiPolicyName: 'Microsoft.Default'
+        raiPolicyName: 'Microsoft.DefaultV2'
         sku: {
-          name: 'Standard'
-          capacity: environment == 'prod' ? 20 : 10
+          name: 'GlobalStandard'
+          capacity: 30
         }
+        versionUpgradeOption: 'OnceNewDefaultVersionAvailable'
       }
     ]
     diagnosticSettings: [
