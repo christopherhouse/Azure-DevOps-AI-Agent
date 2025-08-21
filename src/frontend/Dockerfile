@@ -45,6 +45,10 @@ WORKDIR /app
 # Copy uv files first for better Docker layer caching
 COPY uv.lock pyproject.toml ./
 
+# Copy LICENSE and README files to expected locations for hatchling metadata validation
+COPY LICENSE /LICENSE
+COPY README.md /README.md
+
 # Install dependencies using uv
 RUN uv sync --frozen --no-cache --no-dev
 

@@ -47,7 +47,6 @@ test-results.xml
 .gitignore
 
 # Documentation
-README.md
 docs/
 
 # CI/CD
