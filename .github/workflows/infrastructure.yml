@@ -152,6 +152,7 @@ jobs:
           --resource-group ${{ env.AZURE_RESOURCE_GROUP_DEV }} \
           --template-file infra/main.bicep \
           --parameters infra/parameters/main.dev.bicepparam \
+          --name "infra-deploy-$(echo ${{ github.sha }} | cut -c1-8)" \
           --query 'properties.outputs' \
           --output json)
         
@@ -263,6 +264,7 @@ jobs:
           --resource-group ${{ env.AZURE_RESOURCE_GROUP_PROD }} \
           --template-file infra/main.bicep \
           --parameters infra/parameters/main.prod.bicepparam \
+          --name "infra-deploy-$(echo ${{ github.sha }} | cut -c1-8)" \
           --query 'properties.outputs' \
           --output json)
         
