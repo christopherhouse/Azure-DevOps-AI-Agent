@@ -1,5 +1,8 @@
 name: Deploy Infrastructure and Applications
 
+permissions:
+  contents: read
+
 on:
   release:
     types: [created]
