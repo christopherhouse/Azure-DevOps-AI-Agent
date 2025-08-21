@@ -13,10 +13,6 @@ param azureDevOpsOrganization = 'https://dev.azure.com/your-prod-org'
 param entraIdTenantId = 'your-tenant-id-here'
 param entraIdClientId = 'your-client-id-here'
 
-// Container images (will be updated by CI/CD)
-param frontendImage = 'nginx:latest'
-param backendImage = 'nginx:latest'
-
 // Resource naming
 param containerAppsEnvironmentName = '${appNamePrefix}-${environment}-env'
 param openAIName = '${appNamePrefix}-${environment}-openai'

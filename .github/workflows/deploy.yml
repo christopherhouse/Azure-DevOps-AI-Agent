@@ -1,0 +1,398 @@
+name: Deploy Infrastructure and Applications
+
+permissions:
+  contents: read
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+        default: 'dev'
+
+env:
+  REGISTRY: ghcr.io
+  AZURE_RESOURCE_GROUP_DEV: rg-azure-devops-agent-dev
+  AZURE_RESOURCE_GROUP_PROD: rg-azure-devops-agent-prod
+  AZURE_LOCATION: eastus
+
+jobs:
+  deploy-dev:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')
+    environment: 
+      name: dev
+      url: https://dev-azure-devops-agent.azurecontainerapps.io
+    
+    outputs:
+      container-apps-environment: ${{ steps.deploy-infra.outputs.containerAppsEnvironmentName }}
+      acr-login-server: ${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}
+      backend-app-name: ${{ steps.deploy-apps.outputs.backend-app-name }}
+      frontend-app-name: ${{ steps.deploy-apps.outputs.frontend-app-name }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set lowercase repository name
+      run: |
+        echo "REPO_LOWER=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+        
+    - name: Set release tag
+      run: |
+        if [ "${{ github.event_name }}" == "release" ]; then
+          echo "RELEASE_TAG=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+          echo "RUN_ID=run-$(echo '${{ github.event.release.tag_name }}' | sed 's/v//')" >> $GITHUB_ENV
+        else
+          echo "RELEASE_TAG=latest" >> $GITHUB_ENV
+          echo "RUN_ID=run-${{ github.run_id }}" >> $GITHUB_ENV
+        fi
+        
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+          
+    - name: Deploy Infrastructure
+      id: deploy-infra
+      run: |
+        echo "Deploying infrastructure to development environment..."
+        
+        deployment_output=$(az deployment group create \
+          --resource-group ${{ env.AZURE_RESOURCE_GROUP_DEV }} \
+          --template-file infra/main.bicep \
+          --parameters infra/parameters/main.dev.bicepparam \
+          --query 'properties.outputs' \
+          --output json)
+        
+        # Extract outputs
+        container_apps_env=$(echo $deployment_output | jq -r '.containerAppsEnvironmentName.value')
+        acr_login_server=$(echo $deployment_output | jq -r '.containerRegistryLoginServer.value')
+        
+        echo "containerAppsEnvironmentName=${container_apps_env}" >> $GITHUB_OUTPUT
+        echo "containerRegistryLoginServer=${acr_login_server}" >> $GITHUB_OUTPUT
+        
+        echo "✅ Infrastructure deployed successfully"
+        echo "🏗️ Container Apps Environment: ${container_apps_env}"
+        echo "📦 ACR Login Server: ${acr_login_server}"
+        
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Login to Azure Container Registry
+      run: |
+        az acr login --name ${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}
+        
+    - name: Copy images from GHCR to ACR
+      run: |
+        # Define source and target images
+        GHCR_BACKEND="${{ env.REGISTRY }}/${{ env.REPO_LOWER }}/backend:${{ env.RUN_ID }}"
+        GHCR_FRONTEND="${{ env.REGISTRY }}/${{ env.REPO_LOWER }}/frontend:${{ env.RUN_ID }}"
+        
+        ACR_BACKEND="${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}/backend:${{ env.RELEASE_TAG }}"
+        ACR_FRONTEND="${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}/frontend:${{ env.RELEASE_TAG }}"
+        
+        echo "Copying backend image..."
+        echo "Source: ${GHCR_BACKEND}"
+        echo "Target: ${ACR_BACKEND}"
+        docker pull "${GHCR_BACKEND}"
+        docker tag "${GHCR_BACKEND}" "${ACR_BACKEND}"
+        docker push "${ACR_BACKEND}"
+        
+        echo "Copying frontend image..."
+        echo "Source: ${GHCR_FRONTEND}"
+        echo "Target: ${ACR_FRONTEND}"
+        docker pull "${GHCR_FRONTEND}"
+        docker tag "${GHCR_FRONTEND}" "${ACR_FRONTEND}"
+        docker push "${ACR_FRONTEND}"
+        
+        echo "✅ Images copied to ACR successfully"
+        
+    - name: Deploy Container Apps
+      id: deploy-apps
+      uses: azure/container-apps-deploy-action@v1
+      with:
+        acrName: ${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}
+        containerAppName: azdo-ai-agent-dev-backend
+        resourceGroup: ${{ env.AZURE_RESOURCE_GROUP_DEV }}
+        imageToDeploy: ${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}/backend:${{ env.RELEASE_TAG }}
+        targetPort: 8000
+        ingress: external
+        environmentVariables: |
+          AZURE_OPENAI_ENDPOINT=secretref:azure-openai-endpoint
+          AZURE_OPENAI_KEY=secretref:azure-openai-key
+          AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4
+          AZURE_DEVOPS_ORGANIZATION=https://dev.azure.com/your-dev-org
+          AZURE_TENANT_ID=secretref:entra-tenant-id
+          AZURE_CLIENT_ID=secretref:entra-client-id
+          AZURE_CLIENT_SECRET=secretref:entra-client-secret
+          APPLICATIONINSIGHTS_CONNECTION_STRING=secretref:app-insights-connection-string
+          ENVIRONMENT=dev
+          
+    - name: Deploy Frontend Container App
+      uses: azure/container-apps-deploy-action@v1
+      with:
+        acrName: ${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}
+        containerAppName: azdo-ai-agent-dev-frontend
+        resourceGroup: ${{ env.AZURE_RESOURCE_GROUP_DEV }}
+        imageToDeploy: ${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}/frontend:${{ env.RELEASE_TAG }}
+        targetPort: 7860
+        ingress: external
+        environmentVariables: |
+          BACKEND_URL=https://azdo-ai-agent-dev-backend
+          AZURE_TENANT_ID=secretref:entra-tenant-id
+          AZURE_CLIENT_ID=secretref:entra-client-id
+          AZURE_CLIENT_SECRET=secretref:entra-client-secret
+          APPLICATIONINSIGHTS_CONNECTION_STRING=secretref:app-insights-connection-string
+          ENVIRONMENT=dev
+        
+    - name: Set Container App outputs
+      run: |
+        echo "backend-app-name=azdo-ai-agent-dev-backend" >> $GITHUB_OUTPUT
+        echo "frontend-app-name=azdo-ai-agent-dev-frontend" >> $GITHUB_OUTPUT
+        
+    - name: Development Smoke Test
+      run: |
+        echo "Running development smoke tests..."
+        
+        # Wait for deployment to be ready
+        sleep 60
+        
+        # Get app URLs
+        backend_url=$(az containerapp show \
+          --resource-group ${{ env.AZURE_RESOURCE_GROUP_DEV }} \
+          --name azdo-ai-agent-dev-backend \
+          --query properties.configuration.ingress.fqdn \
+          --output tsv)
+          
+        frontend_url=$(az containerapp show \
+          --resource-group ${{ env.AZURE_RESOURCE_GROUP_DEV }} \
+          --name azdo-ai-agent-dev-frontend \
+          --query properties.configuration.ingress.fqdn \
+          --output tsv)
+        
+        # Test backend health endpoint
+        if curl -f "https://${backend_url}/health" > /dev/null 2>&1; then
+          echo "✅ Backend health check passed"
+        else
+          echo "❌ Backend health check failed"
+          exit 1
+        fi
+        
+        # Test frontend accessibility
+        if curl -f "https://${frontend_url}" > /dev/null 2>&1; then
+          echo "✅ Frontend accessibility check passed"
+        else
+          echo "❌ Frontend accessibility check failed"
+          exit 1
+        fi
+        
+        echo "🎉 Development deployment completed successfully!"
+
+  deploy-prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: deploy-dev
+    if: (github.event_name == 'release') || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod')
+    environment: 
+      name: prod
+      url: https://azure-devops-agent.azurecontainerapps.io
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set lowercase repository name
+      run: |
+        echo "REPO_LOWER=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+        
+    - name: Set release tag
+      run: |
+        if [ "${{ github.event_name }}" == "release" ]; then
+          echo "RELEASE_TAG=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+          echo "RUN_ID=run-$(echo '${{ github.event.release.tag_name }}' | sed 's/v//')" >> $GITHUB_ENV
+        else
+          echo "RELEASE_TAG=latest" >> $GITHUB_ENV
+          echo "RUN_ID=run-${{ github.run_id }}" >> $GITHUB_ENV
+        fi
+        
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS_PROD }}
+        
+    - name: Deploy Infrastructure
+      id: deploy-infra
+      run: |
+        echo "Deploying infrastructure to production environment..."
+        
+        deployment_output=$(az deployment group create \
+          --resource-group ${{ env.AZURE_RESOURCE_GROUP_PROD }} \
+          --template-file infra/main.bicep \
+          --parameters infra/parameters/main.prod.bicepparam \
+          --query 'properties.outputs' \
+          --output json)
+        
+        # Extract outputs
+        container_apps_env=$(echo $deployment_output | jq -r '.containerAppsEnvironmentName.value')
+        acr_login_server=$(echo $deployment_output | jq -r '.containerRegistryLoginServer.value')
+        
+        echo "containerAppsEnvironmentName=${container_apps_env}" >> $GITHUB_OUTPUT
+        echo "containerRegistryLoginServer=${acr_login_server}" >> $GITHUB_OUTPUT
+        
+        echo "✅ Production infrastructure deployed successfully"
+        echo "🏗️ Container Apps Environment: ${container_apps_env}"
+        echo "📦 ACR Login Server: ${acr_login_server}"
+        
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Login to Azure Container Registry
+      run: |
+        az acr login --name ${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}
+        
+    - name: Copy images from GHCR to ACR
+      run: |
+        # Use the same tested images from dev
+        GHCR_BACKEND="${{ env.REGISTRY }}/${{ env.REPO_LOWER }}/backend:${{ env.RUN_ID }}"
+        GHCR_FRONTEND="${{ env.REGISTRY }}/${{ env.REPO_LOWER }}/frontend:${{ env.RUN_ID }}"
+        
+        ACR_BACKEND="${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}/backend:${{ env.RELEASE_TAG }}"
+        ACR_FRONTEND="${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}/frontend:${{ env.RELEASE_TAG }}"
+        
+        echo "Copying tested backend image to production ACR..."
+        echo "Source: ${GHCR_BACKEND}"
+        echo "Target: ${ACR_BACKEND}"
+        docker pull "${GHCR_BACKEND}"
+        docker tag "${GHCR_BACKEND}" "${ACR_BACKEND}"
+        docker push "${ACR_BACKEND}"
+        
+        echo "Copying tested frontend image to production ACR..."
+        echo "Source: ${GHCR_FRONTEND}"
+        echo "Target: ${ACR_FRONTEND}"
+        docker pull "${GHCR_FRONTEND}"
+        docker tag "${GHCR_FRONTEND}" "${ACR_FRONTEND}"
+        docker push "${ACR_FRONTEND}"
+        
+        echo "✅ Tested images deployed to production ACR"
+        
+    - name: Deploy Backend Container App
+      uses: azure/container-apps-deploy-action@v1
+      with:
+        acrName: ${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}
+        containerAppName: azdo-ai-agent-prod-backend
+        resourceGroup: ${{ env.AZURE_RESOURCE_GROUP_PROD }}
+        imageToDeploy: ${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}/backend:${{ env.RELEASE_TAG }}
+        targetPort: 8000
+        ingress: external
+        environmentVariables: |
+          AZURE_OPENAI_ENDPOINT=secretref:azure-openai-endpoint
+          AZURE_OPENAI_KEY=secretref:azure-openai-key
+          AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4
+          AZURE_DEVOPS_ORGANIZATION=https://dev.azure.com/your-prod-org
+          AZURE_TENANT_ID=secretref:entra-tenant-id
+          AZURE_CLIENT_ID=secretref:entra-client-id
+          AZURE_CLIENT_SECRET=secretref:entra-client-secret
+          APPLICATIONINSIGHTS_CONNECTION_STRING=secretref:app-insights-connection-string
+          ENVIRONMENT=prod
+          
+    - name: Deploy Frontend Container App
+      uses: azure/container-apps-deploy-action@v1
+      with:
+        acrName: ${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}
+        containerAppName: azdo-ai-agent-prod-frontend
+        resourceGroup: ${{ env.AZURE_RESOURCE_GROUP_PROD }}
+        imageToDeploy: ${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}/frontend:${{ env.RELEASE_TAG }}
+        targetPort: 7860
+        ingress: external
+        environmentVariables: |
+          BACKEND_URL=https://azdo-ai-agent-prod-backend
+          AZURE_TENANT_ID=secretref:entra-tenant-id
+          AZURE_CLIENT_ID=secretref:entra-client-id
+          AZURE_CLIENT_SECRET=secretref:entra-client-secret
+          APPLICATIONINSIGHTS_CONNECTION_STRING=secretref:app-insights-connection-string
+          ENVIRONMENT=prod
+        
+    - name: Production Smoke Test
+      run: |
+        echo "Running production smoke tests..."
+        
+        # Wait for deployment to be ready
+        sleep 90
+        
+        # Get app URLs
+        backend_url=$(az containerapp show \
+          --resource-group ${{ env.AZURE_RESOURCE_GROUP_PROD }} \
+          --name azdo-ai-agent-prod-backend \
+          --query properties.configuration.ingress.fqdn \
+          --output tsv)
+          
+        frontend_url=$(az containerapp show \
+          --resource-group ${{ env.AZURE_RESOURCE_GROUP_PROD }} \
+          --name azdo-ai-agent-prod-frontend \
+          --query properties.configuration.ingress.fqdn \
+          --output tsv)
+        
+        # Test backend health endpoint
+        if curl -f "https://${backend_url}/health" > /dev/null 2>&1; then
+          echo "✅ Production backend health check passed"
+        else
+          echo "❌ Production backend health check failed"
+          exit 1
+        fi
+        
+        # Test frontend accessibility
+        if curl -f "https://${frontend_url}" > /dev/null 2>&1; then
+          echo "✅ Production frontend accessibility check passed"
+        else
+          echo "❌ Production frontend accessibility check failed"
+          exit 1
+        fi
+        
+        echo "🚀 Production deployment completed successfully!"
+        
+  notify-completion:
+    name: Notify Deployment Completion
+    runs-on: ubuntu-latest
+    needs: [deploy-dev, deploy-prod]
+    if: always()
+    
+    steps:
+    - name: Notify on success
+      if: needs.deploy-dev.result == 'success' && (needs.deploy-prod.result == 'success' || needs.deploy-prod.result == 'skipped')
+      run: |
+        echo "✅ Deployment completed successfully"
+        if [ "${{ needs.deploy-prod.result }}" == "success" ]; then
+          echo "🚀 Both development and production environments deployed"
+        else
+          echo "🚀 Development environment deployed successfully"
+        fi
+        
+    - name: Notify on failure
+      if: needs.deploy-dev.result == 'failure' || needs.deploy-prod.result == 'failure'
+      run: |
+        echo "❌ Deployment failed"
+        echo "📋 Check the workflow logs for details"
+        if [ "${{ needs.deploy-dev.result }}" == "failure" ]; then
+          echo "💥 Development deployment failed"
+        fi
+        if [ "${{ needs.deploy-prod.result }}" == "failure" ]; then
+          echo "💥 Production deployment failed"
+        fi
+        exit 1

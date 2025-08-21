@@ -20,12 +20,6 @@
     "entraIdClientId": {
       "value": "your-client-id-here"
     },
-    "frontendImage": {
-      "value": "nginx:latest"
-    },
-    "backendImage": {
-      "value": "nginx:latest"
-    },
     "containerAppsEnvironmentName": {
       "value": "azdo-ai-agent-dev-env"
     },
