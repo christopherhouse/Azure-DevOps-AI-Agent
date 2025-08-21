@@ -450,7 +450,8 @@ jobs:
     name: Deploy to Development
     needs: create-release
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    permissions: {}
+    permissions:
+      contents: read
     uses: ./.github/workflows/deploy.yml
     with:
       environment: dev
@@ -463,6 +464,8 @@ jobs:
     name: Deploy to Production
     needs: [create-release, deploy-dev]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
     uses: ./.github/workflows/deploy.yml
     with:
       environment: prod
