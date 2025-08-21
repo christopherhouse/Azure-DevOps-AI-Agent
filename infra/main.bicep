@@ -35,12 +35,6 @@ param logAnalyticsName string = '${appNamePrefix}-${environment}-la'
 @description('Managed Identity name')
 param managedIdentityName string = '${appNamePrefix}-${environment}-mi'
 
-@description('Frontend container image')
-param frontendImage string = 'nginx:latest' // Default placeholder
-
-@description('Backend container image')
-param backendImage string = 'nginx:latest' // Default placeholder
-
 @description('Azure DevOps organization URL')
 param azureDevOpsOrganization string
 
@@ -66,8 +60,6 @@ var resourceNames = {
   applicationInsights: applicationInsightsName
   logAnalytics: logAnalyticsName
   managedIdentity: managedIdentityName
-  frontendApp: '${appNamePrefix}-${environment}-frontend'
-  backendApp: '${appNamePrefix}-${environment}-backend'
 }
 
 var environmentConfig = {
@@ -97,7 +89,7 @@ var config = environmentConfig[environment]
 
 // Managed Identity using AVM
 module managedIdentity 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.0' = {
-  name: 'managedIdentityDeployment'
+  name: 'managed-identity-${deployment().name}'
   params: {
     name: resourceNames.managedIdentity
     location: location
@@ -107,7 +99,7 @@ module managedIdentity 'br/public:avm/res/managed-identity/user-assigned-identit
 
 // Log Analytics Workspace using AVM
 module logAnalytics 'br/public:avm/res/operational-insights/workspace:0.11.1' = {
-  name: 'logAnalyticsDeployment'
+  name: 'log-analytics-workspace-${deployment().name}'
   params: {
     name: resourceNames.logAnalytics
     location: location
@@ -136,7 +128,7 @@ module logAnalytics 'br/public:avm/res/operational-insights/workspace:0.11.1' = 
 
 // Application Insights using AVM
 module applicationInsights 'br/public:avm/res/insights/component:0.6.0' = {
-  name: 'applicationInsightsDeployment'
+  name: 'application-insights-${deployment().name}'
   params: {
     name: resourceNames.applicationInsights
     location: location
@@ -166,7 +158,7 @@ module applicationInsights 'br/public:avm/res/insights/component:0.6.0' = {
 
 // Azure Container Registry using AVM
 module containerRegistry 'br/public:avm/res/container-registry/registry:0.9.1' = {
-  name: 'containerRegistryDeployment'
+  name: 'container-registry-${deployment().name}'
   params: {
     name: resourceNames.containerRegistry
     location: location
@@ -206,7 +198,7 @@ module containerRegistry 'br/public:avm/res/container-registry/registry:0.9.1' =
 
 // Key Vault using AVM
 module keyVault 'br/public:avm/res/key-vault/vault:0.12.1' = {
-  name: 'keyVaultDeployment'
+  name: 'key-vault-${deployment().name}'
   params: {
     name: resourceNames.keyVault
     location: location
@@ -241,7 +233,7 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.12.1' = {
 
 // Azure OpenAI Service using AVM
 module openAI 'br/public:avm/res/cognitive-services/account:0.10.1' = {
-  name: 'openAIDeployment'
+  name: 'cognitive-services-account-${deployment().name}'
   params: {
     name: resourceNames.openAI
     location: location
@@ -295,176 +287,13 @@ module openAI 'br/public:avm/res/cognitive-services/account:0.10.1' = {
 
 // Container Apps Environment using AVM
 module containerAppsEnvironment 'br/public:avm/res/app/managed-environment:0.10.0' = {
-  name: 'containerAppsEnvironmentDeployment'
+  name: 'managed-environment-${deployment().name}'
   params: {
     name: resourceNames.containerAppsEnvironment
     location: location
     tags: tags
     logAnalyticsWorkspaceResourceId: logAnalytics.outputs.resourceId
     zoneRedundant: environment == 'prod'
-  }
-}
-
-// Backend Container App using AVM
-module backendApp 'br/public:avm/res/app/container-app:0.12.0' = {
-  name: 'backendAppDeployment'
-  params: {
-    name: resourceNames.backendApp
-    location: location
-    tags: tags
-    environmentResourceId: containerAppsEnvironment.outputs.resourceId
-    managedIdentities: {
-      userAssignedResourceIds: [
-        managedIdentity.outputs.resourceId
-      ]
-    }
-    activeRevisionsMode: 'Single'
-    ingressExternal: true
-    ingressTargetPort: 8000
-    ingressAllowInsecure: false
-    trafficWeight: 100
-    trafficLatestRevision: true
-    registries: [
-      {
-        server: containerRegistry.outputs.loginServer
-        identity: managedIdentity.outputs.resourceId
-      }
-    ]
-    secrets: {
-      secureList: [
-        {
-          name: 'azure-openai-key'
-          keyVaultUrl: '${keyVault.outputs.uri}secrets/azure-openai-key'
-          identity: managedIdentity.outputs.resourceId
-        }
-        {
-          name: 'entra-client-secret'
-          keyVaultUrl: '${keyVault.outputs.uri}secrets/entra-client-secret'
-          identity: managedIdentity.outputs.resourceId
-        }
-      ]
-    }
-    containers: [
-      {
-        name: 'backend'
-        image: backendImage
-        resources: {
-          cpu: config.cpu
-          memory: config.memory
-        }
-        env: [
-          {
-            name: 'AZURE_OPENAI_ENDPOINT'
-            value: openAI.outputs.endpoint
-          }
-          {
-            name: 'AZURE_OPENAI_KEY'
-            secretRef: 'azure-openai-key'
-          }
-          {
-            name: 'AZURE_OPENAI_DEPLOYMENT_NAME'
-            value: 'gpt-4'
-          }
-          {
-            name: 'AZURE_DEVOPS_ORGANIZATION'
-            value: azureDevOpsOrganization
-          }
-          {
-            name: 'AZURE_TENANT_ID'
-            value: entraIdTenantId
-          }
-          {
-            name: 'AZURE_CLIENT_ID'
-            value: entraIdClientId
-          }
-          {
-            name: 'AZURE_CLIENT_SECRET'
-            secretRef: 'entra-client-secret'
-          }
-          {
-            name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-            value: applicationInsights.outputs.connectionString
-          }
-          {
-            name: 'ENVIRONMENT'
-            value: environment
-          }
-        ]
-      }
-    ]
-    scaleMinReplicas: config.replicaCount.min
-    scaleMaxReplicas: config.replicaCount.max
-  }
-}
-
-// Frontend Container App using AVM
-module frontendApp 'br/public:avm/res/app/container-app:0.12.0' = {
-  name: 'frontendAppDeployment'
-  params: {
-    name: resourceNames.frontendApp
-    location: location
-    tags: tags
-    environmentResourceId: containerAppsEnvironment.outputs.resourceId
-    managedIdentities: {
-      userAssignedResourceIds: [
-        managedIdentity.outputs.resourceId
-      ]
-    }
-    activeRevisionsMode: 'Single'
-    ingressExternal: true
-    ingressTargetPort: 7860
-    ingressAllowInsecure: false
-    trafficWeight: 100
-    trafficLatestRevision: true
-    registries: [
-      {
-        server: containerRegistry.outputs.loginServer
-        identity: managedIdentity.outputs.resourceId
-      }
-    ]
-    secrets: {
-      secureList: [
-        {
-          name: 'entra-client-secret'
-          keyVaultUrl: '${keyVault.outputs.uri}secrets/entra-client-secret'
-          identity: managedIdentity.outputs.resourceId
-        }
-      ]
-    }
-    containers: [
-      {
-        name: 'frontend'
-        image: frontendImage
-        resources: {
-          cpu: config.cpu
-          memory: config.memory
-        }
-        env: [
-          {
-            name: 'BACKEND_URL'
-            value: 'https://${backendApp.outputs.fqdn}'
-          }
-          {
-            name: 'AZURE_TENANT_ID'
-            value: entraIdTenantId
-          }
-          {
-            name: 'AZURE_CLIENT_ID'
-            value: entraIdClientId
-          }
-          {
-            name: 'AZURE_CLIENT_SECRET'
-            secretRef: 'entra-client-secret'
-          }
-          {
-            name: 'ENVIRONMENT'
-            value: environment
-          }
-        ]
-      }
-    ]
-    scaleMinReplicas: config.replicaCount.min
-    scaleMaxReplicas: config.replicaCount.max
   }
 }
 
@@ -500,8 +329,8 @@ resource cognitiveServicesUser 'Microsoft.Authorization/roleAssignments@2022-04-
 }
 
 // Outputs
-output frontendUrl string = 'https://${frontendApp.outputs.fqdn}'
-output backendUrl string = 'https://${backendApp.outputs.fqdn}'
+output containerAppsEnvironmentName string = containerAppsEnvironment.outputs.name
+output containerAppsEnvironmentId string = containerAppsEnvironment.outputs.resourceId
 output containerRegistryLoginServer string = containerRegistry.outputs.loginServer
 output keyVaultName string = keyVault.outputs.name
 output applicationInsightsConnectionString string = applicationInsights.outputs.connectionString
