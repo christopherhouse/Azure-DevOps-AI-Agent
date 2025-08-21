@@ -210,3 +210,4 @@ bandit-report.json
 # Bicep build artifacts
 *.json
 !infra/parameters/*.json
+actionlint

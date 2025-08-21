@@ -459,7 +459,6 @@ jobs:
       run_id: run-${{ github.run_id }}
     secrets:
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   deploy-prod:
     name: Deploy to Production
     needs: [create-release, deploy-dev]
@@ -472,7 +471,6 @@ jobs:
       run_id: run-${{ github.run_id }}
     secrets:
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS_PROD }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   notify-completion:
     name: Notify Build and Deployment Completion

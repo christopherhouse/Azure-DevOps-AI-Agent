@@ -26,9 +26,6 @@ on:
       AZURE_CREDENTIALS:
         description: 'Azure credentials for authentication'
         required: true
-      GITHUB_TOKEN:
-        description: 'GitHub token for registry access'
-        required: true
 
 env:
   REGISTRY: ghcr.io
