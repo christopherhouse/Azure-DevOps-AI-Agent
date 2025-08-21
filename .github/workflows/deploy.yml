@@ -2,6 +2,7 @@ name: Deploy Infrastructure and Applications
 
 permissions:
   contents: read
+  id-token: write
 
 on:
   workflow_call:

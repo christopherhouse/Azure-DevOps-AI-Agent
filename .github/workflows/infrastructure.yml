@@ -31,6 +31,9 @@ jobs:
   validate:
     name: Validate Infrastructure
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     
     steps:
     - name: Checkout code
@@ -105,6 +108,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [validate, security-scan]
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      id-token: write
     environment: 
       name: development
       url: https://dev-azure-devops-agent.azurecontainerapps.io
@@ -217,6 +223,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: deploy-dev
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      id-token: write
     environment: 
       name: production
       url: https://azure-devops-agent.azurecontainerapps.io
@@ -326,6 +335,9 @@ jobs:
     name: Destroy Infrastructure
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.destroy == 'true'
+    permissions:
+      contents: read
+      id-token: write
     environment: 
       name: ${{ github.event.inputs.environment }}
     
