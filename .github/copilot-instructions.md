@@ -251,11 +251,94 @@ az deployment group validate \
 3. Use parameter files for environment-specific values
 4. Include diagnostic settings and managed identity
 
+## 🛠️ Available MCP Servers & External Tools
+
+GitHub Copilot agents have access to several MCP (Model Context Protocol) servers that provide additional capabilities beyond code editing. Use these tools strategically to enhance development efficiency.
+
+### Context7 Documentation Server
+**Purpose**: Access up-to-date documentation for libraries and frameworks
+**When to use**:
+- Need current API documentation for dependencies (FastAPI, Gradio, Azure SDK, etc.)
+- Implementing new features with unfamiliar libraries
+- Debugging integration issues with external services
+- Understanding best practices for specific technologies
+
+**Usage pattern**:
+```
+1. context7-resolve-library-id: Find the correct library identifier
+2. context7-get-library-docs: Retrieve focused documentation
+```
+
+**Example scenarios**:
+- Adding new Azure OpenAI features: Get Context7 docs for `/azure/azure-sdk-for-python`
+- Gradio UI improvements: Get Context7 docs for `/gradio-app/gradio`
+- FastAPI endpoint patterns: Get Context7 docs for `/tiangolo/fastapi`
+
+### GitHub MCP Server
+**Purpose**: Comprehensive GitHub repository interaction and automation
+**When to use**:
+- Analyzing PR changes, issues, or workflow failures
+- Understanding repository history and commit patterns
+- Investigating CI/CD pipeline failures
+- Reviewing code quality and security alerts
+
+**Key capabilities**:
+- **Repository exploration**: Search code, issues, PRs across GitHub
+- **Workflow analysis**: Get job logs, artifact downloads, run details
+- **Security scanning**: Access code scanning and secret scanning alerts
+- **PR management**: Review files, comments, status checks
+
+**Best practices**:
+- Use `github-mcp-server-search_code` for finding implementation patterns
+- Use `github-mcp-server-get_job_logs` with `failed_only=true` for CI debugging
+- Use `github-mcp-server-list_workflow_runs` to understand deployment patterns
+
+### Playwright Browser Server
+**Purpose**: Web-based testing and debugging of the Gradio frontend
+**When to use**:
+- Testing authentication flows (Microsoft Entra ID integration)
+- Debugging UI components and user interactions
+- Validating responsive design and accessibility
+- End-to-end testing scenarios
+
+**Usage workflow**:
+```
+1. playwright-browser_navigate: Go to local development server
+2. playwright-browser_snapshot: Capture accessibility tree for analysis
+3. playwright-browser_click/type: Interact with UI elements
+4. playwright-browser_take_screenshot: Document UI changes
+```
+
+### Tool Selection Guidelines
+
+**For Documentation Tasks**:
+- **First choice**: Context7 for current library documentation
+- **Alternative**: GitHub search for repository-specific examples
+- **Last resort**: Web browsing for official documentation
+
+**For Debugging Tasks**:
+- **CI/CD issues**: GitHub MCP server for workflow logs and run details
+- **Authentication issues**: Playwright for testing auth flows
+- **Integration issues**: Context7 for service-specific documentation
+
+**For Development Tasks**:
+- **New features**: Context7 for API patterns, GitHub search for existing implementations
+- **Bug fixes**: GitHub MCP server for related issues/PRs, Context7 for troubleshooting guides
+- **UI changes**: Playwright for testing, Context7 for component documentation
+
+### Performance Considerations
+- **Context7**: Lightweight, fast documentation retrieval
+- **GitHub MCP**: Rate-limited, use focused queries
+- **Playwright**: Resource-intensive, use for targeted testing only
+
+**Avoid over-usage**: These tools supplement but don't replace understanding the codebase through file exploration and code analysis.
+
 ## 🔍 Trust These Instructions
 
 **These instructions are comprehensive and tested.** Only search for additional information if:
 - Instructions are incomplete for your specific task
 - Build commands fail with errors not covered here  
 - You need details about specific business logic or Azure service integration
+- The available MCP servers don't provide the needed external information
 
 Focus on following these patterns rather than exploring alternatives to minimize development time and avoid common pitfalls.
