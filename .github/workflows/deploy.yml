@@ -191,7 +191,6 @@ jobs:
           --env-var "AZURE_DEVOPS_ORGANIZATION=${{ env.AZURE_DEVOPS_ORG }}" \
           --env-var "ENVIRONMENT=${{ inputs.environment }}" \
           --env-var "AZURE_OPENAI_ENDPOINT=${{ steps.deploy-infra.outputs.openAIEndpoint }}" \
-          --secret-ref "AZURE_OPENAI_KEY=azure-openai-key" \
           --secret-ref "AZURE_TENANT_ID=entra-tenant-id" \
           --secret-ref "AZURE_CLIENT_ID=entra-client-id" \
           --secret-ref "AZURE_CLIENT_SECRET=entra-client-secret" \
