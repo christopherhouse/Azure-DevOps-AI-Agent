@@ -18,7 +18,7 @@ param appNamePrefix string = 'azdo-ai-agent'
 param containerAppsEnvironmentName string = '${appNamePrefix}-${environment}-env'
 
 @description('Azure OpenAI resource name')
-param openAIName string = '${appNamePrefix}-${environment}-openai'
+param openAIName string = '${appNamePrefix}-${environment}-oai'
 
 @description('Container Registry name')
 param containerRegistryName string = replace('${appNamePrefix}${environment}acr', '-', '')
@@ -178,12 +178,6 @@ module containerRegistry 'br/public:avm/res/container-registry/registry:0.9.1' =
     trustPolicyStatus: 'disabled'
     publicNetworkAccess: 'Enabled'
     zoneRedundancy: 'Disabled'
-    managedIdentities: {
-      userAssignedResourceIds: [
-        backendManagedIdentity.outputs.resourceId
-        frontendManagedIdentity.outputs.resourceId
-      ]
-    }
     roleAssignments: [
       {
         principalId: backendManagedIdentity.outputs.principalId
@@ -362,7 +356,7 @@ module containerAppsEnvironment 'br/public:avm/res/app/managed-environment:0.10.
     location: location
     tags: tags
     logAnalyticsWorkspaceResourceId: logAnalytics.outputs.resourceId
-    zoneRedundant: true
+    zoneRedundant: false
     publicNetworkAccess: 'Enabled'
     workloadProfiles: [
       {
