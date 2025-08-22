@@ -22,7 +22,7 @@ The infrastructure deployment uses **Azure Verified Modules (AVM)** exclusively 
 
 - Private registry authentication using managed identity
 - Key Vault integration for secret management
-- Role-based access control (RBAC) for least-privilege access
+- Role-based access control (RBAC) implemented through Azure Verified Modules
 - Diagnostic settings configured for all resources with category groups
 
 ## File Structure
@@ -55,6 +55,28 @@ All modules use the latest stable versions and are configured with:
 - Proper resource tagging
 - Managed identity authentication
 - RBAC assignments for secure access
+
+## RBAC Implementation
+
+This infrastructure follows Azure Verified Modules (AVM) best practices by implementing role-based access control (RBAC) through the built-in `roleAssignments` parameter available in AVM modules, rather than creating standalone role assignment resources.
+
+### Role Assignment Strategy
+
+| Resource | Managed Identity | Role | Purpose |
+|----------|------------------|------|---------|
+| Container Registry | Backend MI | AcrPull | Pull container images for backend app |
+| Container Registry | Frontend MI | AcrPull | Pull container images for frontend app |
+| Key Vault | Backend MI | Key Vault Secrets User | Access secrets for backend configuration |
+| Key Vault | Frontend MI | Key Vault Secrets User | Access secrets for frontend configuration |
+| Azure OpenAI | AI Services MI | Cognitive Services User | Access OpenAI services |
+
+### Benefits of AVM RBAC Approach
+
+- **Consolidated Management**: Role assignments are managed within the resource modules themselves
+- **Consistent Patterns**: Follows Microsoft's recommended AVM standards
+- **Reduced Complexity**: Eliminates standalone role assignment resources
+- **Better Maintainability**: Single source of truth for resource and its permissions
+- **Cleaner Code**: More readable and maintainable infrastructure templates
 
 ## Deployment
 
@@ -158,10 +180,11 @@ az keyvault secret set \
 ## Security Features
 
 - **Managed Identity**: All inter-service authentication uses managed identities
-- **RBAC**: Least-privilege access with specific role assignments:
-  - `AcrPull`: Container registry access
-  - `Key Vault Secrets User`: Key vault secret access
-  - `Cognitive Services User`: OpenAI service access
+- **RBAC**: Least-privilege access implemented through Azure Verified Modules (AVM) `roleAssignments` parameter:
+  - `AcrPull`: Container registry access for backend and frontend managed identities
+  - `Key Vault Secrets User`: Key vault secret access for backend and frontend managed identities
+  - `Cognitive Services User`: OpenAI service access for AI services managed identity
+- **AVM Integration**: Role assignments managed through AVM modules rather than standalone resources
 - **Private Networking**: Optional private endpoints for enhanced security
 - **Diagnostic Logging**: Comprehensive logging for security monitoring
 - **Secret Management**: All sensitive data stored in Key Vault
