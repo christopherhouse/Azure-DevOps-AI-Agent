@@ -22,7 +22,7 @@ RUN groupadd --gid 1000 appuser && \
 WORKDIR /app
 
 # Copy uv files first for better Docker layer caching
-COPY uv.lock pyproject.toml ./
+COPY src/backend/uv.lock src/backend/pyproject.toml ./
 
 # Copy LICENSE and README files to expected locations for hatchling metadata validation
 COPY LICENSE /LICENSE
@@ -32,7 +32,10 @@ COPY README.md /README.md
 RUN uv sync --frozen --no-cache --no-dev
 
 # Copy application code
-COPY --chown=appuser:appuser . .
+COPY --chown=appuser:appuser src/backend/ .
+
+# Create necessary directories and set permissions
+RUN chown -R appuser:appuser /app
 
 # Switch to non-root user
 USER appuser
@@ -44,5 +47,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Command to run the application directly from virtual environment
-CMD ["/app/.venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Command to run the application using uv
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
