@@ -320,7 +320,8 @@ build_az_command() {
         cmd_args+=("--environment" "$ENVIRONMENT_NAME")
     fi
     
-    # Container configuration
+    # Container configuration - deploys a single container image per app
+    # Each call to this script deploys exactly one container to one container app
     cmd_args+=(
         "--image" "$IMAGE"
         "--target-port" "$TARGET_PORT"
