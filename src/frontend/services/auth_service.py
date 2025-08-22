@@ -24,11 +24,11 @@ class EntraIDAuthService:
         """Initialize the authentication service."""
         self._client_app = None
         self._token_cache = {}
-        
+
         # Only initialize MSAL if not in testing mode (tenant ID doesn't start with 'mock')
-        if not settings.azure_tenant_id.startswith('mock'):
+        if not settings.azure_tenant_id.startswith("mock"):
             self._init_client_app()
-    
+
     def _init_client_app(self):
         """Initialize MSAL client application."""
         self._client_app = msal.ConfidentialClientApplication(
@@ -36,12 +36,12 @@ class EntraIDAuthService:
             client_credential=settings.azure_client_secret,
             authority=settings.authority_url,
         )
-    
+
     @property
     def client_app(self):
         """Get the MSAL client application."""
         if self._client_app is None:
-            if settings.azure_tenant_id.startswith('mock'):
+            if settings.azure_tenant_id.startswith("mock"):
                 raise AuthenticationError("Authentication not available in mock/testing mode")
             self._init_client_app()
         return self._client_app
