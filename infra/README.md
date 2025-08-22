@@ -158,10 +158,16 @@ The GitHub Actions workflow (`.github/workflows/infrastructure.yml`) is configur
 
 ### Required Secrets
 
-The following secrets must be manually added to Key Vault after deployment:
+The following secrets are automatically populated by the deployment workflow from GitHub secrets:
 
-- `azure-openai-key`: OpenAI service access key
-- `entra-client-secret`: Microsoft Entra ID application secret
+- `azure-openai-key`: OpenAI service access key (from `AZURE_OPENAI_KEY`)
+- `entra-tenant-id`: Microsoft Entra ID tenant ID (from `AZURE_TENANT_ID`) 
+- `frontend-client-id`: Frontend application client ID (from `FRONTEND_CLIENT_ID`)
+- `backend-client-id`: Backend application client ID (from `BACKEND_CLIENT_ID`)
+- `backend-client-secret`: Backend application client secret (from `BACKEND_CLIENT_SECRET`)
+- `app-insights-connection-string`: Application Insights connection string (auto-generated)
+
+For local development or manual setup, you can set these secrets manually:
 
 ```bash
 # Set Azure OpenAI API key
@@ -170,11 +176,29 @@ az keyvault secret set \
   --name azure-openai-key \
   --value "your-openai-api-key"
 
-# Set Entra ID client secret
+# Set Entra ID tenant ID
 az keyvault secret set \
   --vault-name azdo-ai-agent-dev-kv \
-  --name entra-client-secret \
-  --value "your-entra-client-secret"
+  --name entra-tenant-id \
+  --value "your-tenant-id"
+
+# Set frontend client ID
+az keyvault secret set \
+  --vault-name azdo-ai-agent-dev-kv \
+  --name frontend-client-id \
+  --value "your-frontend-client-id"
+
+# Set backend client ID
+az keyvault secret set \
+  --vault-name azdo-ai-agent-dev-kv \
+  --name backend-client-id \
+  --value "your-backend-client-id"
+
+# Set backend client secret
+az keyvault secret set \
+  --vault-name azdo-ai-agent-dev-kv \
+  --name backend-client-secret \
+  --value "your-backend-client-secret"
 ```
 
 ## Security Features

@@ -47,12 +47,15 @@ param azureDevOpsOrganization string
 @description('Microsoft Entra ID tenant ID')
 param entraIdTenantId string
 
-@description('Microsoft Entra ID client ID')
-param entraIdClientId string
+@description('Frontend Entra ID client ID')
+param frontendClientId string
 
-@description('Microsoft Entra ID client secret')
+@description('Backend Entra ID client ID')
+param backendClientId string
+
+@description('Backend Entra ID client secret')
 @secure()
-param entraIdClientSecret string = 'MOCK-CLIENT-SECRET-REPLACE-WITH-REAL-VALUE'
+param backendClientSecret string = 'MOCK-CLIENT-SECRET-REPLACE-WITH-REAL-VALUE'
 
 @description('Azure OpenAI API key')
 @secure()
@@ -263,12 +266,16 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.12.1' = {
         value: entraIdTenantId
       }
       {
-        name: 'entra-client-id'
-        value: entraIdClientId
+        name: 'frontend-client-id'
+        value: frontendClientId
       }
       {
-        name: 'entra-client-secret'
-        value: entraIdClientSecret
+        name: 'backend-client-id'
+        value: backendClientId
+      }
+      {
+        name: 'backend-client-secret'
+        value: backendClientSecret
       }
       {
         name: 'app-insights-connection-string'
