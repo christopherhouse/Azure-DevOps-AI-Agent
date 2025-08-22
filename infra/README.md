@@ -84,7 +84,7 @@ az bicep build-params --file parameters/main.prod.bicepparam
 # Create resource group
 az group create \
   --name rg-azure-devops-agent-dev \
-  --location eastus \
+  --location eastus2 \
   --tags environment=dev project=azure-devops-agent
 
 # Deploy to development
@@ -100,7 +100,7 @@ az deployment group create \
 # Create resource group
 az group create \
   --name rg-azure-devops-agent-prod \
-  --location eastus \
+  --location eastus2 \
   --tags environment=prod project=azure-devops-agent
 
 # Deploy to production
@@ -175,10 +175,10 @@ az keyvault secret set \
 
 ```bash
 # Check backend health
-curl https://azdo-ai-agent-dev-backend.proudsand-12345.eastus.azurecontainerapps.io/health
+curl https://azdo-ai-agent-dev-backend.proudsand-12345.eastus2.azurecontainerapps.io/health
 
 # Check frontend accessibility
-curl https://azdo-ai-agent-dev-frontend.proudsand-12345.eastus.azurecontainerapps.io
+curl https://azdo-ai-agent-dev-frontend.proudsand-12345.eastus2.azurecontainerapps.io
 ```
 
 ## Resource Naming Convention

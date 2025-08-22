@@ -3,7 +3,7 @@ using '../main.bicep'
 
 // Environment configuration
 param environment = 'prod'
-param location = 'eastus'
+param location = 'eastus2'
 param appNamePrefix = 'azdo-ai-agent'
 
 // Azure DevOps configuration
