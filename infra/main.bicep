@@ -205,6 +205,32 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.12.1' = {
       defaultAction: 'Allow'
       bypass: 'AzureServices'
     }
+    secrets: [
+      {
+        name: 'azure-openai-endpoint'
+        value: openAI.outputs.endpoint
+      }
+      {
+        name: 'azure-openai-key'
+        value: azureOpenAIKey
+      }
+      {
+        name: 'entra-tenant-id'
+        value: entraIdTenantId
+      }
+      {
+        name: 'entra-client-id'
+        value: entraIdClientId
+      }
+      {
+        name: 'entra-client-secret'
+        value: entraIdClientSecret
+      }
+      {
+        name: 'app-insights-connection-string'
+        value: applicationInsights.outputs.connectionString
+      }
+    ]
     diagnosticSettings: [
       {
         name: 'default'
@@ -222,69 +248,6 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.12.1' = {
       }
     ]
   }
-}
-
-// Key Vault Secrets
-resource kvSecretAzureOpenAIEndpoint 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
-  name: '${resourceNames.keyVault}/azure-openai-endpoint'
-  properties: {
-    value: openAI.outputs.endpoint
-  }
-  dependsOn: [
-    keyVault
-    openAI
-  ]
-}
-
-resource kvSecretAzureOpenAIKey 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
-  name: '${resourceNames.keyVault}/azure-openai-key'
-  properties: {
-    value: azureOpenAIKey
-  }
-  dependsOn: [
-    keyVault
-  ]
-}
-
-resource kvSecretEntraTenantId 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
-  name: '${resourceNames.keyVault}/entra-tenant-id'
-  properties: {
-    value: entraIdTenantId
-  }
-  dependsOn: [
-    keyVault
-  ]
-}
-
-resource kvSecretEntraClientId 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
-  name: '${resourceNames.keyVault}/entra-client-id'
-  properties: {
-    value: entraIdClientId
-  }
-  dependsOn: [
-    keyVault
-  ]
-}
-
-resource kvSecretEntraClientSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
-  name: '${resourceNames.keyVault}/entra-client-secret'
-  properties: {
-    value: entraIdClientSecret
-  }
-  dependsOn: [
-    keyVault
-  ]
-}
-
-resource kvSecretAppInsightsConnectionString 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
-  name: '${resourceNames.keyVault}/app-insights-connection-string'
-  properties: {
-    value: applicationInsights.outputs.connectionString
-  }
-  dependsOn: [
-    keyVault
-    applicationInsights
-  ]
 }
 
 // Azure OpenAI Service using AVM
@@ -352,6 +315,13 @@ module containerAppsEnvironment 'br/public:avm/res/app/managed-environment:0.10.
     tags: tags
     logAnalyticsWorkspaceResourceId: logAnalytics.outputs.resourceId
     zoneRedundant: environment == 'prod'
+    publicNetworkAccess: 'Enabled'
+    workloadProfiles: [
+      {
+        name: 'Consumption'
+        workloadProfileType: 'Consumption'
+      }
+    ]
   }
 }
 
