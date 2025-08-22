@@ -43,7 +43,7 @@ RUN groupadd --gid 1000 appuser && \
 WORKDIR /app
 
 # Copy uv files first for better Docker layer caching
-COPY uv.lock pyproject.toml ./
+COPY src/frontend/uv.lock src/frontend/pyproject.toml ./
 
 # Copy LICENSE and README files to expected locations for hatchling metadata validation
 COPY LICENSE /LICENSE
@@ -53,7 +53,7 @@ COPY README.md /README.md
 RUN uv sync --frozen --no-cache --no-dev
 
 # Copy application code
-COPY --chown=appuser:appuser . .
+COPY --chown=appuser:appuser src/frontend/ .
 
 # Create necessary directories and set permissions
 RUN mkdir -p /app/logs /app/static/uploads && \
@@ -69,5 +69,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 # Expose port
 EXPOSE 7860
 
-# Command to run the application directly from virtual environment
-CMD ["/app/.venv/bin/python", "app.py"]
+# Command to run the application using uv
+CMD ["uv", "run", "python", "app.py"]
