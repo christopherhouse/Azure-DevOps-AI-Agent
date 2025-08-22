@@ -268,7 +268,6 @@ module openAI 'br/public:avm/res/cognitive-services/account:0.10.1' = {
     managedIdentities: {
       userAssignedResourceIds: [
         backendManagedIdentity.outputs.resourceId
-        frontendManagedIdentity.outputs.resourceId
       ]
     }
     deployments: [
