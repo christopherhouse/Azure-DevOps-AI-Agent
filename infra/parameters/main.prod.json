@@ -38,8 +38,11 @@
     "logAnalyticsName": {
       "value": "azdo-ai-agent-prod-la"
     },
-    "managedIdentityName": {
-      "value": "azdo-ai-agent-prod-mi"
+    "backendManagedIdentityName": {
+      "value": "azdo-ai-agent-prod-be-mi"
+    },
+    "frontendManagedIdentityName": {
+      "value": "azdo-ai-agent-prod-fe-mi"
     },
     "tags": {
       "value": {

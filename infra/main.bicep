@@ -184,6 +184,20 @@ module containerRegistry 'br/public:avm/res/container-registry/registry:0.9.1' =
         frontendManagedIdentity.outputs.resourceId
       ]
     }
+    roleAssignments: [
+      {
+        principalId: backendManagedIdentity.outputs.principalId
+        roleDefinitionIdOrName: '7f951dda-4ed3-4680-a7ca-43fe172d538d' // AcrPull
+        principalType: 'ServicePrincipal'
+        description: 'Assign AcrPull role to Backend Managed Identity'
+      }
+      {
+        principalId: frontendManagedIdentity.outputs.principalId
+        roleDefinitionIdOrName: '7f951dda-4ed3-4680-a7ca-43fe172d538d' // AcrPull
+        principalType: 'ServicePrincipal'
+        description: 'Assign AcrPull role to Frontend Managed Identity'
+      }
+    ]
     diagnosticSettings: [
       {
         name: 'default'
@@ -219,6 +233,20 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.12.1' = {
       defaultAction: 'Allow'
       bypass: 'AzureServices'
     }
+    roleAssignments: [
+      {
+        principalId: backendManagedIdentity.outputs.principalId
+        roleDefinitionIdOrName: '4633458b-17de-408a-b874-0445c86b69e6' // Key Vault Secrets User
+        principalType: 'ServicePrincipal'
+        description: 'Assign Key Vault Secrets User role to Backend Managed Identity'
+      }
+      {
+        principalId: frontendManagedIdentity.outputs.principalId
+        roleDefinitionIdOrName: '4633458b-17de-408a-b874-0445c86b69e6' // Key Vault Secrets User
+        principalType: 'ServicePrincipal'
+        description: 'Assign Key Vault Secrets User role to Frontend Managed Identity'
+      }
+    ]
     secrets: [
       {
         name: 'azure-openai-endpoint'
@@ -284,6 +312,14 @@ module openAI 'br/public:avm/res/cognitive-services/account:0.10.1' = {
         aiManagedIdentity.outputs.resourceId
       ]
     }
+    roleAssignments: [
+      {
+        principalId: aiManagedIdentity.outputs.principalId
+        roleDefinitionIdOrName: 'a97b65f3-24c7-4388-baec-2e87135dc908' // Cognitive Services User
+        principalType: 'ServicePrincipal'
+        description: 'Assign Cognitive Services User role to AI Services Managed Identity'
+      }
+    ]
     deployments: [
       {
         name: 'gpt-4o'
@@ -335,59 +371,6 @@ module containerAppsEnvironment 'br/public:avm/res/app/managed-environment:0.10.
         workloadProfileType: 'Consumption'
       }
     ]
-  }
-}
-
-// RBAC Assignments for Backend Managed Identity
-resource backendAcrPullRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, backendManagedIdentity.name, 'AcrPull')
-  scope: resourceGroup()
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d') // AcrPull
-    principalId: backendManagedIdentity.outputs.principalId
-    principalType: 'ServicePrincipal'
-  }
-}
-
-resource backendKeyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, backendManagedIdentity.name, 'KeyVaultSecretsUser')
-  scope: resourceGroup()
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6') // Key Vault Secrets User
-    principalId: backendManagedIdentity.outputs.principalId
-    principalType: 'ServicePrincipal'
-  }
-}
-
-// RBAC Assignments for AI Services Managed Identity
-resource aiCognitiveServicesUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, aiManagedIdentity.name, 'CognitiveServicesUser')
-  scope: resourceGroup()
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'a97b65f3-24c7-4388-baec-2e87135dc908') // Cognitive Services User
-    principalId: aiManagedIdentity.outputs.principalId
-    principalType: 'ServicePrincipal'
-  }
-}
-
-// RBAC Assignments for Frontend Managed Identity
-resource frontendAcrPullRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, frontendManagedIdentity.name, 'AcrPull')
-  scope: resourceGroup()
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d') // AcrPull
-    principalId: frontendManagedIdentity.outputs.principalId
-    principalType: 'ServicePrincipal'
-  }
-}
-
-resource frontendKeyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, frontendManagedIdentity.name, 'KeyVaultSecretsUser')
-  scope: resourceGroup()
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6') // Key Vault Secrets User
-    principalId: frontendManagedIdentity.outputs.principalId
-    principalType: 'ServicePrincipal'
   }
 }
 
