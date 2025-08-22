@@ -382,6 +382,7 @@ build_az_command() {
     fi
     
     # Secrets - only supported for create operations
+    # For update operations, secrets are handled separately via `az containerapp secret set`
     if [[ "$operation" == "create" ]]; then
         local all_secrets=()
         all_secrets+=("${SECRETS[@]}")
@@ -409,12 +410,63 @@ build_az_command() {
     echo "${cmd_args[@]}"
 }
 
+# Function to update secrets for update operations
+update_secrets() {
+    # Only run for update operations when we have secret references
+    if [[ ${#SECRET_REFS[@]} -eq 0 || -z "$KEY_VAULT_NAME" || -z "$MANAGED_IDENTITY" ]]; then
+        return 0
+    fi
+    
+    print_info "Updating secrets for container app '$APP_NAME'..."
+    
+    local all_secrets=()
+    all_secrets+=("${SECRETS[@]}")
+    
+    # Create Key Vault secret references
+    for secret_ref in "${SECRET_REFS[@]}"; do
+        if [[ "$secret_ref" == *"="* ]]; then
+            env_var_name="${secret_ref%%=*}"
+            secret_name="${secret_ref#*=}"
+            # Format for Container Apps Key Vault reference:
+            # secret-name=keyvaultref:https://vault.vault.azure.net/secrets/secret-name,identityref:managed-identity-id
+            key_vault_uri="https://${KEY_VAULT_NAME}.vault.azure.net/secrets/${secret_name}"
+            all_secrets+=("${secret_name}=keyvaultref:${key_vault_uri},identityref:${MANAGED_IDENTITY}")
+        fi
+    done
+    
+    if [[ ${#all_secrets[@]} -gt 0 ]]; then
+        if [[ "$VERBOSE" == "true" ]]; then
+            print_info "Secret update command: az containerapp secret set --name $APP_NAME --resource-group $RESOURCE_GROUP --secrets ${all_secrets[*]}"
+        fi
+        
+        if az containerapp secret set \
+            --name "$APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --secrets "${all_secrets[@]}"; then
+            print_success "Secrets updated successfully!"
+            return 0
+        else
+            print_error "Failed to update secrets!"
+            return 1
+        fi
+    fi
+    
+    return 0
+}
+
 # Function to execute deployment
 execute_deployment() {
     local operation="$1"
     local cmd_args
     
     print_info "Building Azure CLI command for $operation operation..."
+    
+    # For update operations, update secrets first
+    if [[ "$operation" == "update" ]]; then
+        if ! update_secrets; then
+            return 1
+        fi
+    fi
     
     # Build the command arguments
     cmd_args=($(build_az_command "$operation"))
