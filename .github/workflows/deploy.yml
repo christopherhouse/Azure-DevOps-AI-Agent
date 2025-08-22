@@ -182,6 +182,7 @@ jobs:
           --registry-server "${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}" \
           --registry-identity system \
           --managed-identity "${{ steps.deploy-infra.outputs.backendManagedIdentityResourceId }}" \
+          --key-vault-name "${{ steps.deploy-infra.outputs.keyVaultName }}" \
           --cpu 1.0 \
           --memory 2Gi \
           --min-replicas 1 \
@@ -210,6 +211,7 @@ jobs:
           --registry-server "${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}" \
           --registry-identity system \
           --managed-identity "${{ steps.deploy-infra.outputs.frontendManagedIdentityResourceId }}" \
+          --key-vault-name "${{ steps.deploy-infra.outputs.keyVaultName }}" \
           --cpu 0.5 \
           --memory 1Gi \
           --min-replicas 1 \

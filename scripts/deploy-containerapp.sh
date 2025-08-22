@@ -18,6 +18,7 @@ INGRESS="external"
 REGISTRY_SERVER=""
 REGISTRY_IDENTITY=""
 MANAGED_IDENTITY=""
+KEY_VAULT_NAME=""
 ENV_VARS=()
 SECRETS=()
 SECRET_REFS=()
@@ -99,6 +100,7 @@ Optional Options:
   --registry-server     Container registry server (e.g., myregistry.azurecr.io)
   --registry-identity   Managed identity for registry authentication
   --managed-identity    User-assigned managed identity for the container app
+  --key-vault-name      Key Vault name for secret references (required when using --secret-ref)
   --env-var             Environment variable (key=value). Can be used multiple times
   --secret              Secret (key=value). Can be used multiple times
   --secret-ref          Key Vault secret reference (key=vault-secret-name). Can be used multiple times
@@ -204,6 +206,10 @@ parse_args() {
                 MANAGED_IDENTITY="$2"
                 shift 2
                 ;;
+            --key-vault-name)
+                KEY_VAULT_NAME="$2"
+                shift 2
+                ;;
             --env-var)
                 parse_env_var "$2"
                 shift 2
@@ -263,6 +269,11 @@ validate_params() {
     
     if [[ ${#missing_params[@]} -gt 0 ]]; then
         print_error "Missing required parameters: ${missing_params[*]}"
+    fi
+    
+    # Validate Key Vault name when secret references are used
+    if [[ ${#SECRET_REFS[@]} -gt 0 && -z "$KEY_VAULT_NAME" ]]; then
+        print_error "Key Vault name (--key-vault-name) is required when using secret references (--secret-ref)"
     fi
     
     # Validate revisions mode
@@ -356,10 +367,27 @@ build_az_command() {
         cmd_args+=("${all_env_vars[@]}")
     fi
     
-    # Secrets
-    if [[ ${#SECRETS[@]} -gt 0 ]]; then
+    # Secrets (combine inline secrets and Key Vault references)
+    local all_secrets=()
+    all_secrets+=("${SECRETS[@]}")
+    
+    # Create Key Vault secret references
+    if [[ ${#SECRET_REFS[@]} -gt 0 && -n "$KEY_VAULT_NAME" && -n "$MANAGED_IDENTITY" ]]; then
+        for secret_ref in "${SECRET_REFS[@]}"; do
+            if [[ "$secret_ref" == *"="* ]]; then
+                env_var_name="${secret_ref%%=*}"
+                secret_name="${secret_ref#*=}"
+                # Format for Container Apps Key Vault reference:
+                # secret-name=keyvaultref:https://vault.vault.azure.net/secrets/secret-name,identityref:managed-identity-id
+                key_vault_uri="https://${KEY_VAULT_NAME}.vault.azure.net/secrets/${secret_name}"
+                all_secrets+=("${secret_name}=keyvaultref:${key_vault_uri},identityref:${MANAGED_IDENTITY}")
+            fi
+        done
+    fi
+    
+    if [[ ${#all_secrets[@]} -gt 0 ]]; then
         cmd_args+=("--secrets")
-        cmd_args+=("${SECRETS[@]}")
+        cmd_args+=("${all_secrets[@]}")
     fi
     
     echo "${cmd_args[@]}"
