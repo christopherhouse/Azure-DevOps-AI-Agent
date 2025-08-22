@@ -105,21 +105,27 @@ jobs:
         # Extract outputs
         container_apps_env=$(echo $deployment_output | jq -r '.containerAppsEnvironmentName.value')
         acr_login_server=$(echo $deployment_output | jq -r '.containerRegistryLoginServer.value')
-        backend_identity=$(echo $deployment_output | jq -r '.backendManagedIdentityClientId.value')
-        frontend_identity=$(echo $deployment_output | jq -r '.frontendManagedIdentityClientId.value')
+        backend_identity_client_id=$(echo $deployment_output | jq -r '.backendManagedIdentityClientId.value')
+        backend_identity_resource_id=$(echo $deployment_output | jq -r '.backendManagedIdentityResourceId.value')
+        frontend_identity_client_id=$(echo $deployment_output | jq -r '.frontendManagedIdentityClientId.value')
+        frontend_identity_resource_id=$(echo $deployment_output | jq -r '.frontendManagedIdentityResourceId.value')
         key_vault_name=$(echo $deployment_output | jq -r '.keyVaultName.value')
         
         echo "containerAppsEnvironmentName=${container_apps_env}" >> $GITHUB_OUTPUT
         echo "containerRegistryLoginServer=${acr_login_server}" >> $GITHUB_OUTPUT
-        echo "backendManagedIdentityClientId=${backend_identity}" >> $GITHUB_OUTPUT
-        echo "frontendManagedIdentityClientId=${frontend_identity}" >> $GITHUB_OUTPUT
+        echo "backendManagedIdentityClientId=${backend_identity_client_id}" >> $GITHUB_OUTPUT
+        echo "backendManagedIdentityResourceId=${backend_identity_resource_id}" >> $GITHUB_OUTPUT
+        echo "frontendManagedIdentityClientId=${frontend_identity_client_id}" >> $GITHUB_OUTPUT
+        echo "frontendManagedIdentityResourceId=${frontend_identity_resource_id}" >> $GITHUB_OUTPUT
         echo "keyVaultName=${key_vault_name}" >> $GITHUB_OUTPUT
         
         echo "✅ Infrastructure deployed successfully"
         echo "🏗️ Container Apps Environment: ${container_apps_env}"
         echo "📦 ACR Login Server: ${acr_login_server}"
-        echo "🔑 Backend Identity: ${backend_identity}"
-        echo "🔑 Frontend Identity: ${frontend_identity}"
+        echo "🔑 Backend Identity Client ID: ${backend_identity_client_id}"
+        echo "🔑 Backend Identity Resource ID: ${backend_identity_resource_id}"
+        echo "🔑 Frontend Identity Client ID: ${frontend_identity_client_id}"
+        echo "🔑 Frontend Identity Resource ID: ${frontend_identity_resource_id}"
         echo "🗝️ Key Vault: ${key_vault_name}"
         
     - name: Login to GitHub Container Registry
@@ -172,7 +178,7 @@ jobs:
           --target-port 8000 \
           --registry-server "${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}" \
           --registry-identity system \
-          --managed-identity "${{ steps.deploy-infra.outputs.backendManagedIdentityClientId }}" \
+          --managed-identity "${{ steps.deploy-infra.outputs.backendManagedIdentityResourceId }}" \
           --cpu 1.0 \
           --memory 2Gi \
           --min-replicas 1 \
@@ -201,7 +207,7 @@ jobs:
           --target-port 7860 \
           --registry-server "${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}" \
           --registry-identity system \
-          --managed-identity "${{ steps.deploy-infra.outputs.frontendManagedIdentityClientId }}" \
+          --managed-identity "${{ steps.deploy-infra.outputs.frontendManagedIdentityResourceId }}" \
           --cpu 0.5 \
           --memory 1Gi \
           --min-replicas 1 \
