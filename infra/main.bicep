@@ -255,10 +255,6 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.12.1' = {
     ]
     secrets: [
       {
-        name: 'azure-openai-endpoint'
-        value: openAI.outputs.endpoint
-      }
-      {
         name: 'azure-openai-key'
         value: azureOpenAIKey
       }

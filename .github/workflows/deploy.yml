@@ -110,6 +110,7 @@ jobs:
         frontend_identity_client_id=$(echo $deployment_output | jq -r '.frontendManagedIdentityClientId.value')
         frontend_identity_resource_id=$(echo $deployment_output | jq -r '.frontendManagedIdentityResourceId.value')
         key_vault_name=$(echo $deployment_output | jq -r '.keyVaultName.value')
+        openai_endpoint=$(echo $deployment_output | jq -r '.openAIEndpoint.value')
         
         echo "containerAppsEnvironmentName=${container_apps_env}" >> $GITHUB_OUTPUT
         echo "containerRegistryLoginServer=${acr_login_server}" >> $GITHUB_OUTPUT
@@ -118,6 +119,7 @@ jobs:
         echo "frontendManagedIdentityClientId=${frontend_identity_client_id}" >> $GITHUB_OUTPUT
         echo "frontendManagedIdentityResourceId=${frontend_identity_resource_id}" >> $GITHUB_OUTPUT
         echo "keyVaultName=${key_vault_name}" >> $GITHUB_OUTPUT
+        echo "openAIEndpoint=${openai_endpoint}" >> $GITHUB_OUTPUT
         
         echo "✅ Infrastructure deployed successfully"
         echo "🏗️ Container Apps Environment: ${container_apps_env}"
@@ -127,6 +129,7 @@ jobs:
         echo "🔑 Frontend Identity Client ID: ${frontend_identity_client_id}"
         echo "🔑 Frontend Identity Resource ID: ${frontend_identity_resource_id}"
         echo "🗝️ Key Vault: ${key_vault_name}"
+        echo "🤖 OpenAI Endpoint: ${openai_endpoint}"
         
     - name: Login to GitHub Container Registry
       uses: docker/login-action@v3
@@ -187,7 +190,7 @@ jobs:
           --env-var "AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4" \
           --env-var "AZURE_DEVOPS_ORGANIZATION=${{ env.AZURE_DEVOPS_ORG }}" \
           --env-var "ENVIRONMENT=${{ inputs.environment }}" \
-          --secret-ref "AZURE_OPENAI_ENDPOINT=azure-openai-endpoint" \
+          --env-var "AZURE_OPENAI_ENDPOINT=${{ steps.deploy-infra.outputs.openAIEndpoint }}" \
           --secret-ref "AZURE_OPENAI_KEY=azure-openai-key" \
           --secret-ref "AZURE_TENANT_ID=entra-tenant-id" \
           --secret-ref "AZURE_CLIENT_ID=entra-client-id" \
