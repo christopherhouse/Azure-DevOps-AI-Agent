@@ -273,16 +273,16 @@ module openAI 'br/public:avm/res/cognitive-services/account:0.10.1' = {
     }
     deployments: [
       {
-        name: 'gpt-4'
+        name: 'gpt-4o'
         model: {
           format: 'OpenAI'
-          name: 'gpt-4'
-          version: 'turbo-2024-04-09'
+          name: 'gpt-4o'
+          version: '2024-11-20'
         }
         raiPolicyName: 'Microsoft.DefaultV2'
         sku: {
-          name: 'GlobalStandard'
-          capacity: 30
+          name: 'Standard'
+          capacity: 10
         }
         versionUpgradeOption: 'OnceNewDefaultVersionAvailable'
       }
