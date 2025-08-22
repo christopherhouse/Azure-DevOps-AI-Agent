@@ -11,7 +11,8 @@ param azureDevOpsOrganization = 'https://dev.azure.com/your-dev-org'
 
 // Microsoft Entra ID configuration
 param entraIdTenantId = 'your-tenant-id-here'
-param entraIdClientId = 'your-client-id-here'
+param frontendClientId = 'your-frontend-client-id-here'
+param backendClientId = 'your-backend-client-id-here'
 
 // Resource naming
 param containerAppsEnvironmentName = '${appNamePrefix}-${environment}-env'

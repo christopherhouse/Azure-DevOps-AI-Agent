@@ -89,15 +89,21 @@ jobs:
         echo "Deploying infrastructure to ${{ inputs.environment }} environment..."
         
         # Set secure parameter values from secrets or use mock values
-        ENTRA_CLIENT_SECRET="${{ secrets.ENTRA_CLIENT_SECRET || 'MOCK-CLIENT-SECRET-REPLACE-WITH-REAL-VALUE' }}"
+        BACKEND_CLIENT_SECRET="${{ secrets.BACKEND_CLIENT_SECRET || 'MOCK-CLIENT-SECRET-REPLACE-WITH-REAL-VALUE' }}"
         AZURE_OPENAI_KEY="${{ secrets.AZURE_OPENAI_KEY || 'MOCK-OPENAI-KEY-REPLACE-WITH-REAL-VALUE' }}"
+        FRONTEND_CLIENT_ID="${{ secrets.FRONTEND_CLIENT_ID || 'your-frontend-client-id-here' }}"
+        BACKEND_CLIENT_ID="${{ secrets.BACKEND_CLIENT_ID || 'your-backend-client-id-here' }}"
+        AZURE_TENANT_ID="${{ secrets.AZURE_TENANT_ID || 'your-tenant-id-here' }}"
         
         deployment_output=$(az deployment group create \
           --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
           --template-file infra/main.bicep \
           --parameters infra/parameters/main.${{ inputs.environment }}.bicepparam \
-          --parameters entraIdClientSecret="${ENTRA_CLIENT_SECRET}" \
+          --parameters backendClientSecret="${BACKEND_CLIENT_SECRET}" \
           --parameters azureOpenAIKey="${AZURE_OPENAI_KEY}" \
+          --parameters frontendClientId="${FRONTEND_CLIENT_ID}" \
+          --parameters backendClientId="${BACKEND_CLIENT_ID}" \
+          --parameters entraIdTenantId="${AZURE_TENANT_ID}" \
           --name "infra-deploy-$(echo ${{ github.sha }} | cut -c1-8)" \
           --query 'properties.outputs' \
           --output json)
@@ -193,8 +199,8 @@ jobs:
           --env-var "ENVIRONMENT=${{ inputs.environment }}" \
           --env-var "AZURE_OPENAI_ENDPOINT=${{ steps.deploy-infra.outputs.openAIEndpoint }}" \
           --secret-ref "AZURE_TENANT_ID=entra-tenant-id" \
-          --secret-ref "AZURE_CLIENT_ID=entra-client-id" \
-          --secret-ref "AZURE_CLIENT_SECRET=entra-client-secret" \
+          --secret-ref "AZURE_CLIENT_ID=backend-client-id" \
+          --secret-ref "AZURE_CLIENT_SECRET=backend-client-secret" \
           --secret-ref "APPLICATIONINSIGHTS_CONNECTION_STRING=app-insights-connection-string" \
           --verbose
           
@@ -220,8 +226,7 @@ jobs:
           --env-var "BACKEND_URL=https://${{ env.BACKEND_APP_NAME }}" \
           --env-var "ENVIRONMENT=${{ inputs.environment }}" \
           --secret-ref "AZURE_TENANT_ID=entra-tenant-id" \
-          --secret-ref "AZURE_CLIENT_ID=entra-client-id" \
-          --secret-ref "AZURE_CLIENT_SECRET=entra-client-secret" \
+          --secret-ref "AZURE_CLIENT_ID=frontend-client-id" \
           --secret-ref "APPLICATIONINSIGHTS_CONNECTION_STRING=app-insights-connection-string" \
           --verbose
         
