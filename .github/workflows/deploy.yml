@@ -88,10 +88,16 @@ jobs:
       run: |
         echo "Deploying infrastructure to ${{ inputs.environment }} environment..."
         
+        # Set secure parameter values from secrets or use mock values
+        ENTRA_CLIENT_SECRET="${{ secrets.ENTRA_CLIENT_SECRET || 'MOCK-CLIENT-SECRET-REPLACE-WITH-REAL-VALUE' }}"
+        AZURE_OPENAI_KEY="${{ secrets.AZURE_OPENAI_KEY || 'MOCK-OPENAI-KEY-REPLACE-WITH-REAL-VALUE' }}"
+        
         deployment_output=$(az deployment group create \
           --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
           --template-file infra/main.bicep \
           --parameters infra/parameters/main.${{ inputs.environment }}.bicepparam \
+          --parameters entraIdClientSecret="${ENTRA_CLIENT_SECRET}" \
+          --parameters azureOpenAIKey="${AZURE_OPENAI_KEY}" \
           --name "infra-deploy-$(echo ${{ github.sha }} | cut -c1-8)" \
           --query 'properties.outputs' \
           --output json)
@@ -99,13 +105,22 @@ jobs:
         # Extract outputs
         container_apps_env=$(echo $deployment_output | jq -r '.containerAppsEnvironmentName.value')
         acr_login_server=$(echo $deployment_output | jq -r '.containerRegistryLoginServer.value')
+        backend_identity=$(echo $deployment_output | jq -r '.backendManagedIdentityClientId.value')
+        frontend_identity=$(echo $deployment_output | jq -r '.frontendManagedIdentityClientId.value')
+        key_vault_name=$(echo $deployment_output | jq -r '.keyVaultName.value')
         
         echo "containerAppsEnvironmentName=${container_apps_env}" >> $GITHUB_OUTPUT
         echo "containerRegistryLoginServer=${acr_login_server}" >> $GITHUB_OUTPUT
+        echo "backendManagedIdentityClientId=${backend_identity}" >> $GITHUB_OUTPUT
+        echo "frontendManagedIdentityClientId=${frontend_identity}" >> $GITHUB_OUTPUT
+        echo "keyVaultName=${key_vault_name}" >> $GITHUB_OUTPUT
         
         echo "✅ Infrastructure deployed successfully"
         echo "🏗️ Container Apps Environment: ${container_apps_env}"
         echo "📦 ACR Login Server: ${acr_login_server}"
+        echo "🔑 Backend Identity: ${backend_identity}"
+        echo "🔑 Frontend Identity: ${frontend_identity}"
+        echo "🗝️ Key Vault: ${key_vault_name}"
         
     - name: Login to GitHub Container Registry
       uses: docker/login-action@v3
@@ -157,6 +172,7 @@ jobs:
           --target-port 8000 \
           --registry-server "${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}" \
           --registry-identity system \
+          --managed-identity "${{ steps.deploy-infra.outputs.backendManagedIdentityClientId }}" \
           --cpu 1.0 \
           --memory 2Gi \
           --min-replicas 1 \
@@ -165,12 +181,12 @@ jobs:
           --env-var "AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4" \
           --env-var "AZURE_DEVOPS_ORGANIZATION=${{ env.AZURE_DEVOPS_ORG }}" \
           --env-var "ENVIRONMENT=${{ inputs.environment }}" \
-          --env-var "AZURE_OPENAI_ENDPOINT=secretref:azure-openai-endpoint" \
-          --env-var "AZURE_OPENAI_KEY=secretref:azure-openai-key" \
-          --env-var "AZURE_TENANT_ID=secretref:entra-tenant-id" \
-          --env-var "AZURE_CLIENT_ID=secretref:entra-client-id" \
-          --env-var "AZURE_CLIENT_SECRET=secretref:entra-client-secret" \
-          --env-var "APPLICATIONINSIGHTS_CONNECTION_STRING=secretref:app-insights-connection-string" \
+          --secret-ref "AZURE_OPENAI_ENDPOINT=azure-openai-endpoint" \
+          --secret-ref "AZURE_OPENAI_KEY=azure-openai-key" \
+          --secret-ref "AZURE_TENANT_ID=entra-tenant-id" \
+          --secret-ref "AZURE_CLIENT_ID=entra-client-id" \
+          --secret-ref "AZURE_CLIENT_SECRET=entra-client-secret" \
+          --secret-ref "APPLICATIONINSIGHTS_CONNECTION_STRING=app-insights-connection-string" \
           --verbose
           
     - name: Deploy Frontend Container App  
@@ -185,17 +201,18 @@ jobs:
           --target-port 7860 \
           --registry-server "${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}" \
           --registry-identity system \
+          --managed-identity "${{ steps.deploy-infra.outputs.frontendManagedIdentityClientId }}" \
           --cpu 0.5 \
           --memory 1Gi \
           --min-replicas 1 \
           --max-replicas 3 \
           --revisions-mode multiple \
           --env-var "BACKEND_URL=https://${{ env.BACKEND_APP_NAME }}" \
-          --env-var "AZURE_TENANT_ID=secretref:entra-tenant-id" \
-          --env-var "AZURE_CLIENT_ID=secretref:entra-client-id" \
-          --env-var "AZURE_CLIENT_SECRET=secretref:entra-client-secret" \
-          --env-var "APPLICATIONINSIGHTS_CONNECTION_STRING=secretref:app-insights-connection-string" \
           --env-var "ENVIRONMENT=${{ inputs.environment }}" \
+          --secret-ref "AZURE_TENANT_ID=entra-tenant-id" \
+          --secret-ref "AZURE_CLIENT_ID=entra-client-id" \
+          --secret-ref "AZURE_CLIENT_SECRET=entra-client-secret" \
+          --secret-ref "APPLICATIONINSIGHTS_CONNECTION_STRING=app-insights-connection-string" \
           --verbose
         
     - name: Set Container App outputs

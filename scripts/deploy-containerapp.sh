@@ -17,8 +17,10 @@ TARGET_PORT=""
 INGRESS="external"
 REGISTRY_SERVER=""
 REGISTRY_IDENTITY=""
+MANAGED_IDENTITY=""
 ENV_VARS=()
 SECRETS=()
+SECRET_REFS=()
 CPU="1.0"
 MEMORY="2Gi"
 MIN_REPLICAS="1"
@@ -96,8 +98,10 @@ Optional Options:
   --ingress             Ingress type: external (default) or internal
   --registry-server     Container registry server (e.g., myregistry.azurecr.io)
   --registry-identity   Managed identity for registry authentication
+  --managed-identity    User-assigned managed identity for the container app
   --env-var             Environment variable (key=value). Can be used multiple times
   --secret              Secret (key=value). Can be used multiple times
+  --secret-ref          Key Vault secret reference (key=vault-secret-name). Can be used multiple times
   --cpu                 CPU allocation (default: 1.0)
   --memory              Memory allocation (default: 2Gi)
   --min-replicas        Minimum replicas (default: 1)
@@ -150,6 +154,16 @@ parse_secret() {
     fi
 }
 
+# Function to parse secret references (Key Vault)
+parse_secret_ref() {
+    local secret_ref="$1"
+    if [[ "$secret_ref" == *"="* ]]; then
+        SECRET_REFS+=("$secret_ref")
+    else
+        print_error "Invalid secret reference format: $secret_ref. Use key=vault-secret-name format."
+    fi
+}
+
 # Parse command line arguments
 parse_args() {
     while [[ $# -gt 0 ]]; do
@@ -186,12 +200,20 @@ parse_args() {
                 REGISTRY_IDENTITY="$2"
                 shift 2
                 ;;
+            --managed-identity)
+                MANAGED_IDENTITY="$2"
+                shift 2
+                ;;
             --env-var)
                 parse_env_var "$2"
                 shift 2
                 ;;
             --secret)
                 parse_secret "$2"
+                shift 2
+                ;;
+            --secret-ref)
+                parse_secret_ref "$2"
                 shift 2
                 ;;
             --cpu)
@@ -308,10 +330,30 @@ build_az_command() {
         cmd_args+=("--registry-identity" "$REGISTRY_IDENTITY")
     fi
     
-    # Environment variables
-    if [[ ${#ENV_VARS[@]} -gt 0 ]]; then
+    # Managed Identity
+    if [[ -n "$MANAGED_IDENTITY" ]]; then
+        cmd_args+=("--user-assigned" "$MANAGED_IDENTITY")
+    fi
+    
+    # Environment variables (combine regular env vars and secret refs)
+    local all_env_vars=()
+    all_env_vars+=("${ENV_VARS[@]}")
+    
+    # Convert secret refs to proper Key Vault format using the Key Vault name
+    for secret_ref in "${SECRET_REFS[@]}"; do
+        # Input format: ENV_VAR_NAME=secret-name
+        # Need to get the Key Vault URI and convert to: ENV_VAR_NAME=secretref:secret-name
+        if [[ "$secret_ref" == *"="* ]]; then
+            env_var_name="${secret_ref%%=*}"
+            secret_name="${secret_ref#*=}"
+            # Format for Container Apps: secretref:secret-name
+            all_env_vars+=("${env_var_name}=secretref:${secret_name}")
+        fi
+    done
+    
+    if [[ ${#all_env_vars[@]} -gt 0 ]]; then
         cmd_args+=("--env-vars")
-        cmd_args+=("${ENV_VARS[@]}")
+        cmd_args+=("${all_env_vars[@]}")
     fi
     
     # Secrets
@@ -383,12 +425,20 @@ show_summary() {
     echo -e "${WHITE}  • Memory:         ${NC}$MEMORY"
     echo -e "${WHITE}  • Replicas:       ${NC}$MIN_REPLICAS-$MAX_REPLICAS"
     
+    if [[ -n "$MANAGED_IDENTITY" ]]; then
+        echo -e "${WHITE}  • Managed Identity: ${NC}$MANAGED_IDENTITY"
+    fi
+    
     if [[ ${#ENV_VARS[@]} -gt 0 ]]; then
         echo -e "${WHITE}  • Env Variables:  ${NC}${#ENV_VARS[@]} variables"
     fi
     
+    if [[ ${#SECRET_REFS[@]} -gt 0 ]]; then
+        echo -e "${WHITE}  • Secret Refs:    ${NC}${#SECRET_REFS[@]} Key Vault references"
+    fi
+    
     if [[ ${#SECRETS[@]} -gt 0 ]]; then
-        echo -e "${WHITE}  • Secrets:        ${NC}${#SECRETS[@]} secrets"
+        echo -e "${WHITE}  • Secrets:        ${NC}${#SECRETS[@]} inline secrets"
     fi
     
     echo ""

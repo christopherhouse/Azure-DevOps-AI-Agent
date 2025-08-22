@@ -18,6 +18,8 @@ A comprehensive bash script that creates or updates Azure Container Apps using t
 
 - ✨ **Beautiful output** with colors and emojis
 - 🔄 **Multi-revision deployments** by default
+- 🔑 **Key Vault secret references** for secure configuration
+- 👤 **User-assigned managed identities** for authentication
 - 🛡️ **Parameter validation** and error handling
 - 📊 **Deployment summary** before execution
 - 🌐 **Automatic URL retrieval** after deployment
@@ -33,7 +35,9 @@ A comprehensive bash script that creates or updates Azure Container Apps using t
   --image "myregistry.azurecr.io/app:v1.0" \
   --target-port 8000 \
   --registry-identity system \
+  --managed-identity "12345678-1234-1234-1234-123456789abc" \
   --env-var "API_VERSION=1.0" \
+  --secret-ref "DATABASE_PASSWORD=database-password" \
   --verbose
 ```
 
@@ -50,8 +54,10 @@ A comprehensive bash script that creates or updates Azure Container Apps using t
 - `--ingress`: Ingress type (external/internal, default: external)
 - `--registry-server`: Container registry server
 - `--registry-identity`: Managed identity for registry auth
+- `--managed-identity`: User-assigned managed identity for the container app
 - `--env-var`: Environment variables (can be used multiple times)
-- `--secret`: Secrets (can be used multiple times)
+- `--secret`: Inline secrets (can be used multiple times)
+- `--secret-ref`: Key Vault secret references (can be used multiple times)
 - `--cpu`: CPU allocation (default: 1.0)
 - `--memory`: Memory allocation (default: 2Gi)
 - `--min-replicas`: Minimum replicas (default: 1)
@@ -93,10 +99,11 @@ The script is integrated into the deployment workflow at `.github/workflows/depl
       --image "${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}/backend:${{ env.RELEASE_TAG }}" \
       --target-port 8000 \
       --registry-identity system \
+      --managed-identity "${{ steps.deploy-infra.outputs.backendManagedIdentityClientId }}" \
       --revisions-mode multiple \
-      --env-var "AZURE_OPENAI_ENDPOINT=secretref:azure-openai-endpoint" \
-      --env-var "AZURE_OPENAI_KEY=secretref:azure-openai-key" \
-      # ... more env vars
+      --env-var "AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4" \
+      --secret-ref "AZURE_OPENAI_ENDPOINT=azure-openai-endpoint" \
+      --secret-ref "AZURE_OPENAI_KEY=azure-openai-key" \
       --verbose
 ```
 
@@ -104,10 +111,12 @@ The script is integrated into the deployment workflow at `.github/workflows/depl
 
 1. **Better control**: Direct Azure CLI usage provides more control over deployment
 2. **Multi-revision support**: Built-in support for Azure Container Apps revisions  
-3. **Improved debugging**: Verbose output and better error messages
-4. **Consistency**: Uses the same Azure CLI tools as infrastructure deployment
-5. **Maintainability**: Pure bash script that's easy to modify and extend
-6. **No external dependencies**: Removes dependency on third-party GitHub Action
+3. **Secure configuration**: Key Vault integration for secrets management
+4. **Identity-based security**: User-assigned managed identities for each app
+5. **Improved debugging**: Verbose output and better error messages
+6. **Consistency**: Uses the same Azure CLI tools as infrastructure deployment
+7. **Maintainability**: Pure bash script that's easy to modify and extend
+8. **No external dependencies**: Removes dependency on third-party GitHub Action
 
 ## Testing
 
