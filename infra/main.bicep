@@ -18,7 +18,7 @@ param appNamePrefix string = 'azdo-ai-agent'
 param containerAppsEnvironmentName string = '${appNamePrefix}-${environment}-env'
 
 @description('Azure OpenAI resource name')
-param openAIName string = '${appNamePrefix}-${environment}-openai'
+param openAIName string = '${appNamePrefix}-${environment}-oai'
 
 @description('Container Registry name')
 param containerRegistryName string = replace('${appNamePrefix}${environment}acr', '-', '')
@@ -64,6 +64,18 @@ param tags object = {
   Application: 'Azure DevOps AI Agent'
   CreatedBy: 'Bicep'
 }
+
+@description('Key Vault purge protection enabled')
+@allowed([true, false])
+param enablePurgeProtection bool = environment == 'prod'
+
+@description('Key Vault soft delete enabled')
+@allowed([true, false])
+param enableSoftDelete bool = true
+
+@description('Key Vault soft delete retention in days')
+@allowed([7, 90])
+param softDeleteRetentionInDays int = environment == 'prod' ? 90 : 7
 
 // Variables
 var resourceNames = {
@@ -178,12 +190,6 @@ module containerRegistry 'br/public:avm/res/container-registry/registry:0.9.1' =
     trustPolicyStatus: 'disabled'
     publicNetworkAccess: 'Enabled'
     zoneRedundancy: 'Disabled'
-    managedIdentities: {
-      userAssignedResourceIds: [
-        backendManagedIdentity.outputs.resourceId
-        frontendManagedIdentity.outputs.resourceId
-      ]
-    }
     roleAssignments: [
       {
         principalId: backendManagedIdentity.outputs.principalId
@@ -226,9 +232,9 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.12.1' = {
     tags: tags
     sku: 'standard'
     enableRbacAuthorization: true
-    enableSoftDelete: true
-    enablePurgeProtection: environment == 'prod'
-    softDeleteRetentionInDays: 90
+    enableSoftDelete: enableSoftDelete
+    enablePurgeProtection: enablePurgeProtection
+    softDeleteRetentionInDays: softDeleteRetentionInDays
     networkAcls: {
       defaultAction: 'Allow'
       bypass: 'AzureServices'
@@ -362,7 +368,7 @@ module containerAppsEnvironment 'br/public:avm/res/app/managed-environment:0.10.
     location: location
     tags: tags
     logAnalyticsWorkspaceResourceId: logAnalytics.outputs.resourceId
-    zoneRedundant: true
+    zoneRedundant: false
     publicNetworkAccess: 'Enabled'
     workloadProfiles: [
       {
