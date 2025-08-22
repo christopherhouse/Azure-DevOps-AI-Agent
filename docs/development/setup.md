@@ -225,7 +225,7 @@ az cognitiveservices account create \
   --resource-group your-rg \
   --kind OpenAI \
   --sku S0 \
-  --location eastus
+  --location eastus2
 
 # Deploy GPT-4 model
 az cognitiveservices account deployment create \

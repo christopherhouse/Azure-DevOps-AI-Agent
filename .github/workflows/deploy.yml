@@ -36,7 +36,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  AZURE_LOCATION: eastus
+  AZURE_LOCATION: eastus2
 
 jobs:
   deploy:
