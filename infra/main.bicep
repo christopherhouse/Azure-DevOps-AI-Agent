@@ -32,8 +32,11 @@ param applicationInsightsName string = '${appNamePrefix}-${environment}-ai'
 @description('Log Analytics Workspace name')
 param logAnalyticsName string = '${appNamePrefix}-${environment}-la'
 
-@description('Managed Identity name')
-param managedIdentityName string = '${appNamePrefix}-${environment}-mi'
+@description('Backend Managed Identity name')
+param backendManagedIdentityName string = '${appNamePrefix}-${environment}-be-mi'
+
+@description('Frontend Managed Identity name')
+param frontendManagedIdentityName string = '${appNamePrefix}-${environment}-fe-mi'
 
 @description('Azure DevOps organization URL')
 param azureDevOpsOrganization string
@@ -43,6 +46,14 @@ param entraIdTenantId string
 
 @description('Microsoft Entra ID client ID')
 param entraIdClientId string
+
+@description('Microsoft Entra ID client secret')
+@secure()
+param entraIdClientSecret string = 'MOCK-CLIENT-SECRET-REPLACE-WITH-REAL-VALUE'
+
+@description('Azure OpenAI API key')
+@secure()
+param azureOpenAIKey string = 'MOCK-OPENAI-KEY-REPLACE-WITH-REAL-VALUE'
 
 @description('Tags to apply to all resources')
 param tags object = {
@@ -59,7 +70,8 @@ var resourceNames = {
   keyVault: keyVaultName
   applicationInsights: applicationInsightsName
   logAnalytics: logAnalyticsName
-  managedIdentity: managedIdentityName
+  backendManagedIdentity: backendManagedIdentityName
+  frontendManagedIdentity: frontendManagedIdentityName
 }
 
 var environmentConfig = {
@@ -75,11 +87,21 @@ var environmentConfig = {
 
 var config = environmentConfig[environment]
 
-// Managed Identity using AVM
-module managedIdentity 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.0' = {
-  name: 'managed-identity-${deployment().name}'
+// Backend Managed Identity using AVM
+module backendManagedIdentity 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.0' = {
+  name: 'backend-managed-identity-${deployment().name}'
   params: {
-    name: resourceNames.managedIdentity
+    name: resourceNames.backendManagedIdentity
+    location: location
+    tags: tags
+  }
+}
+
+// Frontend Managed Identity using AVM
+module frontendManagedIdentity 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.0' = {
+  name: 'frontend-managed-identity-${deployment().name}'
+  params: {
+    name: resourceNames.frontendManagedIdentity
     location: location
     tags: tags
   }
@@ -144,7 +166,8 @@ module containerRegistry 'br/public:avm/res/container-registry/registry:0.9.1' =
     zoneRedundancy: 'Disabled'
     managedIdentities: {
       userAssignedResourceIds: [
-        managedIdentity.outputs.resourceId
+        backendManagedIdentity.outputs.resourceId
+        frontendManagedIdentity.outputs.resourceId
       ]
     }
     diagnosticSettings: [
@@ -182,6 +205,32 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.12.1' = {
       defaultAction: 'Allow'
       bypass: 'AzureServices'
     }
+    secrets: [
+      {
+        name: 'azure-openai-endpoint'
+        value: openAI.outputs.endpoint
+      }
+      {
+        name: 'azure-openai-key'
+        value: azureOpenAIKey
+      }
+      {
+        name: 'entra-tenant-id'
+        value: entraIdTenantId
+      }
+      {
+        name: 'entra-client-id'
+        value: entraIdClientId
+      }
+      {
+        name: 'entra-client-secret'
+        value: entraIdClientSecret
+      }
+      {
+        name: 'app-insights-connection-string'
+        value: applicationInsights.outputs.connectionString
+      }
+    ]
     diagnosticSettings: [
       {
         name: 'default'
@@ -218,7 +267,8 @@ module openAI 'br/public:avm/res/cognitive-services/account:0.10.1' = {
     disableLocalAuth: false
     managedIdentities: {
       userAssignedResourceIds: [
-        managedIdentity.outputs.resourceId
+        backendManagedIdentity.outputs.resourceId
+        frontendManagedIdentity.outputs.resourceId
       ]
     }
     deployments: [
@@ -265,36 +315,64 @@ module containerAppsEnvironment 'br/public:avm/res/app/managed-environment:0.10.
     tags: tags
     logAnalyticsWorkspaceResourceId: logAnalytics.outputs.resourceId
     zoneRedundant: environment == 'prod'
+    publicNetworkAccess: 'Enabled'
+    workloadProfiles: [
+      {
+        name: 'Consumption'
+        workloadProfileType: 'Consumption'
+      }
+    ]
   }
 }
 
-// RBAC Assignments for Managed Identity
-resource acrPullRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, managedIdentity.name, 'AcrPull')
+// RBAC Assignments for Backend Managed Identity
+resource backendAcrPullRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, backendManagedIdentity.name, 'AcrPull')
   scope: resourceGroup()
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d') // AcrPull
-    principalId: managedIdentity.outputs.principalId
+    principalId: backendManagedIdentity.outputs.principalId
     principalType: 'ServicePrincipal'
   }
 }
 
-resource keyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, managedIdentity.name, 'KeyVaultSecretsUser')
+resource backendKeyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, backendManagedIdentity.name, 'KeyVaultSecretsUser')
   scope: resourceGroup()
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6') // Key Vault Secrets User
-    principalId: managedIdentity.outputs.principalId
+    principalId: backendManagedIdentity.outputs.principalId
     principalType: 'ServicePrincipal'
   }
 }
 
-resource cognitiveServicesUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, managedIdentity.name, 'CognitiveServicesUser')
+resource backendCognitiveServicesUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, backendManagedIdentity.name, 'CognitiveServicesUser')
   scope: resourceGroup()
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'a97b65f3-24c7-4388-baec-2e87135dc908') // Cognitive Services User
-    principalId: managedIdentity.outputs.principalId
+    principalId: backendManagedIdentity.outputs.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// RBAC Assignments for Frontend Managed Identity
+resource frontendAcrPullRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, frontendManagedIdentity.name, 'AcrPull')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d') // AcrPull
+    principalId: frontendManagedIdentity.outputs.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource frontendKeyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, frontendManagedIdentity.name, 'KeyVaultSecretsUser')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6') // Key Vault Secrets User
+    principalId: frontendManagedIdentity.outputs.principalId
     principalType: 'ServicePrincipal'
   }
 }
@@ -305,5 +383,6 @@ output containerAppsEnvironmentId string = containerAppsEnvironment.outputs.reso
 output containerRegistryLoginServer string = containerRegistry.outputs.loginServer
 output keyVaultName string = keyVault.outputs.name
 output applicationInsightsConnectionString string = applicationInsights.outputs.connectionString
-output managedIdentityClientId string = managedIdentity.outputs.clientId
+output backendManagedIdentityClientId string = backendManagedIdentity.outputs.clientId
+output frontendManagedIdentityClientId string = frontendManagedIdentity.outputs.clientId
 output openAIEndpoint string = openAI.outputs.endpoint

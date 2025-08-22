@@ -20,7 +20,8 @@ param containerRegistryName = replace('${appNamePrefix}${environment}acr', '-', 
 param keyVaultName = '${appNamePrefix}-${environment}-kv'
 param applicationInsightsName = '${appNamePrefix}-${environment}-ai'
 param logAnalyticsName = '${appNamePrefix}-${environment}-la'
-param managedIdentityName = '${appNamePrefix}-${environment}-mi'
+param backendManagedIdentityName = '${appNamePrefix}-${environment}-be-mi'
+param frontendManagedIdentityName = '${appNamePrefix}-${environment}-fe-mi'
 
 // Resource tags
 param tags = {
