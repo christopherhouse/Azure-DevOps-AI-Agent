@@ -25,9 +25,34 @@ class EntraIDAuthService:
         self._client_app = None
         self._token_cache = {}
 
-        # Only initialize MSAL if not in testing mode (tenant ID doesn't start with 'mock')
-        if not settings.azure_tenant_id.startswith("mock"):
+        # Only initialize MSAL if we have a real tenant ID (not mock or placeholder)
+        if self._is_real_tenant_id(settings.azure_tenant_id):
             self._init_client_app()
+
+    def _is_real_tenant_id(self, tenant_id: str) -> bool:
+        """Check if tenant ID is a real Azure tenant ID (not mock or placeholder).
+
+        Args:
+            tenant_id: Tenant ID to validate
+
+        Returns:
+            True if it's a real tenant ID, False if it's mock/placeholder
+        """
+        if not tenant_id:
+            return False
+
+        # Common placeholder patterns used in examples and testing
+        placeholder_patterns = [
+            "mock",
+            "your-tenant",
+            "test-tenant",
+            "example",
+            "placeholder",
+            "sample",
+        ]
+
+        tenant_id_lower = tenant_id.lower()
+        return not any(pattern in tenant_id_lower for pattern in placeholder_patterns)
 
     def _init_client_app(self):
         """Initialize MSAL client application."""
@@ -41,7 +66,7 @@ class EntraIDAuthService:
     def client_app(self):
         """Get the MSAL client application."""
         if self._client_app is None:
-            if settings.azure_tenant_id.startswith("mock"):
+            if not self._is_real_tenant_id(settings.azure_tenant_id):
                 raise AuthenticationError("Authentication not available in mock/testing mode")
             self._init_client_app()
         return self._client_app
