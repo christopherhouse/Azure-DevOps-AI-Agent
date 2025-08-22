@@ -333,7 +333,6 @@ module openAI 'br/public:avm/res/cognitive-services/account:0.10.1' = {
           name: 'Standard'
           capacity: 10
         }
-        versionUpgradeOption: 'OnceNewDefaultVersionAvailable'
       }
     ]
     diagnosticSettings: [
@@ -363,7 +362,7 @@ module containerAppsEnvironment 'br/public:avm/res/app/managed-environment:0.10.
     location: location
     tags: tags
     logAnalyticsWorkspaceResourceId: logAnalytics.outputs.resourceId
-    zoneRedundant: environment == 'prod'
+    zoneRedundant: true
     publicNetworkAccess: 'Enabled'
     workloadProfiles: [
       {
