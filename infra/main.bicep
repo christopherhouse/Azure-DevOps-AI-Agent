@@ -38,6 +38,9 @@ param backendManagedIdentityName string = '${appNamePrefix}-${environment}-be-mi
 @description('Frontend Managed Identity name')
 param frontendManagedIdentityName string = '${appNamePrefix}-${environment}-fe-mi'
 
+@description('AI Services Managed Identity name')
+param aiManagedIdentityName string = '${appNamePrefix}-${environment}-ai-mi'
+
 @description('Azure DevOps organization URL')
 param azureDevOpsOrganization string
 
@@ -72,6 +75,7 @@ var resourceNames = {
   logAnalytics: logAnalyticsName
   backendManagedIdentity: backendManagedIdentityName
   frontendManagedIdentity: frontendManagedIdentityName
+  aiManagedIdentity: aiManagedIdentityName
 }
 
 var environmentConfig = {
@@ -102,6 +106,16 @@ module frontendManagedIdentity 'br/public:avm/res/managed-identity/user-assigned
   name: 'frontend-managed-identity-${deployment().name}'
   params: {
     name: resourceNames.frontendManagedIdentity
+    location: location
+    tags: tags
+  }
+}
+
+// AI Services Managed Identity using AVM
+module aiManagedIdentity 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.0' = {
+  name: 'ai-managed-identity-${deployment().name}'
+  params: {
+    name: resourceNames.aiManagedIdentity
     location: location
     tags: tags
   }
@@ -267,7 +281,7 @@ module openAI 'br/public:avm/res/cognitive-services/account:0.10.1' = {
     disableLocalAuth: false
     managedIdentities: {
       userAssignedResourceIds: [
-        backendManagedIdentity.outputs.resourceId
+        aiManagedIdentity.outputs.resourceId
       ]
     }
     deployments: [
@@ -345,12 +359,13 @@ resource backendKeyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@202
   }
 }
 
-resource backendCognitiveServicesUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, backendManagedIdentity.name, 'CognitiveServicesUser')
+// RBAC Assignments for AI Services Managed Identity
+resource aiCognitiveServicesUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, aiManagedIdentity.name, 'CognitiveServicesUser')
   scope: resourceGroup()
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'a97b65f3-24c7-4388-baec-2e87135dc908') // Cognitive Services User
-    principalId: backendManagedIdentity.outputs.principalId
+    principalId: aiManagedIdentity.outputs.principalId
     principalType: 'ServicePrincipal'
   }
 }
@@ -384,4 +399,5 @@ output keyVaultName string = keyVault.outputs.name
 output applicationInsightsConnectionString string = applicationInsights.outputs.connectionString
 output backendManagedIdentityClientId string = backendManagedIdentity.outputs.clientId
 output frontendManagedIdentityClientId string = frontendManagedIdentity.outputs.clientId
+output aiManagedIdentityClientId string = aiManagedIdentity.outputs.clientId
 output openAIEndpoint string = openAI.outputs.endpoint
