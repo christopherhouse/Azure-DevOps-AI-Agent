@@ -69,5 +69,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 # Expose port
 EXPOSE 7860
 
-# Command to run the application with uv
-CMD ["uv", "run", "--frozen", "python", "app.py"]
+# Command to run the application directly from virtual environment
+CMD ["/app/.venv/bin/python", "app.py"]

@@ -22,12 +22,29 @@ class EntraIDAuthService:
 
     def __init__(self):
         """Initialize the authentication service."""
-        self.client_app = msal.ConfidentialClientApplication(
+        self._client_app = None
+        self._token_cache = {}
+        
+        # Only initialize MSAL if not in testing mode (tenant ID doesn't start with 'mock')
+        if not settings.azure_tenant_id.startswith('mock'):
+            self._init_client_app()
+    
+    def _init_client_app(self):
+        """Initialize MSAL client application."""
+        self._client_app = msal.ConfidentialClientApplication(
             client_id=settings.azure_client_id,
             client_credential=settings.azure_client_secret,
             authority=settings.authority_url,
         )
-        self._token_cache = {}
+    
+    @property
+    def client_app(self):
+        """Get the MSAL client application."""
+        if self._client_app is None:
+            if settings.azure_tenant_id.startswith('mock'):
+                raise AuthenticationError("Authentication not available in mock/testing mode")
+            self._init_client_app()
+        return self._client_app
 
     def get_auth_url(self, state: str | None = None) -> str:
         """Generate authentication URL for OAuth flow.
@@ -215,3 +232,7 @@ def get_auth_service() -> EntraIDAuthService:
     if _auth_service is None:
         _auth_service = EntraIDAuthService()
     return _auth_service
+
+
+# Export the auth service instance for direct import
+auth_service = get_auth_service()
