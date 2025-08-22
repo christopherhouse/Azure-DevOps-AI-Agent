@@ -43,7 +43,7 @@ RUN groupadd --gid 1000 appuser && \
 WORKDIR /app
 
 # Copy uv files first for better Docker layer caching
-COPY src/frontend/uv.lock src/frontend/pyproject.toml ./
+COPY uv.lock pyproject.toml ./
 
 # Copy LICENSE and README files to expected locations for hatchling metadata validation
 COPY LICENSE /LICENSE
@@ -53,7 +53,7 @@ COPY README.md /README.md
 RUN uv sync --frozen --no-cache --no-dev
 
 # Copy application code
-COPY --chown=appuser:appuser src/frontend/ .
+COPY --chown=appuser:appuser . .
 
 # Create necessary directories and set permissions
 RUN mkdir -p /app/logs /app/static/uploads && \
