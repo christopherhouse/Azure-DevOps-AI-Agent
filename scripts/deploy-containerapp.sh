@@ -324,26 +324,34 @@ build_az_command() {
     # Each call to this script deploys exactly one container to one container app
     cmd_args+=(
         "--image" "$IMAGE"
-        "--target-port" "$TARGET_PORT"
-        "--ingress" "$INGRESS"
         "--cpu" "$CPU"
         "--memory" "$MEMORY"
         "--min-replicas" "$MIN_REPLICAS"
         "--max-replicas" "$MAX_REPLICAS"
-        "--revisions-mode" "$REVISIONS_MODE"
     )
     
-    # Registry configuration
-    if [[ -n "$REGISTRY_SERVER" ]]; then
-        cmd_args+=("--registry-server" "$REGISTRY_SERVER")
+    # Ingress and revision configuration - only supported for create operations
+    if [[ "$operation" == "create" ]]; then
+        cmd_args+=(
+            "--target-port" "$TARGET_PORT"
+            "--ingress" "$INGRESS"
+            "--revisions-mode" "$REVISIONS_MODE"
+        )
     fi
     
-    if [[ -n "$REGISTRY_IDENTITY" ]]; then
-        cmd_args+=("--registry-identity" "$REGISTRY_IDENTITY")
+    # Registry configuration - only supported for create operations
+    if [[ "$operation" == "create" ]]; then
+        if [[ -n "$REGISTRY_SERVER" ]]; then
+            cmd_args+=("--registry-server" "$REGISTRY_SERVER")
+        fi
+        
+        if [[ -n "$REGISTRY_IDENTITY" ]]; then
+            cmd_args+=("--registry-identity" "$REGISTRY_IDENTITY")
+        fi
     fi
     
-    # Managed Identity
-    if [[ -n "$MANAGED_IDENTITY" ]]; then
+    # Managed Identity - only supported for create operations
+    if [[ "$operation" == "create" && -n "$MANAGED_IDENTITY" ]]; then
         cmd_args+=("--user-assigned" "$MANAGED_IDENTITY")
     fi
     
@@ -364,31 +372,38 @@ build_az_command() {
     done
     
     if [[ ${#all_env_vars[@]} -gt 0 ]]; then
-        cmd_args+=("--env-vars")
+        # Use different parameter names for create vs update operations
+        if [[ "$operation" == "create" ]]; then
+            cmd_args+=("--env-vars")
+        else
+            cmd_args+=("--set-env-vars")
+        fi
         cmd_args+=("${all_env_vars[@]}")
     fi
     
-    # Secrets (combine inline secrets and Key Vault references)
-    local all_secrets=()
-    all_secrets+=("${SECRETS[@]}")
-    
-    # Create Key Vault secret references
-    if [[ ${#SECRET_REFS[@]} -gt 0 && -n "$KEY_VAULT_NAME" && -n "$MANAGED_IDENTITY" ]]; then
-        for secret_ref in "${SECRET_REFS[@]}"; do
-            if [[ "$secret_ref" == *"="* ]]; then
-                env_var_name="${secret_ref%%=*}"
-                secret_name="${secret_ref#*=}"
-                # Format for Container Apps Key Vault reference:
-                # secret-name=keyvaultref:https://vault.vault.azure.net/secrets/secret-name,identityref:managed-identity-id
-                key_vault_uri="https://${KEY_VAULT_NAME}.vault.azure.net/secrets/${secret_name}"
-                all_secrets+=("${secret_name}=keyvaultref:${key_vault_uri},identityref:${MANAGED_IDENTITY}")
-            fi
-        done
-    fi
-    
-    if [[ ${#all_secrets[@]} -gt 0 ]]; then
-        cmd_args+=("--secrets")
-        cmd_args+=("${all_secrets[@]}")
+    # Secrets - only supported for create operations
+    if [[ "$operation" == "create" ]]; then
+        local all_secrets=()
+        all_secrets+=("${SECRETS[@]}")
+        
+        # Create Key Vault secret references
+        if [[ ${#SECRET_REFS[@]} -gt 0 && -n "$KEY_VAULT_NAME" && -n "$MANAGED_IDENTITY" ]]; then
+            for secret_ref in "${SECRET_REFS[@]}"; do
+                if [[ "$secret_ref" == *"="* ]]; then
+                    env_var_name="${secret_ref%%=*}"
+                    secret_name="${secret_ref#*=}"
+                    # Format for Container Apps Key Vault reference:
+                    # secret-name=keyvaultref:https://vault.vault.azure.net/secrets/secret-name,identityref:managed-identity-id
+                    key_vault_uri="https://${KEY_VAULT_NAME}.vault.azure.net/secrets/${secret_name}"
+                    all_secrets+=("${secret_name}=keyvaultref:${key_vault_uri},identityref:${MANAGED_IDENTITY}")
+                fi
+            done
+        fi
+        
+        if [[ ${#all_secrets[@]} -gt 0 ]]; then
+            cmd_args+=("--secrets")
+            cmd_args+=("${all_secrets[@]}")
+        fi
     fi
     
     echo "${cmd_args[@]}"
