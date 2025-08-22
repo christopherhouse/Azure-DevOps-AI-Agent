@@ -257,7 +257,7 @@ module openAI 'br/public:avm/res/cognitive-services/account:0.10.1' = {
     name: resourceNames.openAI
     location: location
     tags: tags
-    kind: 'OpenAI'
+    kind: 'AIServices'
     sku: config.openAISku
     customSubDomainName: resourceNames.openAI
     networkAcls: {
@@ -277,7 +277,7 @@ module openAI 'br/public:avm/res/cognitive-services/account:0.10.1' = {
         model: {
           format: 'OpenAI'
           name: 'gpt-4o'
-          version: '2024-11-20'
+          version: '2024-08-06'
         }
         raiPolicyName: 'Microsoft.DefaultV2'
         sku: {
