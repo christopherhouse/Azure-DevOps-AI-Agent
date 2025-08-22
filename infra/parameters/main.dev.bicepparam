@@ -15,7 +15,7 @@ param entraIdClientId = 'your-client-id-here'
 
 // Resource naming
 param containerAppsEnvironmentName = '${appNamePrefix}-${environment}-env'
-param openAIName = '${appNamePrefix}-${environment}-openai'
+param openAIName = '${appNamePrefix}-${environment}-oai'
 param containerRegistryName = replace('${appNamePrefix}${environment}acr', '-', '')
 param keyVaultName = '${appNamePrefix}-${environment}-kv'
 param applicationInsightsName = '${appNamePrefix}-${environment}-ai'
@@ -32,3 +32,8 @@ param tags = {
   CreatedBy: 'Bicep'
   Project: 'Azure DevOps AI Agent'
 }
+
+// Key Vault configuration
+param enablePurgeProtection = false
+param enableSoftDelete = true
+param softDeleteRetentionInDays = 90

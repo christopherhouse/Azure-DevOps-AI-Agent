@@ -34,3 +34,8 @@ param tags = {
   BusinessUnit: 'Platform'
   DataClassification: 'Internal'
 }
+
+// Key Vault configuration
+param enablePurgeProtection = true
+param enableSoftDelete = true
+param softDeleteRetentionInDays = 90
