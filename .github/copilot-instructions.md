@@ -310,6 +310,40 @@ az deployment group validate \
 - **Frontend testing**: React Testing Library for component tests
 - **Async testing**: Use pytest-asyncio for backend, async/await patterns for frontend
 
+## 🎯 Next.js/React Best Practices
+
+### Component Development
+- **File naming**: Use PascalCase for component files (e.g., `ChatInterface.tsx`)
+- **Export patterns**: Use default exports for pages, named exports for components
+- **Props interfaces**: Define interfaces in the same file or separate `types/` directory
+- **Component structure**: Keep components under 200 lines, split large components
+- **Hooks placement**: Custom hooks in `hooks/` directory with `use-` prefix
+
+### Next.js App Router Patterns
+- **Server vs Client Components**: Use Server Components by default, add `'use client'` only when needed
+- **Loading states**: Implement `loading.tsx` files for route-level loading UI
+- **Error boundaries**: Use `error.tsx` files for route-level error handling
+- **Metadata**: Export metadata objects for SEO optimization
+- **API routes**: Place in `app/api/` following REST conventions
+
+### State Management
+- **Local state**: Use `useState` for component-specific state
+- **Server state**: Use `fetch` with Next.js cache or React Query for external data
+- **Global state**: Use React Context sparingly, prefer prop drilling for simple cases
+- **Form state**: Use controlled components with proper validation
+
+### Performance Optimization
+- **Image optimization**: Use Next.js `Image` component for all images
+- **Dynamic imports**: Use `dynamic()` for heavy components
+- **Memoization**: Use `React.memo`, `useMemo`, `useCallback` judiciously
+- **Bundle analysis**: Run `npm run build` and analyze bundle size regularly
+
+### Authentication with MSAL
+- **Provider setup**: Wrap app with `MsalProvider` at root level
+- **Token management**: Use MSAL hooks for token acquisition
+- **Route protection**: Implement authentication guards for protected routes
+- **Error handling**: Handle MSAL errors gracefully with user-friendly messages
+
 ## 🎯 Key Success Patterns
 
 ### When Adding New Features
