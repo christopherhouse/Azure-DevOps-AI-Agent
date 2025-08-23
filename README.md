@@ -1,6 +1,6 @@
 # Azure DevOps AI Agent
 
-An intelligent AI agent that provides administrative capabilities for Azure DevOps organizations and projects through a modern web interface. This solution combines a Gradio-based frontend with a FastAPI backend powered by Semantic Kernel and Azure OpenAI.
+An intelligent AI agent that provides administrative capabilities for Azure DevOps organizations and projects through a modern web interface. This solution combines a Next.js TypeScript frontend with a FastAPI backend powered by Semantic Kernel and Azure OpenAI.
 
 ## 🎯 Overview
 
@@ -8,7 +8,7 @@ This repository contains a complete solution for automating Azure DevOps adminis
 
 ### Key Features
 
-- **Intelligent Chat Interface**: Modern web UI built with Gradio for natural language interactions
+- **Intelligent Chat Interface**: Modern web UI built with Next.js and React for natural language interactions
 - **Azure DevOps Integration**: Comprehensive support for projects, work items, repositories, and pipelines
 - **Enterprise Authentication**: Secure Microsoft Entra ID integration
 - **Containerized Deployment**: Ready for Azure Container Apps with complete CI/CD pipeline
@@ -18,7 +18,7 @@ This repository contains a complete solution for automating Azure DevOps adminis
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌───────────────────┐
-│   Gradio UI     │    │   FastAPI API    │    │  Azure DevOps     │
+│   Next.js UI    │    │   FastAPI API    │    │  Azure DevOps     │
 │                 │    │                  │    │                   │
 │ - Chat Interface│◄──►│ - Semantic Kernel│◄──►│ - Projects        │
 │ - Entra ID Auth │    │ - Azure OpenAI   │    │ - Work Items      │
@@ -43,7 +43,7 @@ This repository contains a complete solution for automating Azure DevOps adminis
 │   ├── parameters/       # Environment-specific parameters
 │   └── main.bicep        # Main infrastructure template
 ├── src/                  # Application source code
-│   ├── frontend/         # Gradio web application
+│   ├── frontend/         # Next.js TypeScript application
 │   ├── backend/          # FastAPI application
 │   └── shared/           # Shared utilities and models
 └── README.md            # This file
@@ -98,7 +98,7 @@ This repository contains a complete solution for automating Azure DevOps adminis
    ```
 
 5. **Access the application**
-   - Frontend: http://localhost:7860
+   - Frontend: http://localhost:3000
    - Backend API: http://localhost:8000
    - API Documentation: http://localhost:8000/docs
 
@@ -107,9 +107,11 @@ For detailed setup instructions, see [docs/development/setup.md](docs/developmen
 ## 🔧 Technology Stack
 
 ### Frontend
-- **Gradio**: Modern web interface framework
+- **Next.js**: Modern React framework with TypeScript
+- **React**: Component-based UI library
+- **Tailwind CSS**: Utility-first CSS framework
 - **Microsoft Authentication Library (MSAL)**: Entra ID integration
-- **Custom CSS**: Professional styling and responsive design
+- **Application Insights**: Client-side telemetry and monitoring
 
 ### Backend
 - **FastAPI**: High-performance async web framework
@@ -128,10 +130,13 @@ For detailed setup instructions, see [docs/development/setup.md](docs/developmen
 
 ### DevOps
 - **GitHub Actions**: CI/CD pipelines
-- **Ruff**: Python linting and formatting
-- **Pytest**: Testing framework
-- **MyPy**: Static type checking
-- **Bandit**: Security vulnerability scanning
+- **ESLint**: JavaScript/TypeScript linting
+- **Prettier**: Code formatting
+- **Jest**: Testing framework for frontend
+- **Ruff**: Python linting and formatting (backend)
+- **Pytest**: Testing framework (backend)
+- **MyPy**: Static type checking (backend)
+- **Bandit**: Security vulnerability scanning (backend)
 
 ## 🔐 Security & Authentication
 

@@ -1,14 +1,60 @@
-# Optimized Frontend Dockerfile for faster CI builds with uv
-FROM python:3.11-slim
+# Multi-stage Dockerfile for Next.js frontend
+FROM node:20-alpine AS base
 
-# Set build arguments
+# Install dependencies only when needed
+FROM base AS deps
+# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+# Install dependencies based on the preferred package manager
+COPY package.json package-lock.json* ./
+RUN npm ci --only=production
+
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Next.js collects completely anonymous telemetry data about general usage.
+# Learn more here: https://nextjs.org/telemetry
+# Uncomment the following line in case you want to disable telemetry during the build.
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Build the application
+RUN npm run build
+
+# Production image, copy all the files and run next
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Create a non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copy the public folder
+COPY --from=builder /app/public ./public
+
+# Set the correct permission for prerender cache
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
+
+# Automatically leverage output traces to reduce image size
+# https://nextjs.org/docs/advanced-features/output-file-tracing
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Metadata labels
 ARG BUILD_DATE
 ARG VERSION=1.0.0
 ARG VCS_REF
 
-# Add metadata labels
 LABEL org.opencontainers.image.title="Azure DevOps AI Agent Frontend"
-LABEL org.opencontainers.image.description="Gradio-based web interface for Azure DevOps AI Agent"
+LABEL org.opencontainers.image.description="Next.js web interface for Azure DevOps AI Agent"
 LABEL org.opencontainers.image.version=${VERSION}
 LABEL org.opencontainers.image.created=${BUILD_DATE}
 LABEL org.opencontainers.image.source="https://github.com/christopherhouse/Azure-DevOps-AI-Agent"
@@ -16,58 +62,15 @@ LABEL org.opencontainers.image.revision=${VCS_REF}
 LABEL org.opencontainers.image.vendor="Microsoft"
 LABEL org.opencontainers.image.authors="Christopher House"
 
-# Set environment variables for optimal Python performance
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy \
-    ENVIRONMENT=production \
-    DEBUG=false \
-    GRADIO_SERVER_NAME=0.0.0.0 \
-    GRADIO_SERVER_PORT=7860
+USER nextjs
 
-# Install system dependencies and uv in a single layer
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        curl \
-        ca-certificates \
-        && rm -rf /var/lib/apt/lists/* && \
-    apt-get clean && \
-    pip install --no-cache-dir uv
+EXPOSE 3000
 
-# Create non-root user
-RUN groupadd --gid 1000 appuser && \
-    useradd --uid 1000 --gid appuser --shell /bin/bash --create-home appuser
-
-# Set working directory
-WORKDIR /app
-
-# Copy uv files first for better Docker layer caching
-COPY uv.lock pyproject.toml ./
-
-# Copy LICENSE and README files to expected locations for hatchling metadata validation
-COPY LICENSE /LICENSE
-COPY README.md /README.md
-
-# Install dependencies using uv
-RUN uv sync --frozen --no-cache --no-dev
-
-# Copy application code
-COPY --chown=appuser:appuser . .
-
-# Create necessary directories and set permissions
-RUN mkdir -p /app/logs /app/static/uploads && \
-    chown -R appuser:appuser /app
-
-# Switch to non-root user
-USER appuser
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:7860/ || exit 1
+    CMD curl -f http://localhost:3000/api/health || exit 1
 
-# Expose port
-EXPOSE 7860
-
-# Command to run the application using uv
-CMD ["uv", "run", "python", "app.py"]
+CMD ["node", "server.js"]
