@@ -181,7 +181,7 @@ az deployment group validate \
 - **Backend Build**: `src/backend/pyproject.toml` (contains ruff, mypy, pytest config)
 - **Backend Dependencies**: `src/backend/uv.lock` (lockfiles), `src/backend/pyproject.toml` (dependencies)
 - **Frontend Build**: `src/frontend/next.config.js`, `src/frontend/tailwind.config.js`, `src/frontend/jest.config.js`
-- **Frontend Dependencies**: `src/frontend/package.json`, `src/frontend/package-lock.json`
+- **Frontend Dependencies**: Currently missing `package.json` and `package-lock.json` files
 - **Environment**: `.env.example` (template), `.env.test` (backend test environment)
 - **Security**: `.bandit` (backend security scan configuration)
 - **Docker**: `src/*/Dockerfile` (multi-stage builds)
@@ -212,7 +212,7 @@ az deployment group validate \
 - **Coverage below 25%**: Add tests or adjust coverage threshold
 
 **Frontend Issues:**
-- **npm install fails**: Check package.json and package-lock.json are committed
+- **npm install fails**: Frontend is missing package.json and package-lock.json files
 - **ESLint failures**: Run `npm run lint` locally and fix issues
 - **TypeScript errors**: Run `npm run type-check` locally and fix type issues
 - **Jest test failures**: Run `npm test` locally and ensure tests pass
