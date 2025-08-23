@@ -5,16 +5,34 @@ This document provides comprehensive guidance for GitHub Copilot to work efficie
 ## 🎯 Repository Overview
 
 **Azure DevOps AI Agent** is a conversational AI solution for Azure DevOps administrative tasks, built with:
-- **Frontend**: Gradio web interface with Microsoft Entra ID authentication  
+- **Frontend**: Next.js TypeScript application with Microsoft Entra ID authentication  
 - **Backend**: FastAPI with Azure OpenAI and Semantic Kernel integration
 - **Infrastructure**: Azure Container Apps deployed via Bicep and Azure Verified Modules (AVM)
-- **Languages**: Python 3.11+ throughout, with comprehensive type hints and async/await patterns
+- **Languages**: TypeScript/JavaScript (frontend), Python 3.11+ (backend), with comprehensive type hints and async/await patterns
 
 **Repository Size**: ~500 source files across frontend, backend, infrastructure, and documentation
 
 ## 🔧 Critical Build Requirements
 
-### Package Manager: uv (NOT pip)
+### Frontend Package Manager: npm
+**Frontend uses npm for package management** - standard Node.js package manager:
+
+```bash
+# Install Node.js dependencies (frontend)
+cd src/frontend && npm install
+
+# Run development server
+npm run dev
+
+# Run tests
+npm test
+
+# Lint and format
+npm run lint
+npm run format
+```
+
+### Backend Package Manager: uv (NOT pip)
 **ALWAYS use `uv` instead of pip** - this is the most critical difference from typical Python projects:
 
 ```bash
@@ -23,23 +41,30 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Install dependencies (NEVER use pip install -r requirements.txt)
 cd src/backend && uv sync --group dev
-cd src/frontend && uv sync --group dev
+cd src/frontend && npm install
 
-# Run commands through uv
+# Run commands through uv (backend only)
 uv run pytest
 uv run uvicorn app.main:app --reload
 uv run ruff check app/
+
+# Run commands through npm (frontend)
+npm run dev
+npm test
+npm run lint
 ```
 
 ### Environment Setup
 **ALWAYS copy .env.example before running tests or development servers:**
 ```bash
-cp .env.example .env.test  # Required for test environment
-cp .env.example .env       # Required for development
+cp .env.example .env.test  # Required for backend test environment
+cp .env.example .env       # Required for backend development
+# Frontend environment variables are managed via Next.js config
 ```
 
-### Python Version
-- **Required**: Python 3.11+
+### Version Requirements
+- **Frontend**: Node.js 18+ (LTS recommended), npm 8+
+- **Backend**: Python 3.11+
 - **Target**: Python 3.11 (used in containers and CI)
 - **Installed via uv**: Automatically downloads Python 3.11 if needed
 
@@ -47,19 +72,23 @@ cp .env.example .env       # Required for development
 
 ### Quality Checks (MUST pass before commits)
 ```bash
-# Format code (run from project root)
+# Backend - Format and lint code
 cd src/backend && uv run ruff format app/
-cd src/frontend && uv run ruff format .
-
-# Lint code
 cd src/backend && uv run ruff check app/
-cd src/frontend && uv run ruff check .
 
-# Type checking
+# Frontend - Format and lint code
+cd src/frontend && npm run format
+cd src/frontend && npm run lint
+
+# Backend - Type checking
 cd src/backend && uv run mypy app --ignore-missing-imports
 
-# Security scan
+# Frontend - Type checking (built into Next.js build process)
+cd src/frontend && npm run type-check
+
+# Backend - Security scan
 cd src/backend && uv run bandit -r app -f json -o bandit-report.json
+```
 ```
 
 ### Testing
@@ -68,9 +97,13 @@ cd src/backend && uv run bandit -r app -f json -o bandit-report.json
 uv run pytest tests/ --cov=app --cov-report=term-missing
 
 # Frontend tests (from src/frontend/)  
-uv run pytest tests/ --cov=. --cov-report=term-missing
+npm test
 
-# Coverage requirement: 25% minimum (currently ~72%)
+# Frontend test coverage
+npm run test:coverage
+
+# Backend coverage requirement: 25% minimum (currently ~72%)
+# Frontend coverage requirement: 5% minimum (expanding test coverage)
 ```
 
 ### Running Development Servers
@@ -79,10 +112,10 @@ uv run pytest tests/ --cov=. --cov-report=term-missing
 uv run uvicorn app.main:app --reload --port 8000 --host 0.0.0.0
 
 # Terminal 2 - Frontend (from src/frontend/)
-uv run python app.py
+npm run dev
 
 # Access points:
-# - Frontend UI: http://localhost:7860
+# - Frontend UI: http://localhost:3000
 # - Backend API: http://localhost:8000
 # - API Docs: http://localhost:8000/docs
 ```
@@ -118,10 +151,22 @@ az deployment group validate \
 │   ├── app/services/         # Business logic services
 │   ├── app/models/           # Pydantic models
 │   └── tests/                # Backend tests
-├── src/frontend/              # Gradio web application
-│   ├── app.py                # Gradio app entry point
-│   ├── components/           # UI components
-│   └── tests/                # Frontend tests
+├── src/frontend/              # Next.js TypeScript application
+│   ├── src/app/               # Next.js App Router pages
+│   │   ├── page.tsx          # Main application page
+│   │   ├── layout.tsx        # Root layout component
+│   │   └── api/              # API routes (Next.js)
+│   ├── src/components/       # React UI components
+│   │   ├── ChatInterface.tsx # Main chat interface
+│   │   ├── LoginPage.tsx     # Authentication UI
+│   │   └── Layout.tsx        # Application layout
+│   ├── src/hooks/            # Custom React hooks
+│   ├── src/services/         # API and authentication services
+│   ├── src/types/            # TypeScript type definitions
+│   ├── __tests__/            # Frontend tests (Jest)
+│   ├── next.config.js        # Next.js configuration
+│   ├── tailwind.config.js    # Tailwind CSS configuration
+│   └── jest.config.js        # Jest testing configuration
 ├── infra/                     # Infrastructure as Code
 │   ├── main.bicep            # Main Bicep template
 │   ├── parameters/           # Environment-specific parameters
@@ -133,19 +178,22 @@ az deployment group validate \
 ```
 
 ### Configuration Files
-- **Build**: `src/*/pyproject.toml` (contains ruff, mypy, pytest config)
-- **Dependencies**: `src/*/uv.lock` (lockfiles), `src/*/pyproject.toml` (dependencies)
-- **Environment**: `.env.example` (template), `.env.test` (test environment)
-- **Security**: `.bandit` (security scan configuration)
+- **Backend Build**: `src/backend/pyproject.toml` (contains ruff, mypy, pytest config)
+- **Backend Dependencies**: `src/backend/uv.lock` (lockfiles), `src/backend/pyproject.toml` (dependencies)
+- **Frontend Build**: `src/frontend/next.config.js`, `src/frontend/tailwind.config.js`, `src/frontend/jest.config.js`
+- **Frontend Dependencies**: `src/frontend/package.json`, `src/frontend/package-lock.json`
+- **Environment**: `.env.example` (template), `.env.test` (backend test environment)
+- **Security**: `.bandit` (backend security scan configuration)
 - **Docker**: `src/*/Dockerfile` (multi-stage builds)
 
 ## 🔍 CI/CD Pipeline Details
 
 ### GitHub Actions Workflows
 1. **ci.yml** (Main Pipeline - ~8-10 minutes):
-   - Quality checks (ruff, mypy, bandit)
+   - Backend quality checks (ruff, mypy, bandit)
+   - Frontend quality checks (ESLint, TypeScript, Prettier)
    - Backend tests with Redis service
-   - Frontend tests
+   - Frontend tests (Jest)
    - Container image builds
    - Security scanning with Trivy
 
@@ -156,21 +204,30 @@ az deployment group validate \
    - Smoke testing
 
 ### Common CI Failures & Solutions
+**Backend Issues:**
 - **uv sync fails**: Check uv.lock files are committed
-- **Tests fail with auth errors**: Ensure .env.test is properly configured  
+- **Backend tests fail with auth errors**: Ensure .env.test is properly configured  
 - **Bandit security fails**: Review security scan output, add `# nosec` for false positives
 - **Type checking fails**: Add missing type hints or mypy ignores
 - **Coverage below 25%**: Add tests or adjust coverage threshold
 
+**Frontend Issues:**
+- **npm install fails**: Check package.json and package-lock.json are committed
+- **ESLint failures**: Run `npm run lint` locally and fix issues
+- **TypeScript errors**: Run `npm run type-check` locally and fix type issues
+- **Jest test failures**: Run `npm test` locally and ensure tests pass
+- **Build failures**: Run `npm run build` locally to identify build issues
+
 ## 🔒 Security & Authentication
 
 ### Authentication Flow
-- **Frontend**: Microsoft Entra ID with PKCE flow
+- **Frontend**: Microsoft Entra ID with PKCE flow using MSAL for React
 - **Backend**: JWT token validation with Azure identity
 - **Services**: Managed Identity for Azure service access
 
 ### Secret Management
-- **Development**: Environment variables in `.env` files
+- **Backend Development**: Environment variables in `.env` files
+- **Frontend Development**: Environment variables via Next.js config (NEXT_PUBLIC_ prefix for client-side)
 - **Production**: Azure Key Vault integration
 - **Never commit**: Actual secrets, API keys, or connection strings
 
@@ -185,10 +242,14 @@ az deployment group validate \
 - **pydantic**: Data validation and serialization
 
 ### Frontend Dependencies (key modules)  
-- **gradio**: Web interface framework
-- **msal**: Microsoft Authentication Library
-- **httpx**: API client for backend communication
-- **pandas**: Data manipulation for results display
+- **next**: React framework with built-in optimization
+- **react**: UI library for building user interfaces
+- **typescript**: Type-safe JavaScript development
+- **@azure/msal-react**: Microsoft Authentication Library for React
+- **@azure/msal-browser**: MSAL browser-specific functionality
+- **tailwindcss**: Utility-first CSS framework
+- **lucide-react**: Modern icon library
+- **jest**: JavaScript testing framework
 
 ### Infrastructure Components
 - **Azure Container Apps**: Serverless container hosting
@@ -200,15 +261,23 @@ az deployment group validate \
 ## ⚠️ Common Pitfalls & Solutions
 
 ### Build Issues
+**Backend:**
 1. **"uv command not found"**: Install uv via curl script or package manager
-2. **"No module named 'app'"**: Run commands from correct directory (src/backend/ or src/frontend/)
+2. **"No module named 'app'"**: Run commands from correct directory (src/backend/)
 3. **"ImportError during tests"**: Ensure test environment has .env.test file
 4. **"Coverage below threshold"**: Tests pass but coverage calculation may need adjustment
 
+**Frontend:**
+1. **"npm command not found"**: Install Node.js (includes npm)
+2. **"Module not found"**: Run `npm install` from src/frontend/ directory
+3. **"TypeScript errors"**: Check imports and type definitions
+4. **"Build failed"**: Run `npm run build` to see detailed error messages
+
 ### Authentication Issues in Development
 1. **Mock token errors**: Expected in fresh environments - tests need proper mocking setup
-2. **Entra ID config**: Development requires actual Azure tenant configuration
+2. **Entra ID config**: Development requires actual Azure tenant configuration  
 3. **CORS errors**: Frontend/backend ports must match CORS configuration
+4. **MSAL redirect errors**: Check MSAL configuration and redirect URIs
 
 ### Infrastructure Issues
 1. **Bicep warnings**: Parameters may be unused in templates (warnings, not errors)
@@ -217,27 +286,47 @@ az deployment group validate \
 
 ## 📝 Code Quality Standards
 
-### Python Code Requirements
+### Backend Code Requirements (Python)
 - **Type hints**: Required on all functions and methods
 - **Async patterns**: Use async/await for I/O operations
 - **Pydantic models**: Required for API request/response validation
 - **Error handling**: Comprehensive exception handling with logging
 - **Documentation**: Docstrings for public methods and complex logic
 
+### Frontend Code Requirements (TypeScript/React)
+- **TypeScript**: Strict type checking enabled, avoid `any` type
+- **React patterns**: Use functional components with hooks
+- **Component structure**: Props interfaces for all components
+- **Error boundaries**: Implement error handling for user-facing components
+- **Accessibility**: Include ARIA labels and semantic HTML
+- **Performance**: Use React.memo and useMemo for optimization
+- **Documentation**: JSDoc comments for complex components and functions
+
 ### Testing Requirements
-- **Coverage**: Minimum 25% (target 90% for backend, 70% for frontend)
+- **Backend Coverage**: Minimum 25% (target 90%)
+- **Frontend Coverage**: Minimum 5% (expanding test coverage)
 - **Test organization**: Unit, integration, and e2e test separation
-- **Fixtures**: Reusable test data and authentication mocking
-- **Async testing**: Use pytest-asyncio for async code testing
+- **Backend fixtures**: Reusable test data and authentication mocking with pytest
+- **Frontend testing**: React Testing Library for component tests
+- **Async testing**: Use pytest-asyncio for backend, async/await patterns for frontend
 
 ## 🎯 Key Success Patterns
 
 ### When Adding New Features
+**Backend:**
 1. Start with Pydantic models for data validation
 2. Implement service layer with proper error handling
 3. Add API endpoints with OpenAPI documentation  
 4. Write tests with appropriate mocking
 5. Update documentation and run quality checks
+
+**Frontend:**
+1. Create TypeScript interfaces for data structures
+2. Build React components with proper props typing
+3. Implement hooks for state management and API calls
+4. Add comprehensive error handling and loading states
+5. Write Jest tests for components and hooks
+6. Update documentation and run quality checks
 
 ### When Fixing Issues
 1. **ALWAYS** run quality checks first to understand current state
@@ -258,7 +347,7 @@ GitHub Copilot agents have access to several MCP (Model Context Protocol) server
 ### Context7 Documentation Server
 **Purpose**: Access up-to-date documentation for libraries and frameworks
 **When to use**:
-- Need current API documentation for dependencies (FastAPI, Gradio, Azure SDK, etc.)
+- Need current API documentation for dependencies (FastAPI, Next.js, React, Azure SDK, etc.)
 - Implementing new features with unfamiliar libraries
 - Debugging integration issues with external services
 - Understanding best practices for specific technologies
@@ -271,8 +360,9 @@ GitHub Copilot agents have access to several MCP (Model Context Protocol) server
 
 **Example scenarios**:
 - Adding new Azure OpenAI features: Get Context7 docs for `/azure/azure-sdk-for-python`
-- Gradio UI improvements: Get Context7 docs for `/gradio-app/gradio`
+- Next.js/React UI improvements: Get Context7 docs for `/vercel/next.js` or `/facebook/react`
 - FastAPI endpoint patterns: Get Context7 docs for `/tiangolo/fastapi`
+- MSAL authentication: Get Context7 docs for `/azuread/microsoft-authentication-library-for-js`
 
 ### GitHub MCP Server
 **Purpose**: Comprehensive GitHub repository interaction and automation
@@ -294,10 +384,10 @@ GitHub Copilot agents have access to several MCP (Model Context Protocol) server
 - Use `github-mcp-server-list_workflow_runs` to understand deployment patterns
 
 ### Playwright Browser Server
-**Purpose**: Web-based testing and debugging of the Gradio frontend
+**Purpose**: Web-based testing and debugging of the Next.js frontend
 **When to use**:
 - Testing authentication flows (Microsoft Entra ID integration)
-- Debugging UI components and user interactions
+- Debugging React components and user interactions
 - Validating responsive design and accessibility
 - End-to-end testing scenarios
 
@@ -324,7 +414,7 @@ GitHub Copilot agents have access to several MCP (Model Context Protocol) server
 **For Development Tasks**:
 - **New features**: Context7 for API patterns, GitHub search for existing implementations
 - **Bug fixes**: GitHub MCP server for related issues/PRs, Context7 for troubleshooting guides
-- **UI changes**: Playwright for testing, Context7 for component documentation
+- **UI changes**: Playwright for testing, Context7 for React/Next.js component documentation
 
 ### Performance Considerations
 - **Context7**: Lightweight, fast documentation retrieval
