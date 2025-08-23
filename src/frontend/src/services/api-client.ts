@@ -53,7 +53,8 @@ export class ApiClient {
           response.config.url || '',
           response.config.method?.toUpperCase() || 'GET',
           response.status,
-          duration
+          duration,
+          true
         );
 
         return response;
@@ -68,7 +69,8 @@ export class ApiClient {
           error.config?.url || '',
           error.config?.method?.toUpperCase() || 'GET',
           response?.status || 0,
-          duration
+          duration,
+          false
         );
 
         // Track exception for serious errors

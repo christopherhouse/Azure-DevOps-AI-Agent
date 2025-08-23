@@ -32,7 +32,10 @@ export function useChat() {
     }));
 
     // Track the message
-    trackChatMessage(message.role, message.content.length, chatState.conversationId || undefined);
+    trackChatMessage(message.role, {
+      messageLength: message.content.length,
+      conversationId: chatState.conversationId || undefined,
+    });
 
     return id;
   }, [chatState.conversationId]);
