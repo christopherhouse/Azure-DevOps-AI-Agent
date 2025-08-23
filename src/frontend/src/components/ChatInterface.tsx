@@ -92,7 +92,7 @@ export function ChatInterface() {
                     className="text-left p-3 bg-gray-50 hover:bg-gray-100 rounded-md border border-gray-200 transition-colors"
                     onClick={() => sendMessage(example)}
                   >
-                    "{example}"
+                    &quot;{example}&quot;
                   </button>
                 ))}
               </div>

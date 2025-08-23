@@ -2,7 +2,7 @@
  * Authentication hook using MSAL React.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useMsal, useAccount } from '@azure/msal-react';
 import { InteractionStatus, SilentRequest } from '@azure/msal-browser';
 import { loginRequest, tokenRequest } from '@/lib/auth-config';
@@ -39,7 +39,7 @@ export function useAuth() {
   /**
    * Acquire access token silently
    */
-  const acquireTokenSilently = async (): Promise<string | null> => {
+  const acquireTokenSilently = useCallback(async (): Promise<string | null> => {
     if (!account) return null;
 
     try {
@@ -54,7 +54,7 @@ export function useAuth() {
       console.error('Silent token acquisition failed:', error);
       return null;
     }
-  };
+  }, [account, instance]);
 
   /**
    * Login user
@@ -152,7 +152,7 @@ export function useAuth() {
     };
 
     updateAuthState();
-  }, [account, inProgress]);
+  }, [account, inProgress, acquireTokenSilently]);
 
   // Effect to refresh token periodically
   useEffect(() => {
@@ -172,7 +172,7 @@ export function useAuth() {
     const interval = setInterval(refreshToken, 30 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [authState.isAuthenticated, account, authState.accessToken]);
+  }, [authState.isAuthenticated, account, authState.accessToken, acquireTokenSilently]);
 
   return {
     ...authState,
