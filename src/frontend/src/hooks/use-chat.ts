@@ -2,7 +2,7 @@
  * Chat hook for managing chat state and interactions.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { apiClient } from '@/services/api-client';
 import { trackChatMessage, trackEvent } from '@/lib/telemetry';
@@ -32,10 +32,7 @@ export function useChat() {
     }));
 
     // Track the message
-    trackChatMessage(message.role, {
-      messageLength: message.content.length,
-      conversationId: chatState.conversationId || undefined,
-    });
+    trackChatMessage(message.content.length, undefined);
 
     return id;
   }, [chatState.conversationId]);
@@ -64,7 +61,7 @@ export function useChat() {
 
     try {
       // Add user message
-      const userMessageId = addMessage({
+      addMessage({
         content: content.trim(),
         role: 'user',
         timestamp: new Date(),
