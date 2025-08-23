@@ -84,39 +84,35 @@ def create_login_interface() -> gr.Blocks:
             login_btn = gr.Button("Sign in with Microsoft", variant="primary", size="lg", scale=1)
 
             # Status messages
-            status_msg = gr.Markdown(visible=False)
+            status_msg = gr.Markdown("", visible=True)
 
             # Callback URL input (hidden, used for auth callback)
             callback_url = gr.Textbox(visible=False)
 
-            def initiate_login() -> tuple[str, bool]:
+            def initiate_login() -> str:
                 """Start the OAuth login flow."""
                 try:
                     _ = auth_service.get_auth_url()
-                    status = "Redirecting to Microsoft for authentication..."
-                    return status, True
+                    return "Redirecting to Microsoft for authentication..."
                 except AuthenticationError as e:
                     logger.error(f"Login initiation failed: {e}")
-                    return f"Login failed: {e}", True
+                    return f"Login failed: {e}"
                 except Exception as e:
                     logger.error(f"Unexpected login error: {e}")
-                    return (
-                        "Login failed due to technical error. Please try again.",
-                        True,
-                    )
+                    return "Login failed due to technical error. Please try again."
 
-            def handle_auth_callback(url: str) -> tuple[bool, str]:
+            def handle_auth_callback(url: str) -> str:
                 """Handle the OAuth callback and complete authentication.
 
                 Args:
                     url: Callback URL with authorization code
 
                 Returns:
-                    Tuple of (success, message)
+                    Status message
                 """
                 try:
                     if not url:
-                        return False, "No callback URL provided"
+                        return "No callback URL provided"
 
                     # Parse the callback URL
                     parsed_url = urlparse(url)
@@ -129,17 +125,17 @@ def create_login_interface() -> gr.Blocks:
                     if error:
                         error_desc = query_params.get("error_description", ["Unknown error"])[0]
                         logger.error(f"OAuth error: {error} - {error_desc}")
-                        return False, f"Authentication failed: {error_desc}"
+                        return f"Authentication failed: {error_desc}"
 
                     if not code:
-                        return False, "No authorization code received"
+                        return "No authorization code received"
 
                     # Exchange code for token
                     token_result = auth_service.exchange_code_for_token(code, state)
                     access_token = token_result.get("access_token")
 
                     if not access_token:
-                        return False, "Failed to obtain access token"
+                        return "Failed to obtain access token"
 
                     # Get user information
                     user_info = auth_service.get_user_info(access_token)
@@ -147,25 +143,22 @@ def create_login_interface() -> gr.Blocks:
                     # Update auth state
                     auth_state.login(access_token, user_info)
 
-                    return True, f"Welcome, {auth_state.get_user_display_name()}!"
+                    return f"Welcome, {auth_state.get_user_display_name()}!"
 
                 except AuthenticationError as e:
                     logger.error(f"Authentication callback failed: {e}")
-                    return False, f"Authentication failed: {e}"
+                    return f"Authentication failed: {e}"
                 except Exception as e:
                     logger.error(f"Unexpected callback error: {e}")
-                    return False, "Authentication failed due to technical error"
+                    return "Authentication failed due to technical error"
 
             # Event handlers
-            login_btn.click(fn=initiate_login, outputs=[status_msg, status_msg.visible])
+            login_btn.click(fn=initiate_login, outputs=[status_msg])
 
             callback_url.change(
                 fn=handle_auth_callback,
                 inputs=[callback_url],
-                outputs=[
-                    status_msg,
-                    status_msg,
-                ],  # This would trigger interface refresh in real app
+                outputs=[status_msg],
             )
 
     return login_interface
