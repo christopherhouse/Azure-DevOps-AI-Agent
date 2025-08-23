@@ -203,6 +203,7 @@ def create_main_interface() -> gr.Blocks:
                 """)
 
         # Authentication state and interface switching
+        # Track authentication state
         gr.State(value=auth_state.is_authenticated())
 
         # Conditional interface rendering based on authentication
@@ -256,6 +257,31 @@ def create_main_interface() -> gr.Blocks:
 def main():
     """Main application entry point."""
     try:
+        # Set Gradio environment variables for containerized environments
+        import os
+
+        os.environ["GRADIO_SHARE"] = "False"
+        os.environ["GRADIO_SERVER_NAME"] = "0.0.0.0"
+
+        # Patch gradio_client to fix schema parsing bug in version 4.44.1
+        try:
+            from gradio_client import utils as gradio_utils
+
+            original_json_schema_to_python_type = gradio_utils._json_schema_to_python_type
+
+            def patched_json_schema_to_python_type(schema, defs=None):
+                # Handle case where schema is bool instead of dict
+                if isinstance(schema, bool):
+                    return "bool"
+                if not isinstance(schema, dict):
+                    return str(type(schema).__name__)
+                return original_json_schema_to_python_type(schema, defs)
+
+            gradio_utils._json_schema_to_python_type = patched_json_schema_to_python_type
+            logger.info("Applied gradio_client patch for schema parsing bug")
+        except Exception as e:
+            logger.warning(f"Could not apply gradio_client patch: {e}")
+
         logger.info("Starting Azure DevOps AI Agent frontend...")
         logger.info(f"Environment: {settings.environment}")
         logger.info(f"Frontend URL: {settings.frontend_url}")
@@ -276,7 +302,7 @@ def main():
             "server_name": "0.0.0.0",  # Allow external connections
             "server_port": 7860,
             "show_api": False,  # Hide API docs in production
-            "share": settings.environment == "development",  # Only share in dev
+            "share": False,  # Disable sharing for containerized environments
             "inbrowser": settings.environment == "development",  # Only open browser in dev
             "favicon_path": None,  # Could add custom favicon
             "ssl_verify": settings.require_https,
@@ -287,7 +313,27 @@ def main():
 
         logger.info(f"Launching Gradio app on port {launch_kwargs['server_port']}")
 
-        app.launch(**launch_kwargs)
+        # Try to launch the app, handling potential API generation errors
+        try:
+            app.launch(**launch_kwargs)
+        except TypeError as e:
+            if "argument of type 'bool' is not iterable" in str(e):
+                logger.warning(f"Gradio API generation error (known issue with Gradio 4.44.1): {e}")
+                logger.info("Attempting to launch with minimal configuration...")
+
+                # Launch with absolute minimal configuration
+                minimal_kwargs = {
+                    "server_name": "0.0.0.0",
+                    "server_port": 7860,
+                    "share": False,
+                    "show_api": False,
+                    "quiet": True,  # Suppress most output
+                    "show_error": False,  # Disable error display that might trigger API generation
+                    "max_threads": 10,
+                }
+                app.launch(**minimal_kwargs)
+            else:
+                raise  # Re-raise if it's a different TypeError
 
     except KeyboardInterrupt:
         logger.info("Application stopped by user")
