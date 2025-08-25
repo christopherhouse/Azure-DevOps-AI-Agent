@@ -66,9 +66,9 @@ This repository contains a complete solution for automating Azure DevOps adminis
    cd Azure-DevOps-AI-Agent
    ```
 
-2. **Set up Python environment with uv**
+2. **Set up development environment**
    ```bash
-   # Install uv (if not already installed)
+   # Install uv for backend (if not already installed)
    curl -LsSf https://astral.sh/uv/install.sh | sh
    
    # Install backend dependencies
@@ -77,7 +77,7 @@ This repository contains a complete solution for automating Azure DevOps adminis
    
    # Install frontend dependencies
    cd ../frontend
-   uv sync --group dev
+   npm install
    ```
 
 3. **Configure environment variables**
@@ -94,7 +94,7 @@ This repository contains a complete solution for automating Azure DevOps adminis
 
    # Terminal 2 - Frontend UI
    cd src/frontend
-   uv run python app.py
+   npm run dev
    ```
 
 5. **Access the application**
@@ -257,7 +257,8 @@ For detailed guidelines, see [.copilot-instructions.md](.copilot-instructions.md
 - [Azure DevOps REST API Documentation](https://docs.microsoft.com/en-us/rest/api/azure/devops/)
 - [Semantic Kernel Documentation](https://learn.microsoft.com/en-us/semantic-kernel/)
 - [Azure OpenAI Service](https://azure.microsoft.com/en-us/products/cognitive-services/openai-service)
-- [Gradio Documentation](https://gradio.app/docs/)
+- [Next.js Documentation](https://nextjs.org/docs)
+- [React Documentation](https://react.dev/)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 
 ## 📄 License
