@@ -213,7 +213,7 @@ jobs:
           --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
           --app-name "${{ env.FRONTEND_APP_NAME }}" \
           --image "${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}/frontend:${{ env.RELEASE_TAG }}" \
-          --target-port 7860 \
+          --target-port 3000 \
           --registry-server "${{ steps.deploy-infra.outputs.containerRegistryLoginServer }}" \
           --registry-identity system \
           --managed-identity "${{ steps.deploy-infra.outputs.frontendManagedIdentityResourceId }}" \
