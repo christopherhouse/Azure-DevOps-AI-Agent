@@ -2,7 +2,11 @@
  * Authentication configuration for Microsoft Authentication Library (MSAL)
  */
 
-import { Configuration, PopupRequest, SilentRequest } from '@azure/msal-browser';
+import {
+  Configuration,
+  PopupRequest,
+  SilentRequest,
+} from '@azure/msal-browser';
 
 /**
  * MSAL configuration object

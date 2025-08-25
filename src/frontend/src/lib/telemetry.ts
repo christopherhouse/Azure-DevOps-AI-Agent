@@ -42,7 +42,10 @@ export const trackApiCall = (
 /**
  * Track exceptions
  */
-export const trackException = (error: Error, properties?: Record<string, any>): void => {
+export const trackException = (
+  error: Error,
+  properties?: Record<string, any>
+): void => {
   if (typeof window !== 'undefined') {
     console.error('Exception tracked:', error, properties);
   }
@@ -51,7 +54,10 @@ export const trackException = (error: Error, properties?: Record<string, any>): 
 /**
  * Track chat messages
  */
-export const trackChatMessage = (messageType: string, messageLength?: number): void => {
+export const trackChatMessage = (
+  messageType: string,
+  messageLength?: number
+): void => {
   if (typeof window !== 'undefined') {
     console.log('Chat message:', { messageType, messageLength });
   }
@@ -60,7 +66,10 @@ export const trackChatMessage = (messageType: string, messageLength?: number): v
 /**
  * Track custom events
  */
-export const trackEvent = (eventName: string, properties?: Record<string, any>): void => {
+export const trackEvent = (
+  eventName: string,
+  properties?: Record<string, any>
+): void => {
   if (typeof window !== 'undefined') {
     console.log('Event:', eventName, properties);
   }
