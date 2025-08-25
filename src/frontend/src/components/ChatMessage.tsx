@@ -11,9 +11,9 @@ interface ChatMessageProps {
 
 export function ChatMessageComponent({ message }: ChatMessageProps) {
   const isUser = message.role === 'user';
-  const timestamp = message.timestamp.toLocaleTimeString([], { 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  const timestamp = message.timestamp.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
   });
 
   return (

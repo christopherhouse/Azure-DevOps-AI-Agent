@@ -43,8 +43,9 @@ export function LoginPage() {
                 Get Started
               </h3>
               <p className="text-sm text-gray-600 mb-6">
-                Sign in with your Microsoft account to access your Azure DevOps projects, 
-                work items, repositories, and pipelines through natural language conversations.
+                Sign in with your Microsoft account to access your Azure DevOps
+                projects, work items, repositories, and pipelines through
+                natural language conversations.
               </p>
             </div>
 
@@ -88,8 +89,8 @@ export function LoginPage() {
                   viewBox="0 0 24 24"
                   fill="currentColor"
                 >
-                  <path d="M23.5 12c0-6.35-5.15-11.5-11.5-11.5S.5 5.65.5 12 5.65 23.5 12 23.5 23.5 18.35 23.5 12zM12 21.75c-5.38 0-9.75-4.37-9.75-9.75S6.62 2.25 12 2.25 21.75 6.62 21.75 12 17.38 21.75 12 21.75z"/>
-                  <path d="M10.5 8.5h3v7h-3v-7zm0-2h3v1.5h-3V6.5z"/>
+                  <path d="M23.5 12c0-6.35-5.15-11.5-11.5-11.5S.5 5.65.5 12 5.65 23.5 12 23.5 23.5 18.35 23.5 12zM12 21.75c-5.38 0-9.75-4.37-9.75-9.75S6.62 2.25 12 2.25 21.75 6.62 21.75 12 17.38 21.75 12 21.75z" />
+                  <path d="M10.5 8.5h3v7h-3v-7zm0-2h3v1.5h-3V6.5z" />
                 </svg>
                 Sign in with Microsoft
               </Button>
@@ -151,7 +152,7 @@ export function LoginPage() {
         <div className="text-center">
           <p className="text-xs text-gray-500">
             For support, please contact your system administrator or visit{' '}
-            <a 
+            <a
               href="https://github.com/christopherhouse/Azure-DevOps-AI-Agent"
               className="text-blue-600 hover:text-blue-500"
               target="_blank"

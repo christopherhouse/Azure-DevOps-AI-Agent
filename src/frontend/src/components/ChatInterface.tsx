@@ -73,13 +73,16 @@ export function ChatInterface() {
                 Welcome to Azure DevOps AI Agent
               </h2>
               <p className="text-gray-600 max-w-md mx-auto">
-                Start a conversation by asking about your projects, work items, repositories, or pipelines.
+                Start a conversation by asking about your projects, work items,
+                repositories, or pipelines.
               </p>
             </div>
 
             {/* Example prompts */}
             <div className="max-w-2xl mx-auto">
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Try asking:</h3>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">
+                Try asking:
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                 {[
                   'Show me my active work items',
@@ -103,7 +106,7 @@ export function ChatInterface() {
             {messages.map((message) => (
               <ChatMessageComponent key={message.id} message={message} />
             ))}
-            
+
             {isLoading && (
               <div className="flex justify-start mb-4">
                 <div className="bg-gray-100 rounded-lg px-4 py-2">
@@ -111,7 +114,7 @@ export function ChatInterface() {
                 </div>
               </div>
             )}
-            
+
             <div ref={messagesEndRef} />
           </div>
         )}

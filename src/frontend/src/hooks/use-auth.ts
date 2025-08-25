@@ -13,7 +13,7 @@ import type { User, AuthState } from '@/types';
 export function useAuth() {
   const { instance, accounts, inProgress } = useMsal();
   const account = useAccount(accounts[0] || {});
-  
+
   const [authState, setAuthState] = useState<AuthState>({
     isAuthenticated: false,
     user: null,
@@ -60,7 +60,7 @@ export function useAuth() {
    * Login user
    */
   const login = async () => {
-    setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
+    setAuthState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
       trackAuthEvent('login_attempt');
@@ -69,7 +69,7 @@ export function useAuth() {
     } catch (error: any) {
       console.error('Login failed:', error);
       trackAuthEvent('login_failure', { error: error.message });
-      setAuthState(prev => ({
+      setAuthState((prev) => ({
         ...prev,
         error: error.message || 'Login failed',
         isLoading: false,
@@ -164,7 +164,7 @@ export function useAuth() {
       const newToken = await acquireTokenSilently();
       if (newToken && newToken !== authState.accessToken) {
         apiClient.setAccessToken(newToken);
-        setAuthState(prev => ({ ...prev, accessToken: newToken }));
+        setAuthState((prev) => ({ ...prev, accessToken: newToken }));
       }
     };
 
@@ -172,7 +172,12 @@ export function useAuth() {
     const interval = setInterval(refreshToken, 30 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [authState.isAuthenticated, account, authState.accessToken, acquireTokenSilently]);
+  }, [
+    authState.isAuthenticated,
+    account,
+    authState.accessToken,
+    acquireTokenSilently,
+  ]);
 
   return {
     ...authState,

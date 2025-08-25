@@ -5,7 +5,12 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { config } from '@/lib/config';
 import { trackApiCall, trackException } from '@/lib/telemetry';
-import type { ApiResponse, ChatRequest, ChatResponse, BackendStatus } from '@/types';
+import type {
+  ApiResponse,
+  ChatRequest,
+  ChatResponse,
+  BackendStatus,
+} from '@/types';
 
 // Extend AxiosRequestConfig to include metadata
 declare module 'axios' {
@@ -48,7 +53,7 @@ export class ApiClient {
         // Track successful API calls
         const startTime = response.config.metadata?.startTime || Date.now();
         const duration = Date.now() - startTime;
-        
+
         trackApiCall(
           response.config.url || '',
           response.config.method?.toUpperCase() || 'GET',
@@ -121,13 +126,19 @@ export class ApiClient {
    */
   async sendMessage(request: ChatRequest): Promise<ApiResponse<ChatResponse>> {
     try {
-      const response = await this.client.post<ChatResponse>('/chat/message', request);
+      const response = await this.client.post<ChatResponse>(
+        '/chat/message',
+        request
+      );
       return {
         data: response.data,
         success: true,
       };
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || error.message || 'Failed to send message';
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.message ||
+        'Failed to send message';
       return {
         error: errorMessage,
         success: false,
@@ -138,16 +149,23 @@ export class ApiClient {
   /**
    * Get chat history
    */
-  async getChatHistory(conversationId?: string): Promise<ApiResponse<ChatResponse[]>> {
+  async getChatHistory(
+    conversationId?: string
+  ): Promise<ApiResponse<ChatResponse[]>> {
     try {
       const params = conversationId ? { conversation_id: conversationId } : {};
-      const response = await this.client.get<ChatResponse[]>('/chat/history', { params });
+      const response = await this.client.get<ChatResponse[]>('/chat/history', {
+        params,
+      });
       return {
         data: response.data,
         success: true,
       };
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || error.message || 'Failed to get chat history';
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.message ||
+        'Failed to get chat history';
       return {
         error: errorMessage,
         success: false,
@@ -166,7 +184,10 @@ export class ApiClient {
         success: true,
       };
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || error.message || 'Failed to get projects';
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.message ||
+        'Failed to get projects';
       return {
         error: errorMessage,
         success: false,
@@ -177,7 +198,10 @@ export class ApiClient {
   /**
    * Generic GET request
    */
-  async get<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
+  async get<T>(
+    url: string,
+    config?: AxiosRequestConfig
+  ): Promise<ApiResponse<T>> {
     try {
       const response = await this.client.get<T>(url, config);
       return {
@@ -185,7 +209,8 @@ export class ApiClient {
         success: true,
       };
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || error.message || 'Request failed';
+      const errorMessage =
+        error.response?.data?.detail || error.message || 'Request failed';
       return {
         error: errorMessage,
         success: false,
@@ -196,7 +221,11 @@ export class ApiClient {
   /**
    * Generic POST request
    */
-  async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
+  async post<T>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig
+  ): Promise<ApiResponse<T>> {
     try {
       const response = await this.client.post<T>(url, data, config);
       return {
@@ -204,7 +233,8 @@ export class ApiClient {
         success: true,
       };
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || error.message || 'Request failed';
+      const errorMessage =
+        error.response?.data?.detail || error.message || 'Request failed';
       return {
         error: errorMessage,
         success: false,
