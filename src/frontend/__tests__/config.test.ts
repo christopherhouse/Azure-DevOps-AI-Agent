@@ -97,12 +97,23 @@ describe('Config', () => {
   });
 
   it('should use placeholder values during build time', () => {
+    // Store original values for restoration
+    const originalNodeEnv = process.env.NODE_ENV;
+    const originalWindow = global.window;
+    
     // Simulate build time environment
     delete process.env.NEXT_PUBLIC_AZURE_TENANT_ID;
     delete process.env.NEXT_PUBLIC_AZURE_CLIENT_ID;
-    process.env.NODE_ENV = 'production';
+    
+    // Use Object.defineProperty to safely modify NODE_ENV
+    Object.defineProperty(process.env, 'NODE_ENV', {
+      value: 'production',
+      writable: true,
+      enumerable: true,
+      configurable: true
+    });
+    
     // Mock window to be undefined (server-side)
-    const originalWindow = global.window;
     delete (global as any).window;
 
     const config = loadConfig();
@@ -112,7 +123,15 @@ describe('Config', () => {
     expect(config.azure.clientId).toBe('build-time-placeholder');
     expect(config.azure.authority).toBe('https://login.microsoftonline.com/build-time-placeholder');
 
-    // Restore window
+    // Restore original values
+    if (originalNodeEnv !== undefined) {
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: originalNodeEnv,
+        writable: true,
+        enumerable: true,
+        configurable: true
+      });
+    }
     (global as any).window = originalWindow;
   });
 });
