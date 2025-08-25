@@ -364,13 +364,19 @@ module openAI 'br/public:avm/res/cognitive-services/account:0.10.1' = {
 }
 
 // Container Apps Environment using AVM
-module containerAppsEnvironment 'br/public:avm/res/app/managed-environment:0.10.0' = {
+module containerAppsEnvironment 'br/public:avm/res/app/managed-environment:0.11.3' = {
   name: 'managed-environment-${deployment().name}'
   params: {
     name: resourceNames.containerAppsEnvironment
     location: location
     tags: tags
-    logAnalyticsWorkspaceResourceId: logAnalytics.outputs.resourceId
+    appLogsConfiguration: {
+      destination: 'azure-monitor'
+      logAnalyticsConfiguration: {
+        customerId: logAnalytics.outputs.logAnalyticsWorkspaceId
+        sharedKey: listKeys(resourceId('Microsoft.OperationalInsights/workspaces', resourceNames.logAnalytics), '2025-02-01')[0].primarySharedKey
+      }
+    }
     zoneRedundant: false
     publicNetworkAccess: 'Enabled'
     workloadProfiles: [
