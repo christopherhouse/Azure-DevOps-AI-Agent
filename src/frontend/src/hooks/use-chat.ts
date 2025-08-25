@@ -33,7 +33,7 @@ export function useChat() {
       }));
 
       // Track the message
-      trackChatMessage(message.content.length, undefined);
+      trackChatMessage('user', message.content.length);
 
       return id;
     },
