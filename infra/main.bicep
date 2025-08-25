@@ -372,10 +372,6 @@ module containerAppsEnvironment 'br/public:avm/res/app/managed-environment:0.11.
     tags: tags
     appLogsConfiguration: {
       destination: 'azure-monitor'
-      logAnalyticsConfiguration: {
-        customerId: logAnalytics.outputs.logAnalyticsWorkspaceId
-        sharedKey: listKeys(resourceId('Microsoft.OperationalInsights/workspaces', resourceNames.logAnalytics), '2025-02-01').primarySharedKey
-      }
     }
     zoneRedundant: false
     publicNetworkAccess: 'Enabled'
