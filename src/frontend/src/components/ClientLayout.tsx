@@ -17,11 +17,7 @@ interface ClientLayoutProps {
 }
 
 export function ClientLayout({ children }: ClientLayoutProps) {
-  return (
-    <MsalProvider instance={msalInstance}>
-      {children}
-    </MsalProvider>
-  );
+  return <MsalProvider instance={msalInstance}>{children}</MsalProvider>;
 }
 
 export default ClientLayout;

@@ -30,7 +30,8 @@ export function Button({
 }: ButtonProps) {
   const isDisabled = disabled || loading;
 
-  const baseClasses = 'inline-flex items-center justify-center font-medium border rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2';
+  const baseClasses =
+    'inline-flex items-center justify-center font-medium border rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2';
   const disabledClasses = 'opacity-50 cursor-not-allowed';
 
   const buttonClasses = [
@@ -39,7 +40,9 @@ export function Button({
     sizeClasses[size],
     isDisabled ? disabledClasses : '',
     className,
-  ].filter(Boolean).join(' ');
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <button
@@ -49,9 +52,7 @@ export function Button({
       disabled={isDisabled}
       aria-label={typeof children === 'string' ? children : undefined}
     >
-      {loading && (
-        <Loading size="small" />
-      )}
+      {loading && <Loading size="small" />}
       {loading && <span className="ml-2" />}
       {children}
     </button>

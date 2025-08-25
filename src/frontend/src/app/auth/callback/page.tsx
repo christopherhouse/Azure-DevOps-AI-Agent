@@ -18,16 +18,19 @@ function AuthCallbackContent() {
 
   useEffect(() => {
     // Handle the auth response
-    instance.handleRedirectPromise().then((response) => {
-      if (response) {
-        // Authentication successful, redirect to home
-        window.location.href = '/';
-      }
-    }).catch((error) => {
-      console.error('Authentication callback error:', error);
-      // Redirect to home with error
-      window.location.href = '/?error=auth_failed';
-    });
+    instance
+      .handleRedirectPromise()
+      .then((response) => {
+        if (response) {
+          // Authentication successful, redirect to home
+          window.location.href = '/';
+        }
+      })
+      .catch((error) => {
+        console.error('Authentication callback error:', error);
+        // Redirect to home with error
+        window.location.href = '/?error=auth_failed';
+      });
   }, [instance]);
 
   return (

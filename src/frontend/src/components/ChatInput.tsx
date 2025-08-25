@@ -11,7 +11,11 @@ interface ChatInputProps {
   loading?: boolean;
 }
 
-export function ChatInput({ onSendMessage, disabled = false, loading = false }: ChatInputProps) {
+export function ChatInput({
+  onSendMessage,
+  disabled = false,
+  loading = false,
+}: ChatInputProps) {
   const [message, setMessage] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -22,7 +26,7 @@ export function ChatInput({ onSendMessage, disabled = false, loading = false }: 
 
     const messageToSend = message.trim();
     setMessage('');
-    
+
     // Auto-resize textarea
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -40,7 +44,7 @@ export function ChatInput({ onSendMessage, disabled = false, loading = false }: 
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value);
-    
+
     // Auto-resize textarea
     const textarea = e.target;
     textarea.style.height = 'auto';

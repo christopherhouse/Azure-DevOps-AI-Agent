@@ -37,7 +37,7 @@ export function Layout() {
               Azure DevOps AI Agent
             </h1>
           </div>
-          
+
           <div className="flex items-center space-x-4">
             {user && (
               <div className="flex items-center space-x-3">
