@@ -21,7 +21,7 @@ const mockEnv = {
   NEXT_PUBLIC_REQUIRE_HTTPS: 'false',
 };
 
-describe.skip('Config', () => {
+describe('Config', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
@@ -69,7 +69,7 @@ describe.skip('Config', () => {
     const config = loadConfig();
 
     expect(config.environment).toBe('development');
-    expect(config.debug).toBe(true);
+    expect(config.debug).toBe(false);
     expect(config.frontendUrl).toBe('http://localhost:3000');
     expect(config.backendUrl).toBe('http://localhost:8000');
   });

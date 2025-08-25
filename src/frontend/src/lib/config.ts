@@ -28,6 +28,18 @@ export interface Config {
 }
 
 export const loadConfig = (): Config => {
+  // Validate required Azure environment variables
+  const requiredAzureVars = [
+    'NEXT_PUBLIC_AZURE_TENANT_ID',
+    'NEXT_PUBLIC_AZURE_CLIENT_ID',
+  ];
+
+  for (const varName of requiredAzureVars) {
+    if (!process.env[varName]) {
+      throw new Error(`Required environment variable ${varName} is not set`);
+    }
+  }
+
   return {
     backendUrl: process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000',
     frontendUrl:
@@ -48,7 +60,7 @@ export const loadConfig = (): Config => {
         'http://localhost:3000/auth/callback',
       scopes: (
         process.env.NEXT_PUBLIC_AZURE_SCOPES || 'openid,profile,User.Read'
-      ).split(','),
+      ).split(',').map(scope => scope.trim()),
     },
     telemetry: {
       connectionString:
