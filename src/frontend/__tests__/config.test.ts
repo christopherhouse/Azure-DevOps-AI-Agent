@@ -2,7 +2,7 @@
  * Tests for the configuration module.
  */
 
-import { loadConfig } from '@/lib/config';
+import { loadConfig, resetConfig } from '@/lib/config';
 
 // Mock environment variables
 const mockEnv = {
@@ -26,11 +26,13 @@ describe('Config', () => {
 
   beforeEach(() => {
     jest.resetModules();
+    resetConfig(); // Reset the cached config instance
     process.env = { ...originalEnv, ...mockEnv };
   });
 
   afterEach(() => {
     process.env = originalEnv;
+    resetConfig(); // Clean up after each test
   });
 
   it('should load configuration with all required environment variables', () => {
@@ -92,5 +94,25 @@ describe('Config', () => {
     const config = loadConfig();
 
     expect(config.azure.scopes).toEqual(['openid', 'profile', 'User.Read', 'api://test']);
+  });
+
+  it('should use placeholder values during build time', () => {
+    // Simulate build time environment
+    delete process.env.NEXT_PUBLIC_AZURE_TENANT_ID;
+    delete process.env.NEXT_PUBLIC_AZURE_CLIENT_ID;
+    process.env.NODE_ENV = 'production';
+    // Mock window to be undefined (server-side)
+    const originalWindow = global.window;
+    delete (global as any).window;
+
+    const config = loadConfig();
+
+    // Should get placeholder values instead of throwing an error
+    expect(config.azure.tenantId).toBe('build-time-placeholder');
+    expect(config.azure.clientId).toBe('build-time-placeholder');
+    expect(config.azure.authority).toBe('https://login.microsoftonline.com/build-time-placeholder');
+
+    // Restore window
+    (global as any).window = originalWindow;
   });
 });

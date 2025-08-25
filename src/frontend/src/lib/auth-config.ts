@@ -9,21 +9,40 @@ import {
 } from '@azure/msal-browser';
 
 /**
- * MSAL configuration object
+ * Get MSAL configuration object - deferred to avoid build-time issues
  */
-export const msalConfig: Configuration = {
-  auth: {
-    clientId: process.env.NEXT_PUBLIC_AZURE_CLIENT_ID || '',
-    authority:
-      process.env.NEXT_PUBLIC_AZURE_AUTHORITY ||
-      `https://login.microsoftonline.com/${process.env.NEXT_PUBLIC_AZURE_TENANT_ID}`,
-    redirectUri: process.env.NEXT_PUBLIC_AZURE_REDIRECT_URI || '/',
-  },
-  cache: {
-    cacheLocation: 'sessionStorage',
-    storeAuthStateInCookie: false,
-  },
+export const getMsalConfig = (): Configuration => {
+  // Check if we're in build time - use placeholder values
+  const isBuildTime = typeof window === 'undefined' && process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_AZURE_TENANT_ID;
+  
+  return {
+    auth: {
+      clientId: isBuildTime ? 'build-time-placeholder' : (process.env.NEXT_PUBLIC_AZURE_CLIENT_ID || ''),
+      authority: isBuildTime 
+        ? 'https://login.microsoftonline.com/build-time-placeholder'
+        : (process.env.NEXT_PUBLIC_AZURE_AUTHORITY ||
+           `https://login.microsoftonline.com/${process.env.NEXT_PUBLIC_AZURE_TENANT_ID}`),
+      redirectUri: process.env.NEXT_PUBLIC_AZURE_REDIRECT_URI || '/',
+    },
+    cache: {
+      cacheLocation: 'sessionStorage',
+      storeAuthStateInCookie: false,
+    },
+  };
 };
+
+/**
+ * Legacy export for backward compatibility - will be lazy-loaded
+ */
+let msalConfigInstance: Configuration | null = null;
+export const msalConfig = new Proxy({} as Configuration, {
+  get(target, prop) {
+    if (!msalConfigInstance) {
+      msalConfigInstance = getMsalConfig();
+    }
+    return msalConfigInstance[prop as keyof Configuration];
+  }
+});
 
 /**
  * Scopes requested during login

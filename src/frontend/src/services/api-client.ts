@@ -3,7 +3,7 @@
  */
 
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { config } from '@/lib/config';
+import { getConfig } from '@/lib/config';
 import { trackApiCall, trackException } from '@/lib/telemetry';
 import type {
   ApiResponse,
@@ -27,7 +27,7 @@ export class ApiClient {
 
   constructor() {
     this.client = axios.create({
-      baseURL: config.api.baseUrl,
+      baseURL: getConfig().api.baseUrl,
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
