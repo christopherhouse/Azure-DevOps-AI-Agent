@@ -50,32 +50,35 @@ jobs:
         npm ci
 
     - name: Run backend quality checks
+      working-directory: src/backend
       run: |
-        cd src/backend && uv run ruff check app/
-        cd src/backend && uv run ruff format --check app/
-        cd src/backend && uv run mypy app --ignore-missing-imports
+        uv run ruff check app/
+        uv run ruff format --check app/
+        uv run mypy app --ignore-missing-imports
         
     - name: Run frontend quality checks
+      working-directory: src/frontend
       run: |
-        cd src/frontend
         npm run lint
         npm run type-check
         
     - name: Run Bandit security scan
+      working-directory: src/backend
       run: |
         echo "Running Bandit security scan..."
-        cd src/backend && uv run bandit -r app -f json -o bandit-report.json
+        uv run bandit -r app -f json -o bandit-report.json
         echo "Bandit scan completed successfully - no security issues found!"
         
     - name: Display Bandit results on failure
       if: failure()
+      working-directory: src/backend
       run: |
         echo "❌ Bandit security scan failed!"
         echo "📋 Security issues found:"
-        if [ -f src/backend/bandit-report.json ]; then
+        if [ -f bandit-report.json ]; then
           # Show human-readable output
           echo "=== BANDIT SECURITY ISSUES ==="
-          cd src/backend && uv run bandit -r app -f screen || true
+          uv run bandit -r app -f screen || true
           echo ""
           echo "=== DETAILED JSON REPORT ==="
           cat bandit-report.json | head -50
@@ -132,13 +135,13 @@ jobs:
         cache-dependency-glob: "src/backend/uv.lock"
           
     - name: Install dependencies
+      working-directory: src/backend
       run: |
-        cd src/backend
         uv sync --group dev
         
     - name: Run backend tests
+      working-directory: src/backend
       run: |
-        cd src/backend
         uv run pytest tests/ --cov=app --cov-report=xml --cov-report=html --junitxml=test-results.xml
         
     - name: Upload test results
@@ -179,13 +182,13 @@ jobs:
         cache-dependency-path: 'src/frontend/package-lock.json'
           
     - name: Install dependencies
+      working-directory: src/frontend
       run: |
-        cd src/frontend
         npm ci
         
     - name: Run frontend tests
+      working-directory: src/frontend
       run: |
-        cd src/frontend
         npm run test:coverage
         
     - name: Upload test results
