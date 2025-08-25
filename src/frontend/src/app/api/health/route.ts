@@ -7,6 +7,7 @@ export async function GET() {
       timestamp: new Date().toISOString(),
       service: 'azure-devops-ai-agent-frontend',
       version: '1.0.0',
+      checkType: 'Static'
     },
     { status: 200 }
   );
