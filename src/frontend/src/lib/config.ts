@@ -30,7 +30,8 @@ export interface Config {
 export const loadConfig = (): Config => {
   return {
     backendUrl: process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000',
-    frontendUrl: process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000',
+    frontendUrl:
+      process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000',
     environment: process.env.NEXT_PUBLIC_ENVIRONMENT || 'development',
     debug: process.env.NEXT_PUBLIC_DEBUG === 'true',
     api: {
@@ -42,15 +43,23 @@ export const loadConfig = (): Config => {
       authority:
         process.env.NEXT_PUBLIC_AZURE_AUTHORITY ||
         `https://login.microsoftonline.com/${process.env.NEXT_PUBLIC_AZURE_TENANT_ID}`,
-      redirectUri: process.env.NEXT_PUBLIC_AZURE_REDIRECT_URI || 'http://localhost:3000/auth/callback',
-      scopes: (process.env.NEXT_PUBLIC_AZURE_SCOPES || 'openid,profile,User.Read').split(','),
+      redirectUri:
+        process.env.NEXT_PUBLIC_AZURE_REDIRECT_URI ||
+        'http://localhost:3000/auth/callback',
+      scopes: (
+        process.env.NEXT_PUBLIC_AZURE_SCOPES || 'openid,profile,User.Read'
+      ).split(','),
     },
     telemetry: {
-      connectionString: process.env.NEXT_PUBLIC_APPLICATIONINSIGHTS_CONNECTION_STRING || '',
+      connectionString:
+        process.env.NEXT_PUBLIC_APPLICATIONINSIGHTS_CONNECTION_STRING || '',
       enabled: process.env.NEXT_PUBLIC_ENABLE_TELEMETRY === 'true',
     },
     security: {
-      sessionTimeout: parseInt(process.env.NEXT_PUBLIC_SESSION_TIMEOUT || '3600', 10),
+      sessionTimeout: parseInt(
+        process.env.NEXT_PUBLIC_SESSION_TIMEOUT || '3600',
+        10
+      ),
       requireHttps: process.env.NEXT_PUBLIC_REQUIRE_HTTPS === 'true',
     },
   };
