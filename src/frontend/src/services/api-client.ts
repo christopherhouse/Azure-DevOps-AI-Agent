@@ -26,17 +26,23 @@ export class ApiClient {
   private accessToken: string | null = null;
 
   constructor() {
+    // Initialize axios client with a placeholder URL
+    // The actual baseURL will be set lazily when first request is made
     this.client = axios.create({
-      baseURL: getConfig().api.baseUrl,
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
       },
     });
 
-    // Request interceptor to add auth token
+    // Request interceptor to add auth token and ensure baseURL is set
     this.client.interceptors.request.use(
       (config) => {
+        // Lazily set the baseURL if not already set
+        if (!config.baseURL) {
+          config.baseURL = getConfig().api.baseUrl;
+        }
+        
         if (this.accessToken) {
           config.headers.Authorization = `Bearer ${this.accessToken}`;
         }
