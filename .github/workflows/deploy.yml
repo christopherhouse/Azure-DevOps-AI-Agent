@@ -223,11 +223,11 @@ jobs:
           --min-replicas 1 \
           --max-replicas 3 \
           --revisions-mode multiple \
-          --env-var "BACKEND_URL=https://${{ env.BACKEND_APP_NAME }}" \
-          --env-var "ENVIRONMENT=${{ inputs.environment }}" \
-          --secret-ref "AZURE_TENANT_ID=entra-tenant-id" \
-          --secret-ref "AZURE_CLIENT_ID=frontend-client-id" \
-          --secret-ref "APPLICATIONINSIGHTS_CONNECTION_STRING=app-insights-connection-string" \
+          --env-var "NEXT_PUBLIC_BACKEND_URL=https://${{ env.BACKEND_APP_NAME }}" \
+          --env-var "NEXT_PUBLIC_ENVIRONMENT=${{ inputs.environment }}" \
+          --secret-ref "NEXT_PUBLIC_AZURE_TENANT_ID=entra-tenant-id" \
+          --secret-ref "NEXT_PUBLIC_AZURE_CLIENT_ID=frontend-client-id" \
+          --secret-ref "NEXT_PUBLIC_APPLICATIONINSIGHTS_CONNECTION_STRING=app-insights-connection-string" \
           --verbose
         
     - name: Set Container App outputs
