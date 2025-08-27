@@ -9,6 +9,7 @@ This directory contains the Azure Container App deployment script that replaces 
 A comprehensive bash script that creates or updates Azure Container Apps using the Azure CLI. Features include:
 
 - **Multi-revision support**: Automatically creates new revisions for existing apps
+- **Traffic management**: Routes 100% traffic to latest revision in multi-revision mode
 - **Intelligent deployment**: Checks if app exists and chooses create vs update operation
 - **Rich console output**: Colorful output with emojis for improved readability
 - **Comprehensive validation**: Validates all parameters before deployment
@@ -18,6 +19,8 @@ A comprehensive bash script that creates or updates Azure Container Apps using t
 
 - ✨ **Beautiful output** with colors and emojis
 - 🔄 **Multi-revision deployments** by default
+- 🚦 **Automatic traffic management** routes 100% traffic to latest revision
+- 🧹 **Old revision cleanup** deactivates unused revisions automatically
 - 🔑 **Key Vault secret references** for secure configuration
 - 👤 **User-assigned managed identities** for authentication
 - 🛡️ **Parameter validation** and error handling
@@ -110,13 +113,14 @@ The script is integrated into the deployment workflow at `.github/workflows/depl
 ## Benefits
 
 1. **Better control**: Direct Azure CLI usage provides more control over deployment
-2. **Multi-revision support**: Built-in support for Azure Container Apps revisions  
+2. **Multi-revision support**: Built-in support for Azure Container Apps revisions with automatic traffic management
 3. **Secure configuration**: Key Vault integration for secrets management
 4. **Identity-based security**: User-assigned managed identities for each app
-5. **Improved debugging**: Verbose output and better error messages
-6. **Consistency**: Uses the same Azure CLI tools as infrastructure deployment
-7. **Maintainability**: Pure bash script that's easy to modify and extend
-8. **No external dependencies**: Removes dependency on third-party GitHub Action
+5. **Traffic routing**: Automatically routes 100% traffic to new deployments
+6. **Improved debugging**: Verbose output and better error messages
+7. **Consistency**: Uses the same Azure CLI tools as infrastructure deployment
+8. **Maintainability**: Pure bash script that's easy to modify and extend
+9. **No external dependencies**: Removes dependency on third-party GitHub Action
 
 ## Testing
 
