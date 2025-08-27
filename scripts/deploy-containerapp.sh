@@ -487,6 +487,83 @@ execute_deployment() {
     fi
 }
 
+# Function to manage traffic routing after deployment
+manage_traffic() {
+    local operation="$1"
+    
+    # Only manage traffic for update operations in multiple revision mode
+    if [[ "$operation" != "update" || "$REVISIONS_MODE" != "multiple" ]]; then
+        return 0
+    fi
+    
+    print_info "Managing traffic routing for container app '$APP_NAME'..."
+    
+    # Route 100% traffic to the latest revision
+    if [[ "$VERBOSE" == "true" ]]; then
+        print_info "Command: az containerapp ingress traffic set --name $APP_NAME --resource-group $RESOURCE_GROUP --revision-weight latest=100"
+    fi
+    
+    if az containerapp ingress traffic set \
+        --name "$APP_NAME" \
+        --resource-group "$RESOURCE_GROUP" \
+        --revision-weight latest=100; then
+        print_success "Traffic successfully routed to latest revision (100%)!"
+        
+        # Optionally deactivate old revisions to clean up
+        deactivate_old_revisions
+        
+        return 0
+    else
+        print_warning "Failed to update traffic routing. New revision may not be receiving traffic."
+        return 1
+    fi
+}
+
+# Function to deactivate old revisions (optional cleanup)
+deactivate_old_revisions() {
+    print_info "Deactivating old revisions..."
+    
+    # Get list of all revisions except the latest
+    local old_revisions
+    old_revisions=$(az containerapp revision list \
+        --name "$APP_NAME" \
+        --resource-group "$RESOURCE_GROUP" \
+        --query "[?properties.trafficWeight == \`0\` && properties.active == \`true\`].name" \
+        --output tsv 2>/dev/null)
+    
+    if [[ -n "$old_revisions" ]]; then
+        local revision_count
+        revision_count=$(echo "$old_revisions" | wc -l)
+        
+        if [[ "$VERBOSE" == "true" ]]; then
+            print_info "Found $revision_count old revision(s) to deactivate: $old_revisions"
+        fi
+        
+        # Deactivate each old revision
+        while IFS= read -r revision_name; do
+            if [[ -n "$revision_name" ]]; then
+                if [[ "$VERBOSE" == "true" ]]; then
+                    print_info "Deactivating revision: $revision_name"
+                fi
+                
+                if az containerapp revision deactivate \
+                    --name "$APP_NAME" \
+                    --resource-group "$RESOURCE_GROUP" \
+                    --revision "$revision_name" \
+                    --output none 2>/dev/null; then
+                    print_success "Deactivated revision: $revision_name"
+                else
+                    print_warning "Failed to deactivate revision: $revision_name"
+                fi
+            fi
+        done <<< "$old_revisions"
+    else
+        if [[ "$VERBOSE" == "true" ]]; then
+            print_info "No old revisions found to deactivate."
+        fi
+    fi
+}
+
 # Function to get app URL
 get_app_url() {
     print_info "Retrieving application URL..."
@@ -569,11 +646,19 @@ main() {
     
     if execute_deployment "$operation"; then
         echo ""
+        
+        # Manage traffic routing for multi-revision updates
+        if ! manage_traffic "$operation"; then
+            print_warning "Deployment completed but traffic routing may need manual configuration."
+        fi
+        
         get_app_url
         echo ""
         print_message "$GREEN" "$SPARKLES" "Deployment completed successfully!"
         
-        if [[ "$REVISIONS_MODE" == "multiple" ]]; then
+        if [[ "$REVISIONS_MODE" == "multiple" && "$operation" == "update" ]]; then
+            print_info "Multi-revision mode: Latest revision now receiving 100% traffic."
+        elif [[ "$REVISIONS_MODE" == "multiple" ]]; then
             print_info "Multi-revision mode enabled. New revision created alongside existing ones."
         fi
     else
