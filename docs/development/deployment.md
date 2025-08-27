@@ -181,6 +181,12 @@ Examples:
 
 ## Rollback Strategy
 
+### Traffic Management
+
+- **Automatic traffic routing**: New revisions automatically receive 100% traffic in multi-revision mode
+- **Zero-downtime deployments**: Traffic switches from old to new revisions seamlessly
+- **Revision cleanup**: Previous revisions remain available for quick rollback but receive 0% traffic
+
 ### Automatic Rollback
 
 - Health checks monitor deployment success
