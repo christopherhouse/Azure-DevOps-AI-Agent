@@ -88,12 +88,34 @@ jobs:
       run: |
         echo "Deploying infrastructure to ${{ inputs.environment }} environment..."
         
-        # Set secure parameter values from secrets or use mock values
-        BACKEND_CLIENT_SECRET="${{ secrets.BACKEND_CLIENT_SECRET || 'MOCK-CLIENT-SECRET-REPLACE-WITH-REAL-VALUE' }}"
-        AZURE_OPENAI_KEY="${{ secrets.AZURE_OPENAI_KEY || 'MOCK-OPENAI-KEY-REPLACE-WITH-REAL-VALUE' }}"
-        FRONTEND_CLIENT_ID="${{ secrets.FRONTEND_CLIENT_ID || 'your-frontend-client-id-here' }}"
-        BACKEND_CLIENT_ID="${{ secrets.BACKEND_CLIENT_ID || 'your-backend-client-id-here' }}"
-        AZURE_TENANT_ID="${{ secrets.AZURE_TENANT_ID || 'your-tenant-id-here' }}"
+        # Set secure parameter values from environment secrets (no fallbacks to force proper configuration)
+        BACKEND_CLIENT_SECRET="${{ secrets.BACKEND_CLIENT_SECRET }}"
+        AZURE_OPENAI_KEY="${{ secrets.AZURE_OPENAI_KEY }}"
+        FRONTEND_CLIENT_ID="${{ secrets.FRONTEND_CLIENT_ID }}"
+        BACKEND_CLIENT_ID="${{ secrets.BACKEND_CLIENT_ID }}"
+        AZURE_TENANT_ID="${{ secrets.AZURE_TENANT_ID }}"
+        
+        # Validate that required secrets are provided
+        if [[ -z "$FRONTEND_CLIENT_ID" ]]; then
+          echo "❌ Error: FRONTEND_CLIENT_ID environment secret is not configured"
+          exit 1
+        fi
+        if [[ -z "$BACKEND_CLIENT_ID" ]]; then
+          echo "❌ Error: BACKEND_CLIENT_ID environment secret is not configured"
+          exit 1
+        fi
+        if [[ -z "$AZURE_TENANT_ID" ]]; then
+          echo "❌ Error: AZURE_TENANT_ID environment secret is not configured"
+          exit 1
+        fi
+        if [[ -z "$BACKEND_CLIENT_SECRET" ]]; then
+          echo "❌ Error: BACKEND_CLIENT_SECRET environment secret is not configured"
+          exit 1
+        fi
+        if [[ -z "$AZURE_OPENAI_KEY" ]]; then
+          echo "❌ Error: AZURE_OPENAI_KEY environment secret is not configured"
+          exit 1
+        fi
         
         deployment_output=$(az deployment group create \
           --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
