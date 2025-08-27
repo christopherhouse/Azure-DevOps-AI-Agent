@@ -34,6 +34,7 @@ For each environment (`dev`, `prod`), you need to configure these secrets in Git
 | `AZURE_TENANT_ID` | Microsoft Entra ID Tenant ID | Azure Portal → Entra ID → Properties → Tenant ID |
 | `BACKEND_CLIENT_SECRET` | Microsoft Entra ID Client Secret for the backend app | Azure Portal → Entra ID → App registrations → [Your Backend App] → Certificates & secrets |
 | `AZURE_OPENAI_KEY` | Azure OpenAI Service API Key | Azure Portal → [Your OpenAI Resource] → Keys and Endpoint |
+| `JWT_SECRET_KEY` | JWT secret key for backend authentication | Generate a secure random string (minimum 32 characters) |
 
 ### Example Values
 
@@ -43,6 +44,7 @@ BACKEND_CLIENT_ID: 87654321-4321-4321-4321-210987654321
 AZURE_TENANT_ID: 11111111-2222-3333-4444-555555555555
 BACKEND_CLIENT_SECRET: ABC123def456...
 AZURE_OPENAI_KEY: sk-...
+JWT_SECRET_KEY: your-secure-jwt-secret-key-32-chars-minimum
 ```
 
 ## 🔄 Alternative: Repository Secrets with Environment Suffixes

@@ -20,6 +20,7 @@ For each environment (`dev`, `prod`), configure these secrets in GitHub:
 | `AZURE_TENANT_ID` | Microsoft Entra ID Tenant ID | `11111111-2222-3333-4444-555555555555` |
 | `BACKEND_CLIENT_SECRET` | Microsoft Entra ID Client Secret for backend | `secret_value_here` |
 | `AZURE_OPENAI_KEY` | Azure OpenAI Service API Key | `openai_key_here` |
+| `JWT_SECRET_KEY` | JWT secret key for backend authentication | `your-secure-jwt-secret-key-32-chars-minimum` |
 
 ### Benefits
 - Clear separation between environments
@@ -46,6 +47,8 @@ In **Settings** → **Secrets and variables** → **Actions** → **Repository s
 | `BACKEND_CLIENT_SECRET_PROD` | Production backend client secret | Production deployments |
 | `AZURE_OPENAI_KEY_DEV` | Development OpenAI key | Development deployments |
 | `AZURE_OPENAI_KEY_PROD` | Production OpenAI key | Production deployments |
+| `JWT_SECRET_KEY_DEV` | Development JWT secret key | Development deployments |
+| `JWT_SECRET_KEY_PROD` | Production JWT secret key | Production deployments |
 
 ### Workflow Changes Required
 
@@ -64,12 +67,14 @@ If you prefer this approach, replace the "Deploy Infrastructure" step in `.githu
         if [[ "${{ inputs.environment }}" == "dev" ]]; then
           BACKEND_CLIENT_SECRET="${{ secrets.BACKEND_CLIENT_SECRET_DEV }}"
           AZURE_OPENAI_KEY="${{ secrets.AZURE_OPENAI_KEY_DEV }}"
+          JWT_SECRET_KEY="${{ secrets.JWT_SECRET_KEY_DEV }}"
           FRONTEND_CLIENT_ID="${{ secrets.FRONTEND_CLIENT_ID_DEV }}"
           BACKEND_CLIENT_ID="${{ secrets.BACKEND_CLIENT_ID_DEV }}"
           AZURE_TENANT_ID="${{ secrets.AZURE_TENANT_ID_DEV }}"
         elif [[ "${{ inputs.environment }}" == "prod" ]]; then
           BACKEND_CLIENT_SECRET="${{ secrets.BACKEND_CLIENT_SECRET_PROD }}"
           AZURE_OPENAI_KEY="${{ secrets.AZURE_OPENAI_KEY_PROD }}"
+          JWT_SECRET_KEY="${{ secrets.JWT_SECRET_KEY_PROD }}"
           FRONTEND_CLIENT_ID="${{ secrets.FRONTEND_CLIENT_ID_PROD }}"
           BACKEND_CLIENT_ID="${{ secrets.BACKEND_CLIENT_ID_PROD }}"
           AZURE_TENANT_ID="${{ secrets.AZURE_TENANT_ID_PROD }}"
@@ -99,6 +104,10 @@ If you prefer this approach, replace the "Deploy Infrastructure" step in `.githu
           echo "❌ Error: Azure OpenAI key is not configured for ${{ inputs.environment }} environment"
           exit 1
         fi
+        if [[ -z "$JWT_SECRET_KEY" ]]; then
+          echo "❌ Error: JWT secret key is not configured for ${{ inputs.environment }} environment"
+          exit 1
+        fi
         
         # Continue with deployment...
         deployment_output=$(az deployment group create \
@@ -107,6 +116,7 @@ If you prefer this approach, replace the "Deploy Infrastructure" step in `.githu
           --parameters infra/parameters/main.${{ inputs.environment }}.bicepparam \
           --parameters backendClientSecret="${BACKEND_CLIENT_SECRET}" \
           --parameters azureOpenAIKey="${AZURE_OPENAI_KEY}" \
+          --parameters jwtSecretKey="${JWT_SECRET_KEY}" \
           --parameters frontendClientId="${FRONTEND_CLIENT_ID}" \
           --parameters backendClientId="${BACKEND_CLIENT_ID}" \
           --parameters entraIdTenantId="${AZURE_TENANT_ID}" \
