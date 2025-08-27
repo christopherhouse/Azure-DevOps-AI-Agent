@@ -33,12 +33,6 @@ on:
       AZURE_SUBSCRIPTION_ID:
         description: 'Azure Subscription ID for authentication'
         required: true
-      FRONTEND_CLIENT_ID:
-        description: 'Frontend Client ID for authentication'
-        required: true
-      BACKEND_CLIENT_ID:
-        description: 'Backend Client ID for authentication'
-        required: true
 
 env:
   REGISTRY: ghcr.io
