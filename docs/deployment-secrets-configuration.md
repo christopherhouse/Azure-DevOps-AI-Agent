@@ -1,16 +1,19 @@
 # Deployment Secrets Configuration Guide
 
-This guide explains how to configure GitHub secrets for the Azure DevOps AI Agent deployment workflow after the recent fix for issue #166.
+This guide explains how to configure GitHub secrets for the Azure DevOps AI Agent deployment workflow after the recent fix for issue #170.
 
 ## Overview
 
-The deployment workflow has been updated to properly use environment secrets instead of falling back to placeholder values. This ensures that the correct frontend and backend client IDs are passed to the Bicep infrastructure template during deployment.
+The deployment workflow has been updated to support **flexible secret configuration** with automatic fallback between environment secrets and repository secrets. This ensures deployments work regardless of which secret configuration approach is used.
 
-## ⚠️ Important Change
+## ✨ Flexible Secret Configuration
 
-**Before**: The workflow would silently use placeholder values ('your-frontend-client-id-here', 'your-backend-client-id-here') when secrets were missing.
+The deployment workflow now supports **two approaches** for secret configuration:
 
-**After**: The workflow will now fail with clear error messages if environment secrets are not configured, ensuring you know immediately if secrets are missing.
+1. **Environment Secrets** (Primary) - Provides better separation between environments
+2. **Repository Secrets with Environment Suffixes** (Fallback) - Alternative when environment secrets are not available
+
+The workflow automatically tries environment secrets first and falls back to repository secrets with environment suffixes if environment secrets are not configured. This provides maximum flexibility while maintaining security best practices.
 
 ## 🔑 Required Environment Secrets
 
@@ -42,6 +45,42 @@ BACKEND_CLIENT_SECRET: ABC123def456...
 AZURE_OPENAI_KEY: sk-...
 ```
 
+## 🔄 Alternative: Repository Secrets with Environment Suffixes
+
+If you prefer to use repository secrets instead of environment secrets, or if environment secrets are not available in your GitHub plan, you can configure repository secrets with environment suffixes. The workflow will automatically detect and use these secrets when environment secrets are not available.
+
+### How to Configure Repository Secrets
+
+1. Go to your GitHub repository
+2. Navigate to **Settings** → **Secrets and variables** → **Actions**
+3. Click **New repository secret**
+4. Add each of the following secrets with environment suffixes:
+
+| Secret Name | Description | Used For |
+|-------------|-------------|----------|
+| `FRONTEND_CLIENT_ID_DEV` | Microsoft Entra ID Application (client) ID for frontend | Development deployments |
+| `FRONTEND_CLIENT_ID_PROD` | Microsoft Entra ID Application (client) ID for frontend | Production deployments |
+| `BACKEND_CLIENT_ID_DEV` | Microsoft Entra ID Application (client) ID for backend | Development deployments |
+| `BACKEND_CLIENT_ID_PROD` | Microsoft Entra ID Application (client) ID for backend | Production deployments |
+| `AZURE_TENANT_ID_DEV` | Microsoft Entra ID Tenant ID | Development deployments |
+| `AZURE_TENANT_ID_PROD` | Microsoft Entra ID Tenant ID | Production deployments |
+| `BACKEND_CLIENT_SECRET_DEV` | Microsoft Entra ID Client Secret for backend | Development deployments |
+| `BACKEND_CLIENT_SECRET_PROD` | Microsoft Entra ID Client Secret for backend | Production deployments |
+| `AZURE_OPENAI_KEY_DEV` | Azure OpenAI Service API Key | Development deployments |
+| `AZURE_OPENAI_KEY_PROD` | Azure OpenAI Service API Key | Production deployments |
+
+### Example Repository Secret Values
+
+```
+FRONTEND_CLIENT_ID_DEV: 12345678-1234-1234-1234-123456789012
+FRONTEND_CLIENT_ID_PROD: 11111111-1111-1111-1111-111111111111
+BACKEND_CLIENT_ID_DEV: 87654321-4321-4321-4321-210987654321
+BACKEND_CLIENT_ID_PROD: 22222222-2222-2222-2222-222222222222
+AZURE_TENANT_ID_DEV: 11111111-2222-3333-4444-555555555555
+AZURE_TENANT_ID_PROD: 66666666-7777-8888-9999-000000000000
+# ... and so on for other secrets
+```
+
 ## 🚀 Verification
 
 After configuring the secrets, you can verify the deployment works by:
@@ -52,7 +91,7 @@ After configuring the secrets, you can verify the deployment works by:
 
 ### Expected Log Output
 
-✅ **Success**: 
+✅ **Success with environment secrets**: 
 ```
 Deploying infrastructure to dev environment...
 ✅ All required secrets validated
@@ -60,29 +99,52 @@ Deploying infrastructure to dev environment...
 🔑 Frontend Identity Client ID: 12345678-1234-1234-1234-123456789012
 ```
 
-❌ **Failure (missing secret)**:
+✅ **Success with repository secrets fallback**: 
 ```
-❌ Error: FRONTEND_CLIENT_ID environment secret is not configured
+Deploying infrastructure to dev environment...
+⚠️ Environment secrets not found, trying repository secrets with environment suffixes...
+✅ All required secrets validated
+🏗️ Container Apps Environment: azdo-ai-agent-dev-env
+🔑 Frontend Identity Client ID: 12345678-1234-1234-1234-123456789012
+```
+
+❌ **Failure (missing secrets)**:
+```
+❌ Error: Frontend client ID is not configured
+💡 Configure either:
+   - Environment secret: FRONTEND_CLIENT_ID in dev environment
+   - Repository secret: FRONTEND_CLIENT_ID_DEV
+📚 See docs/deployment-secrets-configuration.md for detailed instructions
 ```
 
 ## 🔄 Troubleshooting
 
-### "Environment secret is not configured" Error
+### "Frontend/Backend client ID is not configured" Error
 
-**Cause**: The specified secret is not set in the GitHub environment.
+**Cause**: The required secrets are not configured in either environment secrets or repository secrets.
 
 **Solution**:
-1. Check the environment name matches exactly (`dev` or `prod`)
-2. Verify the secret name is spelled correctly
-3. Ensure the secret has a value (not empty)
+1. **Option A**: Configure environment secrets (recommended)
+   - Go to **Settings** → **Environments** → Select your environment
+   - Add the required secrets (e.g., `FRONTEND_CLIENT_ID`, `BACKEND_CLIENT_ID`, etc.)
+2. **Option B**: Configure repository secrets with environment suffixes
+   - Go to **Settings** → **Secrets and variables** → **Actions**
+   - Add secrets with environment suffixes (e.g., `FRONTEND_CLIENT_ID_DEV`, `FRONTEND_CLIENT_ID_PROD`)
+
+### "Environment secrets not found, trying repository secrets..." Message
+
+**Cause**: This is normal behavior when environment secrets are not configured.
+
+**Action**: No action needed. The workflow is automatically falling back to repository secrets with environment suffixes.
 
 ### "Deployment failed with placeholder values"
 
-**Cause**: Using old cached workflow or secrets not configured.
+**Cause**: Using an old cached workflow or secrets not configured properly.
 
 **Solution**:
-1. Ensure you're using the latest workflow version
-2. Re-run the workflow after configuring all required secrets
+1. Ensure you're using the latest workflow version (should include fallback logic)
+2. Re-run the workflow after configuring secrets using either approach
+3. Check that secret names exactly match the expected format
 
 ### Different Secrets for Dev vs Prod
 

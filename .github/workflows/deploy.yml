@@ -88,34 +88,78 @@ jobs:
       run: |
         echo "Deploying infrastructure to ${{ inputs.environment }} environment..."
         
-        # Set secure parameter values from environment secrets (no fallbacks to force proper configuration)
+        # Try to use environment secrets first (primary approach)
         BACKEND_CLIENT_SECRET="${{ secrets.BACKEND_CLIENT_SECRET }}"
         AZURE_OPENAI_KEY="${{ secrets.AZURE_OPENAI_KEY }}"
         FRONTEND_CLIENT_ID="${{ secrets.FRONTEND_CLIENT_ID }}"
         BACKEND_CLIENT_ID="${{ secrets.BACKEND_CLIENT_ID }}"
         AZURE_TENANT_ID="${{ secrets.AZURE_TENANT_ID }}"
         
+        # If environment secrets are not available, fall back to repository secrets with environment suffixes
+        if [[ -z "$FRONTEND_CLIENT_ID" ]] || [[ -z "$BACKEND_CLIENT_ID" ]] || [[ -z "$AZURE_TENANT_ID" ]] || [[ -z "$BACKEND_CLIENT_SECRET" ]] || [[ -z "$AZURE_OPENAI_KEY" ]]; then
+          echo "⚠️ Environment secrets not found, trying repository secrets with environment suffixes..."
+          
+          if [[ "${{ inputs.environment }}" == "dev" ]]; then
+            BACKEND_CLIENT_SECRET="${{ secrets.BACKEND_CLIENT_SECRET_DEV }}"
+            AZURE_OPENAI_KEY="${{ secrets.AZURE_OPENAI_KEY_DEV }}"
+            FRONTEND_CLIENT_ID="${{ secrets.FRONTEND_CLIENT_ID_DEV }}"
+            BACKEND_CLIENT_ID="${{ secrets.BACKEND_CLIENT_ID_DEV }}"
+            AZURE_TENANT_ID="${{ secrets.AZURE_TENANT_ID_DEV }}"
+          elif [[ "${{ inputs.environment }}" == "prod" ]]; then
+            BACKEND_CLIENT_SECRET="${{ secrets.BACKEND_CLIENT_SECRET_PROD }}"
+            AZURE_OPENAI_KEY="${{ secrets.AZURE_OPENAI_KEY_PROD }}"
+            FRONTEND_CLIENT_ID="${{ secrets.FRONTEND_CLIENT_ID_PROD }}"
+            BACKEND_CLIENT_ID="${{ secrets.BACKEND_CLIENT_ID_PROD }}"
+            AZURE_TENANT_ID="${{ secrets.AZURE_TENANT_ID_PROD }}"
+          else
+            echo "❌ Error: Unsupported environment: ${{ inputs.environment }}"
+            exit 1
+          fi
+        fi
+        
         # Validate that required secrets are provided
         if [[ -z "$FRONTEND_CLIENT_ID" ]]; then
-          echo "❌ Error: FRONTEND_CLIENT_ID environment secret is not configured"
+          echo "❌ Error: Frontend client ID is not configured"
+          echo "💡 Configure either:"
+          echo "   - Environment secret: FRONTEND_CLIENT_ID in ${{ inputs.environment }} environment"
+          echo "   - Repository secret: FRONTEND_CLIENT_ID_$(echo ${{ inputs.environment }} | tr '[:lower:]' '[:upper:]')"
+          echo "📚 See docs/deployment-secrets-configuration.md for detailed instructions"
           exit 1
         fi
         if [[ -z "$BACKEND_CLIENT_ID" ]]; then
-          echo "❌ Error: BACKEND_CLIENT_ID environment secret is not configured"
+          echo "❌ Error: Backend client ID is not configured"
+          echo "💡 Configure either:"
+          echo "   - Environment secret: BACKEND_CLIENT_ID in ${{ inputs.environment }} environment"
+          echo "   - Repository secret: BACKEND_CLIENT_ID_$(echo ${{ inputs.environment }} | tr '[:lower:]' '[:upper:]')"
+          echo "📚 See docs/deployment-secrets-configuration.md for detailed instructions"
           exit 1
         fi
         if [[ -z "$AZURE_TENANT_ID" ]]; then
-          echo "❌ Error: AZURE_TENANT_ID environment secret is not configured"
+          echo "❌ Error: Azure tenant ID is not configured"
+          echo "💡 Configure either:"
+          echo "   - Environment secret: AZURE_TENANT_ID in ${{ inputs.environment }} environment"
+          echo "   - Repository secret: AZURE_TENANT_ID_$(echo ${{ inputs.environment }} | tr '[:lower:]' '[:upper:]')"
+          echo "📚 See docs/deployment-secrets-configuration.md for detailed instructions"
           exit 1
         fi
         if [[ -z "$BACKEND_CLIENT_SECRET" ]]; then
-          echo "❌ Error: BACKEND_CLIENT_SECRET environment secret is not configured"
+          echo "❌ Error: Backend client secret is not configured"
+          echo "💡 Configure either:"
+          echo "   - Environment secret: BACKEND_CLIENT_SECRET in ${{ inputs.environment }} environment"
+          echo "   - Repository secret: BACKEND_CLIENT_SECRET_$(echo ${{ inputs.environment }} | tr '[:lower:]' '[:upper:]')"
+          echo "📚 See docs/deployment-secrets-configuration.md for detailed instructions"
           exit 1
         fi
         if [[ -z "$AZURE_OPENAI_KEY" ]]; then
-          echo "❌ Error: AZURE_OPENAI_KEY environment secret is not configured"
+          echo "❌ Error: Azure OpenAI key is not configured"
+          echo "💡 Configure either:"
+          echo "   - Environment secret: AZURE_OPENAI_KEY in ${{ inputs.environment }} environment"
+          echo "   - Repository secret: AZURE_OPENAI_KEY_$(echo ${{ inputs.environment }} | tr '[:lower:]' '[:upper:]')"
+          echo "📚 See docs/deployment-secrets-configuration.md for detailed instructions"
           exit 1
         fi
+        
+        echo "✅ All required secrets validated"
         
         deployment_output=$(az deployment group create \
           --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
