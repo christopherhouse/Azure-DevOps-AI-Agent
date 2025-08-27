@@ -61,6 +61,10 @@ param backendClientSecret string = 'MOCK-CLIENT-SECRET-REPLACE-WITH-REAL-VALUE'
 @secure()
 param azureOpenAIKey string = 'MOCK-OPENAI-KEY-REPLACE-WITH-REAL-VALUE'
 
+@description('JWT secret key for authentication')
+@secure()
+param jwtSecretKey string = 'MOCK-JWT-SECRET-KEY-REPLACE-WITH-REAL-VALUE'
+
 @description('Tags to apply to all resources')
 param tags object = {
   Environment: environment
@@ -280,6 +284,10 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.12.1' = {
       {
         name: 'app-insights-connection-string'
         value: applicationInsights.outputs.connectionString
+      }
+      {
+        name: 'jwt-secret-key'
+        value: jwtSecretKey
       }
     ]
     diagnosticSettings: [

@@ -45,6 +45,9 @@ on:
       AZURE_OPENAI_KEY:
         description: 'Azure OpenAI API key'
         required: true
+      JWT_SECRET_KEY:
+        description: 'JWT secret key for backend authentication'
+        required: true
 
 env:
   REGISTRY: ghcr.io
@@ -106,6 +109,7 @@ jobs:
         FRONTEND_CLIENT_ID="${{ secrets.FRONTEND_CLIENT_ID }}"
         BACKEND_CLIENT_ID="${{ secrets.BACKEND_CLIENT_ID }}"
         AZURE_TENANT_ID="${{ secrets.AZURE_TENANT_ID }}"
+        JWT_SECRET_KEY="${{ secrets.JWT_SECRET_KEY }}"
         
         # Validate that required secrets are provided
         if [[ -z "$FRONTEND_CLIENT_ID" ]]; then
@@ -143,6 +147,13 @@ jobs:
           echo "📚 This should contain your Azure OpenAI service access key"
           exit 1
         fi
+        if [[ -z "$JWT_SECRET_KEY" ]]; then
+          echo "❌ Error: JWT secret key is not configured"
+          echo "💡 Configure either:"
+          echo "   - Repository secret: JWT_SECRET_KEY_${{ inputs.environment == 'dev' && 'DEV' || 'PROD' }} in repository secrets"
+          echo "📚 This should contain a secure JWT secret key for backend authentication"
+          exit 1
+        fi
         
         deployment_output=$(az deployment group create \
           --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
@@ -153,6 +164,7 @@ jobs:
           --parameters frontendClientId="${FRONTEND_CLIENT_ID}" \
           --parameters backendClientId="${BACKEND_CLIENT_ID}" \
           --parameters entraIdTenantId="${AZURE_TENANT_ID}" \
+          --parameters jwtSecretKey="${JWT_SECRET_KEY}" \
           --name "infra-deploy-$(echo ${{ github.sha }} | cut -c1-8)" \
           --query 'properties.outputs' \
           --output json)
@@ -250,6 +262,7 @@ jobs:
           --secret-ref "AZURE_TENANT_ID=entra-tenant-id" \
           --secret-ref "AZURE_CLIENT_ID=backend-client-id" \
           --secret-ref "AZURE_CLIENT_SECRET=backend-client-secret" \
+          --secret-ref "JWT_SECRET_KEY=jwt-secret-key" \
           --secret-ref "APPLICATIONINSIGHTS_CONNECTION_STRING=app-insights-connection-string" \
           --verbose
           
