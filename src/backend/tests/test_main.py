@@ -1,5 +1,48 @@
 """Comprehensive tests for backend API."""
 
+import os
+import pytest
+from unittest.mock import patch
+
+
+def test_required_environment_variables():
+    """Test that the application fails when required environment variables are missing."""
+    # This test verifies that the configuration properly validates required environment variables
+    # The actual configuration is loaded at module import time, so this test documents
+    # the expected behavior rather than testing the runtime validation directly.
+    
+    # These are the required environment variables for the backend
+    required_vars = [
+        "AZURE_TENANT_ID",
+        "AZURE_CLIENT_ID", 
+        "JWT_SECRET_KEY"
+    ]
+    
+    # In a real container environment, if any of these are missing,
+    # the application should fail to start with a RuntimeError
+    for var in required_vars:
+        assert var in os.environ, f"Required environment variable {var} should be set for tests"
+    
+    # Verify the test setup has proper values
+    assert len(os.environ["JWT_SECRET_KEY"]) >= 32, "JWT_SECRET_KEY should be at least 32 characters"
+    assert os.environ["AZURE_TENANT_ID"] != "", "AZURE_TENANT_ID should not be empty"
+    assert os.environ["AZURE_CLIENT_ID"] != "", "AZURE_CLIENT_ID should not be empty"
+
+
+def test_configuration_loading():
+    """Test that configuration loads successfully with all required variables."""
+    from app.core.config import settings
+    
+    # Verify all required configuration is loaded
+    assert settings.azure_tenant_id is not None
+    assert settings.azure_client_id is not None
+    assert settings.jwt_secret_key is not None
+    
+    # Verify JWT configuration
+    assert len(settings.jwt_secret_key) >= 32
+    assert settings.jwt_algorithm == "HS256"
+    assert settings.jwt_expire_minutes > 0
+
 
 def test_health_check(client):
     """Test health check endpoint."""

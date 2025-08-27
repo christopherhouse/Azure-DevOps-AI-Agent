@@ -33,6 +33,7 @@ For each environment (`dev`, `prod`), you need to configure these secrets in Git
 | `BACKEND_CLIENT_ID` | Microsoft Entra ID Application (client) ID for the backend app | Azure Portal → Entra ID → App registrations → [Your Backend App] → Overview |
 | `AZURE_TENANT_ID` | Microsoft Entra ID Tenant ID | Azure Portal → Entra ID → Properties → Tenant ID |
 | `BACKEND_CLIENT_SECRET` | Microsoft Entra ID Client Secret for the backend app | Azure Portal → Entra ID → App registrations → [Your Backend App] → Certificates & secrets |
+| `JWT_SECRET_KEY` | JWT secret key for token signing (minimum 32 characters) | Generate a secure random string (e.g., `openssl rand -base64 32`) |
 | `AZURE_OPENAI_KEY` | Azure OpenAI Service API Key | Azure Portal → [Your OpenAI Resource] → Keys and Endpoint |
 
 ### Example Values
@@ -42,6 +43,7 @@ FRONTEND_CLIENT_ID: 12345678-1234-1234-1234-123456789012
 BACKEND_CLIENT_ID: 87654321-4321-4321-4321-210987654321
 AZURE_TENANT_ID: 11111111-2222-3333-4444-555555555555
 BACKEND_CLIENT_SECRET: ABC123def456...
+JWT_SECRET_KEY: super-secure-jwt-key-32-chars-minimum
 AZURE_OPENAI_KEY: sk-...
 ```
 
@@ -66,6 +68,8 @@ If you prefer to use repository secrets instead of environment secrets, or if en
 | `AZURE_TENANT_ID_PROD` | Microsoft Entra ID Tenant ID | Production deployments |
 | `BACKEND_CLIENT_SECRET_DEV` | Microsoft Entra ID Client Secret for backend | Development deployments |
 | `BACKEND_CLIENT_SECRET_PROD` | Microsoft Entra ID Client Secret for backend | Production deployments |
+| `JWT_SECRET_KEY_DEV` | JWT secret key for token signing | Development deployments |
+| `JWT_SECRET_KEY_PROD` | JWT secret key for token signing | Production deployments |
 | `AZURE_OPENAI_KEY_DEV` | Azure OpenAI Service API Key | Development deployments |
 | `AZURE_OPENAI_KEY_PROD` | Azure OpenAI Service API Key | Production deployments |
 

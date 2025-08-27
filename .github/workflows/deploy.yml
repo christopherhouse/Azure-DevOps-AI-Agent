@@ -45,6 +45,9 @@ on:
       AZURE_OPENAI_KEY:
         description: 'Azure OpenAI API key'
         required: true
+      JWT_SECRET_KEY:
+        description: 'JWT secret key for token signing (minimum 32 characters)'
+        required: true
 
 env:
   REGISTRY: ghcr.io
@@ -103,6 +106,7 @@ jobs:
         # Set secure parameter values from repository secrets passed from CI workflow
         BACKEND_CLIENT_SECRET="${{ secrets.BACKEND_CLIENT_SECRET }}"
         AZURE_OPENAI_KEY="${{ secrets.AZURE_OPENAI_KEY }}"
+        JWT_SECRET_KEY="${{ secrets.JWT_SECRET_KEY }}"
         FRONTEND_CLIENT_ID="${{ secrets.FRONTEND_CLIENT_ID }}"
         BACKEND_CLIENT_ID="${{ secrets.BACKEND_CLIENT_ID }}"
         AZURE_TENANT_ID="${{ secrets.AZURE_TENANT_ID }}"
@@ -143,6 +147,13 @@ jobs:
           echo "📚 This should contain your Azure OpenAI service access key"
           exit 1
         fi
+        if [[ -z "$JWT_SECRET_KEY" ]]; then
+          echo "❌ Error: JWT secret key is not configured"
+          echo "💡 Configure either:"
+          echo "   - Repository secret: JWT_SECRET_KEY_${{ inputs.environment == 'dev' && 'DEV' || 'PROD' }} in repository secrets"
+          echo "📚 This should contain a secure JWT secret key (minimum 32 characters)"
+          exit 1
+        fi
         
         deployment_output=$(az deployment group create \
           --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
@@ -150,6 +161,7 @@ jobs:
           --parameters infra/parameters/main.${{ inputs.environment }}.bicepparam \
           --parameters backendClientSecret="${BACKEND_CLIENT_SECRET}" \
           --parameters azureOpenAIKey="${AZURE_OPENAI_KEY}" \
+          --parameters jwtSecretKey="${JWT_SECRET_KEY}" \
           --parameters frontendClientId="${FRONTEND_CLIENT_ID}" \
           --parameters backendClientId="${BACKEND_CLIENT_ID}" \
           --parameters entraIdTenantId="${AZURE_TENANT_ID}" \
@@ -250,6 +262,7 @@ jobs:
           --secret-ref "AZURE_TENANT_ID=entra-tenant-id" \
           --secret-ref "AZURE_CLIENT_ID=backend-client-id" \
           --secret-ref "AZURE_CLIENT_SECRET=backend-client-secret" \
+          --secret-ref "JWT_SECRET_KEY=jwt-secret-key" \
           --secret-ref "APPLICATIONINSIGHTS_CONNECTION_STRING=app-insights-connection-string" \
           --verbose
           
