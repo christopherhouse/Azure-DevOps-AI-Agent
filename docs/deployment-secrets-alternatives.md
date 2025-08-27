@@ -119,4 +119,9 @@ If you prefer this approach, replace the "Deploy Infrastructure" step in `.githu
 
 ## Recommendation
 
-Use the **Environment Secrets** approach (primary implementation) as it provides better security separation and follows GitHub Actions best practices. Only use the repository secrets approach if environment secrets are not available in your GitHub plan or organization settings.
+The **Environment Secrets** approach is still recommended as it provides better security separation and follows GitHub Actions best practices. However, you no longer need to manually modify the workflow - it now **automatically supports both approaches** with intelligent fallback:
+
+1. **Primary**: Environment secrets (tries first)
+2. **Fallback**: Repository secrets with environment suffixes (automatic fallback)
+
+This means you can choose the approach that works best for your setup without modifying workflow files. The deployment will work regardless of which approach you use.

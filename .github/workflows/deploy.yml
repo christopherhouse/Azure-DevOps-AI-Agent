@@ -88,32 +88,42 @@ jobs:
       run: |
         echo "Deploying infrastructure to ${{ inputs.environment }} environment..."
         
-        # Set secure parameter values from environment secrets (no fallbacks to force proper configuration)
+        # Set secure parameter values from environment secrets (available when running in environment context)
         BACKEND_CLIENT_SECRET="${{ secrets.BACKEND_CLIENT_SECRET }}"
         AZURE_OPENAI_KEY="${{ secrets.AZURE_OPENAI_KEY }}"
         FRONTEND_CLIENT_ID="${{ secrets.FRONTEND_CLIENT_ID }}"
         BACKEND_CLIENT_ID="${{ secrets.BACKEND_CLIENT_ID }}"
         AZURE_TENANT_ID="${{ secrets.AZURE_TENANT_ID }}"
         
-        # Validate that required secrets are provided
+        # Validate that required environment secrets are provided
         if [[ -z "$FRONTEND_CLIENT_ID" ]]; then
           echo "❌ Error: FRONTEND_CLIENT_ID environment secret is not configured"
+          echo "💡 Configure the environment secret: FRONTEND_CLIENT_ID in the ${{ inputs.environment }} environment"
+          echo "📚 This should contain the client ID of your frontend Entra ID application"
           exit 1
         fi
         if [[ -z "$BACKEND_CLIENT_ID" ]]; then
           echo "❌ Error: BACKEND_CLIENT_ID environment secret is not configured"
+          echo "💡 Configure the environment secret: BACKEND_CLIENT_ID in the ${{ inputs.environment }} environment"
+          echo "📚 This should contain the client ID of your backend Entra ID application"
           exit 1
         fi
         if [[ -z "$AZURE_TENANT_ID" ]]; then
           echo "❌ Error: AZURE_TENANT_ID environment secret is not configured"
+          echo "💡 Configure the environment secret: AZURE_TENANT_ID in the ${{ inputs.environment }} environment"
+          echo "📚 This should contain your Azure Entra ID tenant ID"
           exit 1
         fi
         if [[ -z "$BACKEND_CLIENT_SECRET" ]]; then
           echo "❌ Error: BACKEND_CLIENT_SECRET environment secret is not configured"
+          echo "💡 Configure the environment secret: BACKEND_CLIENT_SECRET in the ${{ inputs.environment }} environment"
+          echo "📚 This should contain the client secret of your backend Entra ID application"
           exit 1
         fi
         if [[ -z "$AZURE_OPENAI_KEY" ]]; then
           echo "❌ Error: AZURE_OPENAI_KEY environment secret is not configured"
+          echo "💡 Configure the environment secret: AZURE_OPENAI_KEY in the ${{ inputs.environment }} environment"
+          echo "📚 This should contain your Azure OpenAI service access key"
           exit 1
         fi
         
