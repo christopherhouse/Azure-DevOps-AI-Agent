@@ -467,6 +467,10 @@ jobs:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      FRONTEND_CLIENT_ID: ${{ secrets.FRONTEND_CLIENT_ID }}
+      BACKEND_CLIENT_ID: ${{ secrets.BACKEND_CLIENT_ID }}
+      BACKEND_CLIENT_SECRET: ${{ secrets.BACKEND_CLIENT_SECRET }}
+      AZURE_OPENAI_KEY: ${{ secrets.AZURE_OPENAI_KEY }}
   deploy-prod:
     name: Deploy to Production
     needs: [create-release, deploy-dev]
@@ -484,6 +488,10 @@ jobs:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID_PROD }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID_PROD }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID_PROD }}
+      FRONTEND_CLIENT_ID: ${{ secrets.FRONTEND_CLIENT_ID_PROD }}
+      BACKEND_CLIENT_ID: ${{ secrets.BACKEND_CLIENT_ID_PROD }}
+      BACKEND_CLIENT_SECRET: ${{ secrets.BACKEND_CLIENT_SECRET_PROD }}
+      AZURE_OPENAI_KEY: ${{ secrets.AZURE_OPENAI_KEY_PROD }}
 
   notify-completion:
     name: Notify Build and Deployment Completion
