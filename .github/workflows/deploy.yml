@@ -33,18 +33,6 @@ on:
       AZURE_SUBSCRIPTION_ID:
         description: 'Azure Subscription ID for authentication'
         required: true
-      FRONTEND_CLIENT_ID:
-        description: 'Frontend application client ID for Entra ID authentication'
-        required: true
-      BACKEND_CLIENT_ID:
-        description: 'Backend application client ID for Entra ID authentication'
-        required: true
-      BACKEND_CLIENT_SECRET:
-        description: 'Backend application client secret for Entra ID authentication'
-        required: true
-      AZURE_OPENAI_KEY:
-        description: 'Azure OpenAI service key'
-        required: true
 
 env:
   REGISTRY: ghcr.io
@@ -100,41 +88,41 @@ jobs:
       run: |
         echo "Deploying infrastructure to ${{ inputs.environment }} environment..."
         
-        # Set secure parameter values from secrets passed by calling workflow
+        # Set secure parameter values from environment secrets (available when running in environment context)
         BACKEND_CLIENT_SECRET="${{ secrets.BACKEND_CLIENT_SECRET }}"
         AZURE_OPENAI_KEY="${{ secrets.AZURE_OPENAI_KEY }}"
         FRONTEND_CLIENT_ID="${{ secrets.FRONTEND_CLIENT_ID }}"
         BACKEND_CLIENT_ID="${{ secrets.BACKEND_CLIENT_ID }}"
         AZURE_TENANT_ID="${{ secrets.AZURE_TENANT_ID }}"
         
-        # Validate that required secrets are provided
+        # Validate that required environment secrets are provided
         if [[ -z "$FRONTEND_CLIENT_ID" ]]; then
-          echo "❌ Error: FRONTEND_CLIENT_ID secret is not configured"
-          echo "💡 Configure the repository secret: FRONTEND_CLIENT_ID (dev) or FRONTEND_CLIENT_ID_PROD (prod)"
+          echo "❌ Error: FRONTEND_CLIENT_ID environment secret is not configured"
+          echo "💡 Configure the environment secret: FRONTEND_CLIENT_ID in the ${{ inputs.environment }} environment"
           echo "📚 This should contain the client ID of your frontend Entra ID application"
           exit 1
         fi
         if [[ -z "$BACKEND_CLIENT_ID" ]]; then
-          echo "❌ Error: BACKEND_CLIENT_ID secret is not configured"
-          echo "💡 Configure the repository secret: BACKEND_CLIENT_ID (dev) or BACKEND_CLIENT_ID_PROD (prod)"
+          echo "❌ Error: BACKEND_CLIENT_ID environment secret is not configured"
+          echo "💡 Configure the environment secret: BACKEND_CLIENT_ID in the ${{ inputs.environment }} environment"
           echo "📚 This should contain the client ID of your backend Entra ID application"
           exit 1
         fi
         if [[ -z "$AZURE_TENANT_ID" ]]; then
-          echo "❌ Error: AZURE_TENANT_ID secret is not configured"
-          echo "💡 Configure the repository secret: AZURE_TENANT_ID (dev) or AZURE_TENANT_ID_PROD (prod)"
+          echo "❌ Error: AZURE_TENANT_ID environment secret is not configured"
+          echo "💡 Configure the environment secret: AZURE_TENANT_ID in the ${{ inputs.environment }} environment"
           echo "📚 This should contain your Azure Entra ID tenant ID"
           exit 1
         fi
         if [[ -z "$BACKEND_CLIENT_SECRET" ]]; then
-          echo "❌ Error: BACKEND_CLIENT_SECRET secret is not configured"
-          echo "💡 Configure the repository secret: BACKEND_CLIENT_SECRET (dev) or BACKEND_CLIENT_SECRET_PROD (prod)"
+          echo "❌ Error: BACKEND_CLIENT_SECRET environment secret is not configured"
+          echo "💡 Configure the environment secret: BACKEND_CLIENT_SECRET in the ${{ inputs.environment }} environment"
           echo "📚 This should contain the client secret of your backend Entra ID application"
           exit 1
         fi
         if [[ -z "$AZURE_OPENAI_KEY" ]]; then
-          echo "❌ Error: AZURE_OPENAI_KEY secret is not configured"
-          echo "💡 Configure the repository secret: AZURE_OPENAI_KEY (dev) or AZURE_OPENAI_KEY_PROD (prod)"
+          echo "❌ Error: AZURE_OPENAI_KEY environment secret is not configured"
+          echo "💡 Configure the environment secret: AZURE_OPENAI_KEY in the ${{ inputs.environment }} environment"
           echo "📚 This should contain your Azure OpenAI service access key"
           exit 1
         fi
