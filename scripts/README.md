@@ -13,11 +13,13 @@ A comprehensive bash script that creates or updates Azure Container Apps using t
 - **Rich console output**: Colorful output with emojis for improved readability
 - **Comprehensive validation**: Validates all parameters before deployment
 - **Flexible configuration**: Supports all common container app configurations
+- **Traffic management**: Automatically routes 100% traffic to new revisions in multi-revision mode
 
 #### Key Features
 
 - ✨ **Beautiful output** with colors and emojis
 - 🔄 **Multi-revision deployments** by default
+- 🚦 **Automatic traffic routing** to new revisions (100% traffic to latest)
 - 🔑 **Key Vault secret references** for secure configuration
 - 👤 **User-assigned managed identities** for authentication
 - 🛡️ **Parameter validation** and error handling
@@ -110,13 +112,14 @@ The script is integrated into the deployment workflow at `.github/workflows/depl
 ## Benefits
 
 1. **Better control**: Direct Azure CLI usage provides more control over deployment
-2. **Multi-revision support**: Built-in support for Azure Container Apps revisions  
+2. **Multi-revision support**: Built-in support for Azure Container Apps revisions with automatic traffic routing
 3. **Secure configuration**: Key Vault integration for secrets management
 4. **Identity-based security**: User-assigned managed identities for each app
 5. **Improved debugging**: Verbose output and better error messages
 6. **Consistency**: Uses the same Azure CLI tools as infrastructure deployment
 7. **Maintainability**: Pure bash script that's easy to modify and extend
 8. **No external dependencies**: Removes dependency on third-party GitHub Action
+9. **Traffic management**: Automatically routes 100% traffic to new revisions, solving the 0% traffic issue
 
 ## Testing
 

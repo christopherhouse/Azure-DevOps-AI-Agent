@@ -487,6 +487,32 @@ execute_deployment() {
     fi
 }
 
+# Function to manage traffic routing for multi-revision deployments
+manage_traffic_routing() {
+    # Only manage traffic for multi-revision mode and update operations
+    if [[ "$REVISIONS_MODE" != "multiple" ]]; then
+        return 0
+    fi
+    
+    print_info "Setting traffic routing to latest revision..."
+    
+    if [[ "$VERBOSE" == "true" ]]; then
+        print_info "Command: az containerapp ingress traffic set --name $APP_NAME --resource-group $RESOURCE_GROUP --revision-weight latest=100"
+    fi
+    
+    # Set 100% traffic to the latest revision
+    if az containerapp ingress traffic set \
+        --name "$APP_NAME" \
+        --resource-group "$RESOURCE_GROUP" \
+        --revision-weight latest=100; then
+        print_success "Traffic routing configured: 100% traffic to latest revision"
+        return 0
+    else
+        print_error "Failed to configure traffic routing!"
+        return 1
+    fi
+}
+
 # Function to get app URL
 get_app_url() {
     print_info "Retrieving application URL..."
@@ -569,12 +595,27 @@ main() {
     
     if execute_deployment "$operation"; then
         echo ""
+        
+        # Manage traffic routing for update operations in multi-revision mode
+        if [[ "$operation" == "update" ]]; then
+            if ! manage_traffic_routing; then
+                echo ""
+                print_message "$RED" "$CROSS" "Deployment completed but traffic routing failed!"
+                exit 1
+            fi
+            echo ""
+        fi
+        
         get_app_url
         echo ""
         print_message "$GREEN" "$SPARKLES" "Deployment completed successfully!"
         
         if [[ "$REVISIONS_MODE" == "multiple" ]]; then
-            print_info "Multi-revision mode enabled. New revision created alongside existing ones."
+            if [[ "$operation" == "update" ]]; then
+                print_info "Multi-revision mode: New revision created and set to receive 100% traffic."
+            else
+                print_info "Multi-revision mode enabled. New revision created alongside existing ones."
+            fi
         fi
     else
         echo ""
