@@ -12,17 +12,44 @@ import {
  * Get MSAL configuration object - deferred to avoid build-time issues
  */
 export const getMsalConfig = (): Configuration => {
-  // Check if we're in build time - use placeholder values
-  const isBuildTime = typeof window === 'undefined' && process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_AZURE_TENANT_ID;
+  // Check if we're in build time - use placeholder values only during static generation
+  const isBuildTime = typeof window === 'undefined' && 
+                     process.env.NODE_ENV === 'production' && 
+                     !process.env.NEXT_PUBLIC_AZURE_TENANT_ID;
   
+  if (isBuildTime) {
+    // Only return placeholder values during build/SSG phase
+    return {
+      auth: {
+        clientId: 'build-time-placeholder',
+        authority: 'https://login.microsoftonline.com/build-time-placeholder',
+        redirectUri: '/',
+      },
+      cache: {
+        cacheLocation: 'sessionStorage',
+        storeAuthStateInCookie: false,
+      },
+    };
+  }
+
+  // Runtime configuration - validate environment variables are present
+  const tenantId = process.env.NEXT_PUBLIC_AZURE_TENANT_ID;
+  const clientId = process.env.NEXT_PUBLIC_AZURE_CLIENT_ID;
+
+  if (!tenantId) {
+    throw new Error('Required environment variable NEXT_PUBLIC_AZURE_TENANT_ID is not set');
+  }
+  if (!clientId) {
+    throw new Error('Required environment variable NEXT_PUBLIC_AZURE_CLIENT_ID is not set');
+  }
+
   return {
     auth: {
-      clientId: isBuildTime ? 'build-time-placeholder' : (process.env.NEXT_PUBLIC_AZURE_CLIENT_ID || ''),
-      authority: isBuildTime 
-        ? 'https://login.microsoftonline.com/build-time-placeholder'
-        : (process.env.NEXT_PUBLIC_AZURE_AUTHORITY ||
-           `https://login.microsoftonline.com/${process.env.NEXT_PUBLIC_AZURE_TENANT_ID}`),
-      redirectUri: process.env.NEXT_PUBLIC_AZURE_REDIRECT_URI || '/',
+      clientId: clientId,
+      authority: process.env.NEXT_PUBLIC_AZURE_AUTHORITY || 
+                `https://login.microsoftonline.com/${tenantId}`,
+      redirectUri: process.env.NEXT_PUBLIC_AZURE_REDIRECT_URI || 
+                  (typeof window !== 'undefined' ? window.location.origin + '/auth/callback' : '/auth/callback'),
     },
     cache: {
       cacheLocation: 'sessionStorage',
