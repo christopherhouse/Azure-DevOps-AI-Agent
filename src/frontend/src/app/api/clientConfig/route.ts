@@ -48,6 +48,9 @@ export async function GET() {
     if (!backendUrl) {
       throw new Error('BACKEND_URL environment variable is not set');
     }
+    if (!frontendUrl) {
+      throw new Error('FRONTEND_URL environment variable is not set');
+    }
 
     // Build the response with defaults for optional values
     const config: ClientConfigResponse = {
@@ -57,7 +60,7 @@ export async function GET() {
         authority: authority || `https://login.microsoftonline.com/${tenantId}`,
         redirectUri:
           redirectUri ||
-          `${frontendUrl || 'http://localhost:3000'}/auth/callback`,
+          `${frontendUrl}/auth/callback`,
         scopes: scopes
           ? scopes.split(',').map((scope) => scope.trim())
           : ['openid', 'profile', 'User.Read'],
@@ -66,7 +69,7 @@ export async function GET() {
         url: backendUrl.endsWith('/api') ? backendUrl : `${backendUrl}/api`,
       },
       frontend: {
-        url: frontendUrl || 'http://localhost:3000',
+        url: frontendUrl,
       },
     };
 
@@ -83,7 +86,7 @@ export async function GET() {
             ? error.message
             : 'Unknown configuration error',
         details:
-          'Please check that required environment variables (AZURE_TENANT_ID, AZURE_CLIENT_ID, BACKEND_URL) are properly set on the server',
+          'Please check that required environment variables (AZURE_TENANT_ID, AZURE_CLIENT_ID, BACKEND_URL, FRONTEND_URL) are properly set on the server',
       },
       { status: 500 }
     );
