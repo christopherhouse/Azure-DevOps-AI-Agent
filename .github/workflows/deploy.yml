@@ -311,6 +311,7 @@ jobs:
           --env-var "NEXT_PUBLIC_ENVIRONMENT=${{ inputs.environment }}" \
           --secret-ref "AZURE_TENANT_ID=entra-tenant-id" \
           --secret-ref "AZURE_CLIENT_ID=frontend-client-id" \
+          --secret-ref "BACKEND_CLIENT_ID=backend-client-id" \
           --secret-ref "NEXT_PUBLIC_AZURE_TENANT_ID=entra-tenant-id" \
           --secret-ref "NEXT_PUBLIC_AZURE_CLIENT_ID=frontend-client-id" \
           --secret-ref "NEXT_PUBLIC_APPLICATIONINSIGHTS_CONNECTION_STRING=app-insights-connection-string" \
