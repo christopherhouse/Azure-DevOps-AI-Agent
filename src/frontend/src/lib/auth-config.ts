@@ -149,7 +149,7 @@ export const msalConfig = new Proxy({} as Configuration, {
  */
 function getScopes(): string[] {
   const clientConfig = getCachedClientConfig();
-  return clientConfig?.azure.scopes || ['openid', 'profile', 'User.Read'];
+  return clientConfig?.azure.scopes || ['openid', 'profile', 'User.Read', 'email'];
 }
 
 /**
@@ -176,7 +176,7 @@ export function getTokenRequest(): SilentRequest {
  * @deprecated Use getLoginRequest() instead for dynamic scopes
  */
 export const loginRequest: PopupRequest = {
-  scopes: ['openid', 'profile', 'User.Read'],
+  scopes: ['openid', 'profile', 'User.Read', 'email'],
 };
 
 /**
@@ -184,6 +184,6 @@ export const loginRequest: PopupRequest = {
  * @deprecated Use getTokenRequest() instead for dynamic scopes
  */
 export const tokenRequest: SilentRequest = {
-  scopes: ['openid', 'profile', 'User.Read'],
+  scopes: ['openid', 'profile', 'User.Read', 'email'],
   account: null as any,
 };

@@ -13,7 +13,7 @@ describe('JWT Scope Fix Validation', () => {
       clientId: 'test-client-id',
       authority: 'https://login.microsoftonline.com/test-tenant-id',
       redirectUri: 'http://localhost:3000/auth/callback',
-      scopes: ['openid', 'profile', 'User.Read', 'api://backend-client-id/Api.All']
+      scopes: ['openid', 'profile', 'User.Read', 'email', 'api://backend-client-id/Api.All']
     },
     backend: {
       url: 'http://localhost:8000/api'
@@ -45,7 +45,8 @@ describe('JWT Scope Fix Validation', () => {
     expect(loginReq.scopes).toEqual([
       'openid', 
       'profile', 
-      'User.Read', 
+      'User.Read',
+      'email',
       'api://backend-client-id/Api.All'
     ]);
   });
@@ -60,11 +61,12 @@ describe('JWT Scope Fix Validation', () => {
     // Verify the backend API scope is included
     expect(tokenReq.scopes).toContain('api://backend-client-id/Api.All');
     
-    // Verify all expected scopes are present
+    // Verify all expected scopes are present (all 5 required scopes)
     expect(tokenReq.scopes).toEqual([
       'openid', 
       'profile', 
-      'User.Read', 
+      'User.Read',
+      'email',
       'api://backend-client-id/Api.All'
     ]);
   });
@@ -94,8 +96,8 @@ describe('JWT Scope Fix Validation', () => {
     const loginReq = getLoginRequest();
     const tokenReq = getTokenRequest();
 
-    // Should use default scopes
-    expect(loginReq.scopes).toEqual(['openid', 'profile', 'User.Read']);
-    expect(tokenReq.scopes).toEqual(['openid', 'profile', 'User.Read']);
+    // Should use default scopes including email
+    expect(loginReq.scopes).toEqual(['openid', 'profile', 'User.Read', 'email']);
+    expect(tokenReq.scopes).toEqual(['openid', 'profile', 'User.Read', 'email']);
   });
 });

@@ -19,7 +19,7 @@ const mockClientConfigWithBackendScope = {
     clientId: 'test-client-id-67890',
     authority: 'https://login.microsoftonline.com/test-tenant-id-12345',
     redirectUri: 'http://localhost:3000/auth/callback',
-    scopes: ['openid', 'profile', 'User.Read', 'api://backend-client-id/Api.All']
+    scopes: ['openid', 'profile', 'User.Read', 'email', 'api://backend-client-id/Api.All']
   },
   backend: {
     url: 'http://localhost:8000'
@@ -142,7 +142,7 @@ describe('Dynamic Auth Requests', () => {
     it('should return login request with default scopes when no config is cached', () => {
       const request = getLoginRequest();
       
-      expect(request.scopes).toEqual(['openid', 'profile', 'User.Read']);
+      expect(request.scopes).toEqual(['openid', 'profile', 'User.Read', 'email']);
     });
 
     it('should return login request with scopes from cached client config', () => {
@@ -150,7 +150,7 @@ describe('Dynamic Auth Requests', () => {
       
       const request = getLoginRequest();
       
-      expect(request.scopes).toEqual(['openid', 'profile', 'User.Read', 'api://backend-client-id/Api.All']);
+      expect(request.scopes).toEqual(['openid', 'profile', 'User.Read', 'email', 'api://backend-client-id/Api.All']);
     });
 
     it('should include backend API scope when present in config', () => {
@@ -166,7 +166,7 @@ describe('Dynamic Auth Requests', () => {
     it('should return token request with default scopes when no config is cached', () => {
       const request = getTokenRequest();
       
-      expect(request.scopes).toEqual(['openid', 'profile', 'User.Read']);
+      expect(request.scopes).toEqual(['openid', 'profile', 'User.Read', 'email']);
       expect(request.account).toBe(null);
     });
 
@@ -175,7 +175,7 @@ describe('Dynamic Auth Requests', () => {
       
       const request = getTokenRequest();
       
-      expect(request.scopes).toEqual(['openid', 'profile', 'User.Read', 'api://backend-client-id/Api.All']);
+      expect(request.scopes).toEqual(['openid', 'profile', 'User.Read', 'email', 'api://backend-client-id/Api.All']);
       expect(request.account).toBe(null);
     });
 
@@ -190,11 +190,11 @@ describe('Dynamic Auth Requests', () => {
 
   describe('Legacy exports (deprecated)', () => {
     it('should maintain backward compatibility for loginRequest', () => {
-      expect(loginRequest.scopes).toEqual(['openid', 'profile', 'User.Read']);
+      expect(loginRequest.scopes).toEqual(['openid', 'profile', 'User.Read', 'email']);
     });
 
     it('should maintain backward compatibility for tokenRequest', () => {
-      expect(tokenRequest.scopes).toEqual(['openid', 'profile', 'User.Read']);
+      expect(tokenRequest.scopes).toEqual(['openid', 'profile', 'User.Read', 'email']);
       expect(tokenRequest.account).toBe(null);
     });
   });

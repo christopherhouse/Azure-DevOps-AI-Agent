@@ -80,7 +80,7 @@ describe('/api/clientConfig', () => {
       expect(response.status).toBe(200)
       expect(data.azure.authority).toBe('https://login.microsoftonline.com/test-tenant-id')
       expect(data.azure.redirectUri).toBe('http://localhost:3000/auth/callback')
-      expect(data.azure.scopes).toEqual(['openid', 'profile', 'User.Read', 'api://test-backend-client-id/Api.All'])
+      expect(data.azure.scopes).toEqual(['openid', 'profile', 'User.Read', 'email', 'api://test-backend-client-id/Api.All'])
       expect(data.frontend.url).toBe('http://localhost:3000')
     })
 
