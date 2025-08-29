@@ -145,11 +145,32 @@ export const msalConfig = new Proxy({} as Configuration, {
 });
 
 /**
- * Get scopes from client config or fallback to defaults
+ * Get scopes from client config or fallback to defaults with backend API scope
  */
 function getScopes(): string[] {
   const clientConfig = getCachedClientConfig();
-  return clientConfig?.azure.scopes || ['openid', 'profile', 'User.Read', 'email'];
+  
+  // If client config is available, use its scopes
+  if (clientConfig?.azure.scopes) {
+    return clientConfig.azure.scopes;
+  }
+  
+  // Fallback: try to construct backend API scope from environment
+  const backendClientId = process.env.NEXT_PUBLIC_BACKEND_CLIENT_ID || process.env.BACKEND_CLIENT_ID;
+  const defaultScopes = ['openid', 'profile', 'User.Read', 'email'];
+  
+  if (backendClientId) {
+    const backendApiScope = `api://${backendClientId}/Api.All`;
+    return [...defaultScopes, backendApiScope];
+  } else {
+    // Warning: Backend API scope not available
+    console.warn(
+      'Backend API scope not available: BACKEND_CLIENT_ID not found in client config or environment. ' +
+      'JWT tokens will not include backend API scope. ' +
+      'Ensure BACKEND_CLIENT_ID environment variable is set or client configuration is properly loaded.'
+    );
+    return defaultScopes;
+  }
 }
 
 /**
