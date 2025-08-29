@@ -14,7 +14,7 @@ const mockClientConfig = {
     clientId: 'test-client-id',
     authority: 'https://login.microsoftonline.com/test-tenant-id',
     redirectUri: 'http://localhost:3000/auth/callback',
-    scopes: ['openid', 'profile', 'User.Read']
+    scopes: ['openid', 'profile', 'User.Read', 'email']
   },
   backend: {
     url: 'http://localhost:8000'

@@ -57,7 +57,7 @@ export async function GET() {
     }
 
     // Construct scopes array with OIDC scopes and backend API scope
-    const defaultScopes = ['openid', 'profile', 'User.Read'];
+    const defaultScopes = ['openid', 'profile', 'User.Read', 'email'];
     const backendApiScope = `api://${backendClientId}/Api.All`;
 
     const scopesArray = scopes

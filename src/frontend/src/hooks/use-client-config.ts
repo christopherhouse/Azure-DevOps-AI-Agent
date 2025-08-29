@@ -56,6 +56,8 @@ export function useClientConfig(): UseClientConfigResult {
 
         const configData = await response.json();
         setConfig(configData);
+        // Cache the config immediately when loaded so other components can access it
+        setCachedClientConfig(configData);
       } catch (err) {
         setError({
           error: 'Network Error',
