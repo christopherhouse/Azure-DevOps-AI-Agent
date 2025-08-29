@@ -21,7 +21,7 @@ A comprehensive bash script that creates or updates Azure Container Apps using t
 - 🔄 **Multi-revision deployments** by default
 - 🚦 **Automatic traffic management** routes 100% traffic to latest revision
 - 🧹 **Old revision cleanup** deactivates unused revisions automatically
-- 🔑 **Key Vault secret references** for secure configuration
+- 🔑 **Key Vault secret references** for secure configuration with automatic deduplication
 - 👤 **User-assigned managed identities** for authentication
 - 🛡️ **Parameter validation** and error handling
 - 📊 **Deployment summary** before execution
@@ -114,13 +114,24 @@ The script is integrated into the deployment workflow at `.github/workflows/depl
 
 1. **Better control**: Direct Azure CLI usage provides more control over deployment
 2. **Multi-revision support**: Built-in support for Azure Container Apps revisions with automatic traffic management
-3. **Secure configuration**: Key Vault integration for secrets management
+3. **Secure configuration**: Key Vault integration for secrets management with automatic deduplication
 4. **Identity-based security**: User-assigned managed identities for each app
 5. **Traffic routing**: Automatically routes 100% traffic to new deployments
 6. **Improved debugging**: Verbose output and better error messages
 7. **Consistency**: Uses the same Azure CLI tools as infrastructure deployment
 8. **Maintainability**: Pure bash script that's easy to modify and extend
 9. **No external dependencies**: Removes dependency on third-party GitHub Action
+
+### Secret Deduplication
+
+The script automatically handles scenarios where multiple environment variables reference the same Key Vault secret. For example:
+
+```bash
+--secret-ref "AZURE_TENANT_ID=entra-tenant-id" \
+--secret-ref "NEXT_PUBLIC_AZURE_TENANT_ID=entra-tenant-id"
+```
+
+Instead of creating duplicate secret entries that would cause Azure CLI errors, the script intelligently deduplicates them to create only one Key Vault reference per unique secret name. This is particularly useful for frontend applications that need both server-side and client-side environment variables referencing the same secrets.
 
 ## Testing
 

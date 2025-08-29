@@ -387,8 +387,10 @@ build_az_command() {
         local all_secrets=()
         all_secrets+=("${SECRETS[@]}")
         
-        # Create Key Vault secret references
+        # Create Key Vault secret references with deduplication
         if [[ ${#SECRET_REFS[@]} -gt 0 && -n "$KEY_VAULT_NAME" && -n "$MANAGED_IDENTITY" ]]; then
+            # Use associative array to prevent duplicate secret names
+            declare -A unique_secrets
             for secret_ref in "${SECRET_REFS[@]}"; do
                 if [[ "$secret_ref" == *"="* ]]; then
                     env_var_name="${secret_ref%%=*}"
@@ -396,7 +398,13 @@ build_az_command() {
                     # Format for Container Apps Key Vault reference:
                     # secret-name=keyvaultref:https://vault.vault.azure.net/secrets/secret-name,identityref:managed-identity-id
                     key_vault_uri="https://${KEY_VAULT_NAME}.vault.azure.net/secrets/${secret_name}"
-                    all_secrets+=("${secret_name}=keyvaultref:${key_vault_uri},identityref:${MANAGED_IDENTITY}")
+                    secret_value="keyvaultref:${key_vault_uri},identityref:${MANAGED_IDENTITY}"
+                    
+                    # Only add if we haven't seen this secret name before
+                    if [[ -z "${unique_secrets[$secret_name]}" ]]; then
+                        unique_secrets[$secret_name]="$secret_value"
+                        all_secrets+=("${secret_name}=${secret_value}")
+                    fi
                 fi
             done
         fi
@@ -422,7 +430,9 @@ update_secrets() {
     local all_secrets=()
     all_secrets+=("${SECRETS[@]}")
     
-    # Create Key Vault secret references
+    # Create Key Vault secret references with deduplication
+    # Use associative array to prevent duplicate secret names
+    declare -A unique_secrets
     for secret_ref in "${SECRET_REFS[@]}"; do
         if [[ "$secret_ref" == *"="* ]]; then
             env_var_name="${secret_ref%%=*}"
@@ -430,7 +440,13 @@ update_secrets() {
             # Format for Container Apps Key Vault reference:
             # secret-name=keyvaultref:https://vault.vault.azure.net/secrets/secret-name,identityref:managed-identity-id
             key_vault_uri="https://${KEY_VAULT_NAME}.vault.azure.net/secrets/${secret_name}"
-            all_secrets+=("${secret_name}=keyvaultref:${key_vault_uri},identityref:${MANAGED_IDENTITY}")
+            secret_value="keyvaultref:${key_vault_uri},identityref:${MANAGED_IDENTITY}"
+            
+            # Only add if we haven't seen this secret name before
+            if [[ -z "${unique_secrets[$secret_name]}" ]]; then
+                unique_secrets[$secret_name]="$secret_value"
+                all_secrets+=("${secret_name}=${secret_value}")
+            fi
         fi
     done
     
