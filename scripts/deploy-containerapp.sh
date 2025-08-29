@@ -401,7 +401,7 @@ build_az_command() {
                     secret_value="keyvaultref:${key_vault_uri},identityref:${MANAGED_IDENTITY}"
                     
                     # Only add if we haven't seen this secret name before
-                    if [[ -z "${unique_secrets[$secret_name]}" ]]; then
+                    if [[ -z "${unique_secrets[$secret_name]:-}" ]]; then
                         unique_secrets[$secret_name]="$secret_value"
                         all_secrets+=("${secret_name}=${secret_value}")
                     fi
@@ -443,7 +443,7 @@ update_secrets() {
             secret_value="keyvaultref:${key_vault_uri},identityref:${MANAGED_IDENTITY}"
             
             # Only add if we haven't seen this secret name before
-            if [[ -z "${unique_secrets[$secret_name]}" ]]; then
+            if [[ -z "${unique_secrets[$secret_name]:-}" ]]; then
                 unique_secrets[$secret_name]="$secret_value"
                 all_secrets+=("${secret_name}=${secret_value}")
             fi
