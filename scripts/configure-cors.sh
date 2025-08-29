@@ -12,18 +12,15 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 MAGENTA='\033[0;35m'
-CYAN='\033[0;36m'
 WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
 # Emoji codes
-ROCKET='🚀'
 SPARKLES='✨'
 GEAR='⚙️'
 CROSS='❌'
 CHECK='✅'
 WARNING='⚠️'
-GLOBE='🌐'
 
 # Default values
 SCRIPT_NAME="$(basename "$0")"
@@ -196,10 +193,8 @@ configure_cors() {
         
         if "${cmd_args[@]}"; then
             print_success "CORS enabled successfully!"
-            return 0
         else
             print_error "Failed to enable CORS!"
-            return 1
         fi
     else
         # Update existing CORS configuration
@@ -223,10 +218,8 @@ configure_cors() {
         
         if "${cmd_args[@]}"; then
             print_success "CORS updated successfully!"
-            return 0
         else
             print_error "Failed to update CORS!"
-            return 1
         fi
     fi
 }
