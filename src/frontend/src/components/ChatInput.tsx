@@ -61,7 +61,7 @@ export function ChatInput({
             onChange={handleTextareaChange}
             onKeyDown={handleKeyDown}
             placeholder="Type your message here... (Press Enter to send, Shift+Enter for new line)"
-            className="w-full resize-none border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full resize-none border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             style={{ minHeight: '40px', maxHeight: '150px' }}
             disabled={disabled || loading}
             rows={1}
@@ -80,7 +80,7 @@ export function ChatInput({
           </Button>
         </div>
       </div>
-      <div className="text-xs text-gray-500 mt-2">
+      <div className="text-xs text-gray-700 mt-2">
         Press Enter to send, Shift+Enter for a new line
       </div>
     </div>
