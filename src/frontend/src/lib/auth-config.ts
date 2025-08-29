@@ -1,6 +1,6 @@
 /**
  * Authentication configuration for Microsoft Authentication Library (MSAL)
- * This works with both build-time and runtime configuration loading
+ * This uses the new client config API instead of NEXT_PUBLIC_* environment variables
  */
 
 import {
@@ -8,23 +8,16 @@ import {
   PopupRequest,
   SilentRequest,
 } from '@azure/msal-browser';
+import { ClientConfig, getCachedClientConfig } from '@/hooks/use-client-config';
 
 /**
- * Check if we're using build-time placeholders (indicates container deployment)
- */
-function isUsingPlaceholders(): boolean {
-  return process.env.NEXT_PUBLIC_AZURE_TENANT_ID === 'build-time-placeholder' ||
-         process.env.NEXT_PUBLIC_AZURE_CLIENT_ID === 'build-time-placeholder';
-}
-
-/**
- * Get MSAL configuration from runtime config API
+ * Get MSAL configuration from client config API
  */
 async function getMsalConfigFromApi(): Promise<Configuration> {
   try {
-    const response = await fetch('/api/config');
+    const response = await fetch('/api/clientConfig');
     if (!response.ok) {
-      throw new Error(`Failed to load configuration: ${response.status}`);
+      throw new Error(`Failed to load client configuration: ${response.status}`);
     }
     
     const config = await response.json();
@@ -51,13 +44,28 @@ async function getMsalConfigFromApi(): Promise<Configuration> {
 }
 
 /**
- * Get MSAL configuration object - deferred to avoid build-time issues
+ * Create MSAL configuration from client config object
+ */
+export function createMsalConfigFromClientConfig(clientConfig: ClientConfig): Configuration {
+  return {
+    auth: {
+      clientId: clientConfig.azure.clientId,
+      authority: clientConfig.azure.authority,
+      redirectUri: clientConfig.azure.redirectUri,
+    },
+    cache: {
+      cacheLocation: 'sessionStorage',
+      storeAuthStateInCookie: false,
+    },
+  };
+}
+
+/**
+ * Get MSAL configuration object - loads from runtime API
  */
 export const getMsalConfig = async (): Promise<Configuration> => {
   // Check if we're in build time - use placeholder values only during static generation
-  const isBuildTime = typeof window === 'undefined' && 
-                     process.env.NODE_ENV === 'production' && 
-                     !process.env.NEXT_PUBLIC_AZURE_TENANT_ID;
+  const isBuildTime = typeof window === 'undefined' && process.env.NODE_ENV === 'production';
   
   if (isBuildTime) {
     // Only return placeholder values during build/SSG phase
@@ -74,45 +82,22 @@ export const getMsalConfig = async (): Promise<Configuration> => {
     };
   }
 
-  // If using placeholders, load from runtime API
-  if (isUsingPlaceholders()) {
-    return await getMsalConfigFromApi();
+  // Try to get from cache first
+  const cachedConfig = getCachedClientConfig();
+  if (cachedConfig) {
+    return createMsalConfigFromClientConfig(cachedConfig);
   }
 
-  // Standard configuration - validate environment variables are present
-  const tenantId = process.env.NEXT_PUBLIC_AZURE_TENANT_ID;
-  const clientId = process.env.NEXT_PUBLIC_AZURE_CLIENT_ID;
-
-  if (!tenantId) {
-    throw new Error('Required environment variable NEXT_PUBLIC_AZURE_TENANT_ID is not set');
-  }
-  if (!clientId) {
-    throw new Error('Required environment variable NEXT_PUBLIC_AZURE_CLIENT_ID is not set');
-  }
-
-  return {
-    auth: {
-      clientId: clientId,
-      authority: process.env.NEXT_PUBLIC_AZURE_AUTHORITY || 
-                `https://login.microsoftonline.com/${tenantId}`,
-      redirectUri: process.env.NEXT_PUBLIC_AZURE_REDIRECT_URI || 
-                  (typeof window !== 'undefined' ? window.location.origin + '/auth/callback' : '/auth/callback'),
-    },
-    cache: {
-      cacheLocation: 'sessionStorage',
-      storeAuthStateInCookie: false,
-    },
-  };
+  // If not cached, load from API
+  return await getMsalConfigFromApi();
 };
 
 /**
- * Synchronous version for legacy compatibility - only works with direct env vars
+ * Synchronous version - uses cached config if available, otherwise throws
  */
 export const getMsalConfigSync = (): Configuration => {
   // Check if we're in build time - use placeholder values only during static generation
-  const isBuildTime = typeof window === 'undefined' && 
-                     process.env.NODE_ENV === 'production' && 
-                     !process.env.NEXT_PUBLIC_AZURE_TENANT_ID;
+  const isBuildTime = typeof window === 'undefined' && process.env.NODE_ENV === 'production';
   
   if (isBuildTime) {
     // Only return placeholder values during build/SSG phase
@@ -129,35 +114,13 @@ export const getMsalConfigSync = (): Configuration => {
     };
   }
 
-  // If using placeholders, we can't provide sync config
-  if (isUsingPlaceholders()) {
-    throw new Error('Configuration uses runtime API. Use getMsalConfig() instead.');
+  // Try to get from cache
+  const cachedConfig = getCachedClientConfig();
+  if (!cachedConfig) {
+    throw new Error('Client configuration not loaded yet. Use getMsalConfig() instead or ensure useClientConfig has completed loading.');
   }
 
-  // Standard synchronous configuration
-  const tenantId = process.env.NEXT_PUBLIC_AZURE_TENANT_ID;
-  const clientId = process.env.NEXT_PUBLIC_AZURE_CLIENT_ID;
-
-  if (!tenantId) {
-    throw new Error('Required environment variable NEXT_PUBLIC_AZURE_TENANT_ID is not set');
-  }
-  if (!clientId) {
-    throw new Error('Required environment variable NEXT_PUBLIC_AZURE_CLIENT_ID is not set');
-  }
-
-  return {
-    auth: {
-      clientId: clientId,
-      authority: process.env.NEXT_PUBLIC_AZURE_AUTHORITY || 
-                `https://login.microsoftonline.com/${tenantId}`,
-      redirectUri: process.env.NEXT_PUBLIC_AZURE_REDIRECT_URI || 
-                  (typeof window !== 'undefined' ? window.location.origin + '/auth/callback' : '/auth/callback'),
-    },
-    cache: {
-      cacheLocation: 'sessionStorage',
-      storeAuthStateInCookie: false,
-    },
-  };
+  return createMsalConfigFromClientConfig(cachedConfig);
 };
 
 /**
