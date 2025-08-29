@@ -145,32 +145,31 @@ export const msalConfig = new Proxy({} as Configuration, {
 });
 
 /**
- * Get scopes from client config or fallback to defaults with backend API scope
+ * Get scopes directly from client config as requested in issue #224
+ * "Just use clientConfig.scopes as the source of the scopes when requesting a token"
  */
 function getScopes(): string[] {
   const clientConfig = getCachedClientConfig();
   
-  // If client config is available, use its scopes
+  // Use scopes directly from client config as requested - no array manipulation
   if (clientConfig?.azure.scopes) {
+    console.debug('Using scopes from client config:', clientConfig.azure.scopes);
     return clientConfig.azure.scopes;
   }
   
-  // Fallback: try to construct backend API scope from environment
-  const backendClientId = process.env.NEXT_PUBLIC_BACKEND_CLIENT_ID || process.env.BACKEND_CLIENT_ID;
-  const defaultScopes = ['openid', 'profile', 'User.Read', 'email'];
+  // If no client config available, this is the problematic scenario described in issue #224
+  console.error(
+    '🚨 SCOPE ISSUE #224: Client configuration not loaded when requesting authentication scopes! ' +
+    'This will result in JWT tokens missing the backend API scope. ' +
+    'Expected scopes from /api/clientConfig but falling back to basic scopes only.'
+  );
   
-  if (backendClientId) {
-    const backendApiScope = `api://${backendClientId}/Api.All`;
-    return [...defaultScopes, backendApiScope];
-  } else {
-    // Warning: Backend API scope not available
-    console.warn(
-      'Backend API scope not available: BACKEND_CLIENT_ID not found in client config or environment. ' +
-      'JWT tokens will not include backend API scope. ' +
-      'Ensure BACKEND_CLIENT_ID environment variable is set or client configuration is properly loaded.'
-    );
-    return defaultScopes;
-  }
+  // Minimal fallback to prevent complete failure, but this is the problematic case
+  const basicScopes = ['openid', 'profile', 'User.Read', 'email'];
+  console.warn('Falling back to basic scopes only:', basicScopes);
+  console.warn('JWT tokens will NOT include backend API scope - authentication may fail!');
+  
+  return basicScopes;
 }
 
 /**
