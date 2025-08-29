@@ -32,6 +32,7 @@ export async function GET() {
     // Read configuration from server-side environment variables
     const tenantId = process.env.AZURE_TENANT_ID;
     const clientId = process.env.AZURE_CLIENT_ID;
+    const backendClientId = process.env.BACKEND_CLIENT_ID;
     const backendUrl = process.env.BACKEND_URL;
     const frontendUrl = process.env.FRONTEND_URL;
     const authority = process.env.AZURE_AUTHORITY;
@@ -45,11 +46,27 @@ export async function GET() {
     if (!clientId) {
       throw new Error('AZURE_CLIENT_ID environment variable is not set');
     }
+    if (!backendClientId) {
+      throw new Error('BACKEND_CLIENT_ID environment variable is not set');
+    }
     if (!backendUrl) {
       throw new Error('BACKEND_URL environment variable is not set');
     }
     if (!frontendUrl) {
       throw new Error('FRONTEND_URL environment variable is not set');
+    }
+
+    // Construct scopes array with OIDC scopes and backend API scope
+    const defaultScopes = ['openid', 'profile', 'User.Read'];
+    const backendApiScope = `api://${backendClientId}/Api.All`;
+
+    const scopesArray = scopes
+      ? scopes.split(',').map((scope) => scope.trim())
+      : defaultScopes;
+
+    // Add backend API scope if not already present
+    if (!scopesArray.includes(backendApiScope)) {
+      scopesArray.push(backendApiScope);
     }
 
     // Build the response with defaults for optional values
@@ -58,12 +75,8 @@ export async function GET() {
         tenantId,
         clientId,
         authority: authority || `https://login.microsoftonline.com/${tenantId}`,
-        redirectUri:
-          redirectUri ||
-          `${frontendUrl}/auth/callback`,
-        scopes: scopes
-          ? scopes.split(',').map((scope) => scope.trim())
-          : ['openid', 'profile', 'User.Read'],
+        redirectUri: redirectUri || `${frontendUrl}/auth/callback`,
+        scopes: scopesArray,
       },
       backend: {
         url: backendUrl.endsWith('/api') ? backendUrl : `${backendUrl}/api`,
@@ -86,7 +99,7 @@ export async function GET() {
             ? error.message
             : 'Unknown configuration error',
         details:
-          'Please check that required environment variables (AZURE_TENANT_ID, AZURE_CLIENT_ID, BACKEND_URL, FRONTEND_URL) are properly set on the server',
+          'Please check that required environment variables (AZURE_TENANT_ID, AZURE_CLIENT_ID, BACKEND_CLIENT_ID, BACKEND_URL, FRONTEND_URL) are properly set on the server',
       },
       { status: 500 }
     );

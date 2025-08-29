@@ -9,6 +9,7 @@ import { NextRequest } from 'next/server'
 const mockEnvVars = {
   AZURE_TENANT_ID: 'test-tenant-id',
   AZURE_CLIENT_ID: 'test-client-id',
+  BACKEND_CLIENT_ID: 'test-backend-client-id',
   BACKEND_URL: 'http://localhost:8000',
   FRONTEND_URL: 'http://localhost:3000',
   AZURE_AUTHORITY: 'https://login.microsoftonline.com/test-tenant-id',
@@ -52,7 +53,7 @@ describe('/api/clientConfig', () => {
           clientId: 'test-client-id',
           authority: 'https://login.microsoftonline.com/test-tenant-id',
           redirectUri: 'http://localhost:3000/auth/callback',
-          scopes: ['openid', 'profile', 'User.Read']
+          scopes: ['openid', 'profile', 'User.Read', 'api://test-backend-client-id/Api.All']
         },
         backend: {
           url: 'http://localhost:8000/api'
@@ -79,7 +80,7 @@ describe('/api/clientConfig', () => {
       expect(response.status).toBe(200)
       expect(data.azure.authority).toBe('https://login.microsoftonline.com/test-tenant-id')
       expect(data.azure.redirectUri).toBe('http://localhost:3000/auth/callback')
-      expect(data.azure.scopes).toEqual(['openid', 'profile', 'User.Read'])
+      expect(data.azure.scopes).toEqual(['openid', 'profile', 'User.Read', 'api://test-backend-client-id/Api.All'])
       expect(data.frontend.url).toBe('http://localhost:3000')
     })
 
@@ -111,6 +112,21 @@ describe('/api/clientConfig', () => {
       expect(data.error).toBe('Configuration Error')
       expect(data.message).toBe('AZURE_CLIENT_ID environment variable is not set')
       expect(data.details).toContain('AZURE_CLIENT_ID')
+    })
+
+    it('should return error when BACKEND_CLIENT_ID is missing', async () => {
+      delete process.env.BACKEND_CLIENT_ID
+
+      // Re-import the module to pick up env changes
+      jest.resetModules()
+      const module = await import('@/app/api/clientConfig/route')
+      const response = await module.GET()
+      const data = await response.json()
+
+      expect(response.status).toBe(500)
+      expect(data.error).toBe('Configuration Error')
+      expect(data.message).toBe('BACKEND_CLIENT_ID environment variable is not set')
+      expect(data.details).toContain('BACKEND_CLIENT_ID')
     })
 
     it('should return error when BACKEND_URL is missing', async () => {
@@ -153,7 +169,7 @@ describe('/api/clientConfig', () => {
       const data = await response.json()
 
       expect(response.status).toBe(200)
-      expect(data.azure.scopes).toEqual(['scope1', 'scope2', 'scope3'])
+      expect(data.azure.scopes).toEqual(['scope1', 'scope2', 'scope3', 'api://test-backend-client-id/Api.All'])
     })
 
     it('should handle custom authority and redirect URI', async () => {
@@ -196,6 +212,22 @@ describe('/api/clientConfig', () => {
 
       expect(response.status).toBe(200)
       expect(data.backend.url).toBe('http://localhost:8000/api')
+    })
+
+    it('should not duplicate backend API scope if already present in AZURE_SCOPES', async () => {
+      process.env.AZURE_SCOPES = 'openid,profile,User.Read,api://test-backend-client-id/Api.All'
+
+      // Re-import the module to pick up env changes
+      jest.resetModules()
+      const module = await import('@/app/api/clientConfig/route')
+      const response = await module.GET()
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.azure.scopes).toEqual(['openid', 'profile', 'User.Read', 'api://test-backend-client-id/Api.All'])
+      // Should not have duplicates
+      const backendApiScopes = data.azure.scopes.filter(scope => scope === 'api://test-backend-client-id/Api.All')
+      expect(backendApiScopes.length).toBe(1)
     })
   })
 })
