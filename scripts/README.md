@@ -1,6 +1,6 @@
-# Container App Deployment Script
+# Container App Deployment Scripts
 
-This directory contains the Azure Container App deployment script that replaces the `azure/container-apps-deploy-action` GitHub Action.
+This directory contains Azure Container App deployment and configuration scripts that replace GitHub Actions with direct Azure CLI usage.
 
 ## Scripts
 
@@ -15,20 +15,33 @@ A comprehensive bash script that creates or updates Azure Container Apps using t
 - **Comprehensive validation**: Validates all parameters before deployment
 - **Flexible configuration**: Supports all common container app configurations
 
+### `configure-cors.sh`
+
+A dedicated script for configuring Cross-Origin Resource Sharing (CORS) settings for Azure Container Apps. Features include:
+
+- **CORS configuration**: Enable or update CORS settings for container apps
+- **Multiple origins support**: Configure multiple allowed origins
+- **Flexible methods**: Configure allowed HTTP methods
+- **Credentials support**: Enable or disable credential sharing
+- **Status checking**: Shows current CORS configuration after changes
+
 #### Key Features
 
 - ✨ **Beautiful output** with colors and emojis
-- 🔄 **Multi-revision deployments** by default
-- 🚦 **Automatic traffic management** routes 100% traffic to latest revision
-- 🧹 **Old revision cleanup** deactivates unused revisions automatically
-- 🔑 **Key Vault secret references** for secure configuration with automatic deduplication
-- 👤 **User-assigned managed identities** for authentication
+- 🔄 **Multi-revision deployments** by default (deploy-containerapp.sh)
+- 🚦 **Automatic traffic management** routes 100% traffic to latest revision (deploy-containerapp.sh)
+- 🧹 **Old revision cleanup** deactivates unused revisions automatically (deploy-containerapp.sh)
+- 🔑 **Key Vault secret references** for secure configuration with automatic deduplication (deploy-containerapp.sh)
+- 👤 **User-assigned managed identities** for authentication (deploy-containerapp.sh)
 - 🛡️ **Parameter validation** and error handling
 - 📊 **Deployment summary** before execution
-- 🌐 **Automatic URL retrieval** after deployment
+- 🌐 **Automatic URL retrieval** after deployment (deploy-containerapp.sh)
 - 📝 **Verbose mode** for debugging
+- 🌐 **CORS configuration** for cross-origin request support (configure-cors.sh)
 
 #### Usage
+
+##### Container App Deployment
 
 ```bash
 ./scripts/deploy-containerapp.sh \
@@ -44,15 +57,35 @@ A comprehensive bash script that creates or updates Azure Container Apps using t
   --verbose
 ```
 
+##### CORS Configuration
+
+```bash
+./scripts/configure-cors.sh \
+  --app-name "my-backend" \
+  --resource-group "my-rg" \
+  --allowed-origins "https://my-frontend.azurecontainerapps.io" \
+  --verbose
+```
+
 #### Required Parameters
 
+##### deploy-containerapp.sh
+
 - `--environment, -e`: Container Apps Environment name or resource ID
-- `--resource-group, -g`: Resource group name  
+- `--resource-group, -g`: Resource group name
 - `--app-name, -n`: Container app name
 - `--image, -i`: Container image URL
 - `--target-port, -p`: Application port for ingress traffic
 
+##### configure-cors.sh
+
+- `--app-name, -n`: Container app name
+- `--resource-group, -g`: Resource group name
+- `--allowed-origins, -o`: Comma-separated list of allowed origins
+
 #### Optional Parameters
+
+##### deploy-containerapp.sh
 
 - `--ingress`: Ingress type (external/internal, default: external)
 - `--registry-server`: Container registry server
@@ -66,6 +99,12 @@ A comprehensive bash script that creates or updates Azure Container Apps using t
 - `--min-replicas`: Minimum replicas (default: 1)
 - `--max-replicas`: Maximum replicas (default: 10)
 - `--revisions-mode`: multiple (default) or single
+- `--verbose, -v`: Enable verbose output
+
+##### configure-cors.sh
+
+- `--allowed-methods, -m`: Comma-separated list of allowed methods (default: GET,POST,PUT,DELETE,OPTIONS)
+- `--allow-credentials`: Allow credentials (default: true)
 - `--verbose, -v`: Enable verbose output
 
 ## Integration with GitHub Actions

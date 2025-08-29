@@ -275,6 +275,17 @@ jobs:
           --secret-ref "APPLICATIONINSIGHTS_CONNECTION_STRING=app-insights-connection-string" \
           --verbose
           
+    - name: Configure Backend CORS Settings
+      run: |
+        echo "🌐 Configuring CORS settings for backend container app..."
+        
+        # Configure CORS to allow the frontend FQDN
+        ./scripts/configure-cors.sh \
+          --app-name "${{ env.BACKEND_APP_NAME }}" \
+          --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+          --allowed-origins "https://${{ env.FRONTEND_APP_NAME }}.${{ steps.deploy-infra.outputs.environmentDefaultDomain }}" \
+          --verbose
+          
     - name: Deploy Frontend Container App  
       run: |
         echo "🎨 Deploying frontend container app using custom script..."
