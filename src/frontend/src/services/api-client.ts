@@ -1,9 +1,10 @@
 /**
  * API client for communicating with the FastAPI backend.
+ * Uses the new client config API instead of NEXT_PUBLIC_* environment variables.
  */
 
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { getConfig } from '@/lib/config';
+import { getCachedClientConfig } from '@/hooks/use-client-config';
 import { trackApiCall, trackException } from '@/lib/telemetry';
 import type {
   ApiResponse,
@@ -40,7 +41,13 @@ export class ApiClient {
       (config) => {
         // Lazily set the baseURL if not already set
         if (!config.baseURL) {
-          config.baseURL = getConfig().api.baseUrl;
+          const clientConfig = getCachedClientConfig();
+          if (clientConfig) {
+            config.baseURL = clientConfig.backend.url;
+          } else {
+            // Fallback for when config isn't loaded yet
+            config.baseURL = 'http://localhost:8000';
+          }
         }
         
         if (this.accessToken) {

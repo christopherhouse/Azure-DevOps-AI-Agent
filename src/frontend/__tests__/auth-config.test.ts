@@ -1,90 +1,92 @@
 /**
- * Tests for MSAL configuration fix - ensuring client_id is properly passed during authentication
+ * Tests for MSAL configuration with new client config system
  */
 
-import { getMsalConfigSync } from '@/lib/auth-config';
+import { createMsalConfigFromClientConfig, getMsalConfigSync } from '@/lib/auth-config';
+import { setCachedClientConfig, clearCachedClientConfig } from '@/hooks/use-client-config';
 
-// Test environment variables
-const mockEnvVars = {
-  NEXT_PUBLIC_AZURE_TENANT_ID: 'test-tenant-id-12345',
-  NEXT_PUBLIC_AZURE_CLIENT_ID: 'test-client-id-67890',
-  NEXT_PUBLIC_AZURE_AUTHORITY: 'https://login.microsoftonline.com/test-tenant-id-12345',
-  NEXT_PUBLIC_AZURE_REDIRECT_URI: 'http://localhost:3000/auth/callback',
+// Mock client config
+const mockClientConfig = {
+  azure: {
+    tenantId: 'test-tenant-id-12345',
+    clientId: 'test-client-id-67890',
+    authority: 'https://login.microsoftonline.com/test-tenant-id-12345',
+    redirectUri: 'http://localhost:3000/auth/callback',
+    scopes: ['openid', 'profile', 'User.Read']
+  },
+  backend: {
+    url: 'http://localhost:8000'
+  },
+  frontend: {
+    url: 'http://localhost:3000'
+  }
 };
 
-describe('MSAL Configuration Fix', () => {
-  const originalEnv = process.env;
+describe('MSAL Configuration with Client Config', () => {
   const originalWindow = global.window;
 
   beforeEach(() => {
     jest.resetModules();
-    // Set up test environment variables
-    process.env = { ...originalEnv, ...mockEnvVars };
+    clearCachedClientConfig();
     // Mock browser environment
     (global as any).window = { location: { origin: 'http://localhost:3000' } };
   });
 
   afterEach(() => {
-    process.env = originalEnv;
+    clearCachedClientConfig();
     global.window = originalWindow;
   });
 
-  it('should not use placeholder values in browser environment', () => {
-    const config = getMsalConfigSync();
+  it('should create MSAL config from client config', () => {
+    const config = createMsalConfigFromClientConfig(mockClientConfig);
 
-    // Ensure real values are used, not placeholders
     expect(config.auth.clientId).toBe('test-client-id-67890');
-    expect(config.auth.clientId).not.toBe('build-time-placeholder');
     expect(config.auth.authority).toBe('https://login.microsoftonline.com/test-tenant-id-12345');
-    expect(config.auth.authority).not.toBe('https://login.microsoftonline.com/build-time-placeholder');
+    expect(config.auth.redirectUri).toBe('http://localhost:3000/auth/callback');
+    expect(config.cache.cacheLocation).toBe('sessionStorage');
   });
 
-  it('should throw error when NEXT_PUBLIC_AZURE_TENANT_ID is missing in browser', () => {
-    delete process.env.NEXT_PUBLIC_AZURE_TENANT_ID;
-
-    expect(() => getMsalConfigSync()).toThrow('Required environment variable NEXT_PUBLIC_AZURE_TENANT_ID is not set');
-  });
-
-  it('should throw error when NEXT_PUBLIC_AZURE_CLIENT_ID is missing in browser', () => {
-    delete process.env.NEXT_PUBLIC_AZURE_CLIENT_ID;
-
-    expect(() => getMsalConfigSync()).toThrow('Required environment variable NEXT_PUBLIC_AZURE_CLIENT_ID is not set');
-  });
-
-  it('should use placeholder values only during build time', () => {
-    // Simulate build time environment
-    delete process.env.NEXT_PUBLIC_AZURE_TENANT_ID;
-    delete process.env.NEXT_PUBLIC_AZURE_CLIENT_ID;
+  it('should work with getMsalConfigSync when config is cached', () => {
+    setCachedClientConfig(mockClientConfig);
     
-    // Mock server-side production environment
-    delete (global as any).window;
-    Object.defineProperty(process.env, 'NODE_ENV', {
-      value: 'production',
-      writable: true,
-      enumerable: true,
-      configurable: true
-    });
-
     const config = getMsalConfigSync();
 
-    // Should use placeholder values during build
-    expect(config.auth.clientId).toBe('build-time-placeholder');
-    expect(config.auth.authority).toBe('https://login.microsoftonline.com/build-time-placeholder');
-  });
-
-  it('should construct correct redirect URI with client origin', () => {
-    delete process.env.NEXT_PUBLIC_AZURE_REDIRECT_URI; // Test default behavior
-
-    const config = getMsalConfigSync();
-
+    expect(config.auth.clientId).toBe('test-client-id-67890');
+    expect(config.auth.authority).toBe('https://login.microsoftonline.com/test-tenant-id-12345');
     expect(config.auth.redirectUri).toBe('http://localhost:3000/auth/callback');
   });
 
-  it('should use explicit redirect URI when provided', () => {
-    process.env.NEXT_PUBLIC_AZURE_REDIRECT_URI = 'https://custom.domain.com/auth/callback';
+  it('should throw error when config is not cached for getMsalConfigSync', () => {
+    expect(() => getMsalConfigSync()).toThrow('Client configuration not loaded yet. Use getMsalConfig() instead or ensure useClientConfig has completed loading.');
+  });
+
+  it('should use placeholder values during build time', () => {
+    // Mock build time environment
+    const originalWindow = global.window;
+    delete (global as any).window;
+    const originalNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
 
     const config = getMsalConfigSync();
 
-    expect(config.auth.redirectUri).toBe('https://custom.domain.com/auth/callback');
+    expect(config.auth.clientId).toBe('build-time-placeholder');
+    expect(config.auth.authority).toBe('https://login.microsoftonline.com/build-time-placeholder');
+
+    // Restore environment
+    (global as any).window = originalWindow;
+    process.env.NODE_ENV = originalNodeEnv;
+  });
+
+  it('should handle custom redirect URI in client config', () => {
+    const customConfig = {
+      ...mockClientConfig,
+      azure: {
+        ...mockClientConfig.azure,
+        redirectUri: 'https://custom.domain.com/callback'
+      }
+    };
+
+    const config = createMsalConfigFromClientConfig(customConfig);
+    expect(config.auth.redirectUri).toBe('https://custom.domain.com/callback');
   });
 });

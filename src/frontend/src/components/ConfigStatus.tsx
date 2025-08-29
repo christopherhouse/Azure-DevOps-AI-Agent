@@ -1,14 +1,15 @@
 /**
  * Configuration status component
- * Shows whether runtime configuration is loaded and displays any errors
+ * Shows whether client configuration is loaded and displays any errors
+ * Uses the new useClientConfig hook instead of NEXT_PUBLIC_* environment variables
  */
 
 'use client'
 
-import { useRuntimeConfig } from '@/hooks/use-runtime-config'
+import { useClientConfig } from '@/hooks/use-client-config'
 
 export function ConfigStatus() {
-  const { config, loading, error } = useRuntimeConfig()
+  const { config, loading, error } = useClientConfig()
 
   if (loading) {
     return (
@@ -93,7 +94,6 @@ export function ConfigStatus() {
         </div>
       </div>
       <div className="text-sm text-green-700">
-        <p>Environment: <span className="font-medium">{config.environment}</span></p>
         <p>Azure Tenant: <span className="font-medium">{config.azure.tenantId}</span></p>
         <p>Backend URL: <span className="font-medium">{config.backend.url}</span></p>
       </div>
