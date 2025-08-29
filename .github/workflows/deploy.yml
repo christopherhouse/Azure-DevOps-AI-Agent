@@ -179,6 +179,13 @@ jobs:
         key_vault_name=$(echo $deployment_output | jq -r '.keyVaultName.value')
         openai_endpoint=$(echo $deployment_output | jq -r '.openAIEndpoint.value')
         
+        # Get the container apps environment default domain to construct FQDNs
+        environment_default_domain=$(az containerapp env show \
+          --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+          --name ${container_apps_env} \
+          --query properties.defaultDomain \
+          --output tsv)
+        
         echo "containerAppsEnvironmentName=${container_apps_env}" >> $GITHUB_OUTPUT
         echo "containerRegistryLoginServer=${acr_login_server}" >> $GITHUB_OUTPUT
         echo "backendManagedIdentityClientId=${backend_identity_client_id}" >> $GITHUB_OUTPUT
@@ -187,9 +194,11 @@ jobs:
         echo "frontendManagedIdentityResourceId=${frontend_identity_resource_id}" >> $GITHUB_OUTPUT
         echo "keyVaultName=${key_vault_name}" >> $GITHUB_OUTPUT
         echo "openAIEndpoint=${openai_endpoint}" >> $GITHUB_OUTPUT
+        echo "environmentDefaultDomain=${environment_default_domain}" >> $GITHUB_OUTPUT
         
         echo "✅ Infrastructure deployed successfully"
         echo "🏗️ Container Apps Environment: ${container_apps_env}"
+        echo "🌐 Environment Default Domain: ${environment_default_domain}"
         echo "📦 ACR Login Server: ${acr_login_server}"
         echo "🔑 Backend Identity Client ID: ${backend_identity_client_id}"
         echo "🔑 Backend Identity Resource ID: ${backend_identity_resource_id}"
@@ -285,8 +294,12 @@ jobs:
           --min-replicas 1 \
           --max-replicas 3 \
           --revisions-mode multiple \
-          --env-var "NEXT_PUBLIC_BACKEND_URL=https://${{ env.BACKEND_APP_NAME }}" \
+          --env-var "FRONTEND_URL=https://${{ env.FRONTEND_APP_NAME }}.${{ steps.deploy-infra.outputs.environmentDefaultDomain }}" \
+          --env-var "BACKEND_URL=https://${{ env.BACKEND_APP_NAME }}.${{ steps.deploy-infra.outputs.environmentDefaultDomain }}" \
+          --env-var "NEXT_PUBLIC_BACKEND_URL=https://${{ env.BACKEND_APP_NAME }}.${{ steps.deploy-infra.outputs.environmentDefaultDomain }}" \
           --env-var "NEXT_PUBLIC_ENVIRONMENT=${{ inputs.environment }}" \
+          --secret-ref "AZURE_TENANT_ID=entra-tenant-id" \
+          --secret-ref "AZURE_CLIENT_ID=frontend-client-id" \
           --secret-ref "NEXT_PUBLIC_AZURE_TENANT_ID=entra-tenant-id" \
           --secret-ref "NEXT_PUBLIC_AZURE_CLIENT_ID=frontend-client-id" \
           --secret-ref "NEXT_PUBLIC_APPLICATIONINSIGHTS_CONNECTION_STRING=app-insights-connection-string" \
