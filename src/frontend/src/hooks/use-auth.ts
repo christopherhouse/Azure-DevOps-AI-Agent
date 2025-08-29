@@ -5,10 +5,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useMsal, useAccount } from '@azure/msal-react';
 import { InteractionStatus, SilentRequest } from '@azure/msal-browser';
-import { loginRequest, tokenRequest } from '@/lib/auth-config';
+import { getLoginRequest, getTokenRequest } from '@/lib/auth-config';
 import { trackAuthEvent } from '@/lib/telemetry';
 import { apiClient } from '@/services/api-client';
-import { getCachedClientConfig } from '@/hooks/use-client-config';
 import type { User, AuthState } from '@/types';
 
 export function useAuth() {
@@ -22,14 +21,6 @@ export function useAuth() {
     error: null,
     isLoading: true,
   });
-
-  /**
-   * Get scopes from client config or fallback to default
-   */
-  const getScopes = useCallback((): string[] => {
-    const clientConfig = getCachedClientConfig();
-    return clientConfig?.azure.scopes || ['openid', 'profile', 'User.Read'];
-  }, []);
 
   /**
    * Extract user information from account
@@ -52,10 +43,9 @@ export function useAuth() {
     if (!account) return null;
 
     try {
-      const scopes = getScopes();
+      const tokenReq = getTokenRequest();
       const request: SilentRequest = {
-        ...tokenRequest,
-        scopes,
+        ...tokenReq,
         account,
       };
 
@@ -65,7 +55,7 @@ export function useAuth() {
       console.error('Silent token acquisition failed:', error);
       return null;
     }
-  }, [account, instance, getScopes]);
+  }, [account, instance]);
 
   /**
    * Login user
@@ -75,12 +65,8 @@ export function useAuth() {
 
     try {
       trackAuthEvent('login_attempt');
-      const scopes = getScopes();
-      const request = {
-        ...loginRequest,
-        scopes,
-      };
-      await instance.loginPopup(request);
+      const loginReq = getLoginRequest();
+      await instance.loginPopup(loginReq);
       trackAuthEvent('login_success');
     } catch (error: any) {
       console.error('Login failed:', error);
