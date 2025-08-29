@@ -17,15 +17,17 @@ async function getMsalConfigFromApi(): Promise<Configuration> {
   try {
     const response = await fetch('/api/clientConfig');
     if (!response.ok) {
-      throw new Error(`Failed to load client configuration: ${response.status}`);
+      throw new Error(
+        `Failed to load client configuration: ${response.status}`
+      );
     }
-    
+
     const config = await response.json();
-    
+
     if (config.error) {
       throw new Error(config.message || 'Configuration error');
     }
-    
+
     return {
       auth: {
         clientId: config.azure.clientId,
@@ -46,7 +48,9 @@ async function getMsalConfigFromApi(): Promise<Configuration> {
 /**
  * Create MSAL configuration from client config object
  */
-export function createMsalConfigFromClientConfig(clientConfig: ClientConfig): Configuration {
+export function createMsalConfigFromClientConfig(
+  clientConfig: ClientConfig
+): Configuration {
   return {
     auth: {
       clientId: clientConfig.azure.clientId,
@@ -65,8 +69,9 @@ export function createMsalConfigFromClientConfig(clientConfig: ClientConfig): Co
  */
 export const getMsalConfig = async (): Promise<Configuration> => {
   // Check if we're in build time - use placeholder values only during static generation
-  const isBuildTime = typeof window === 'undefined' && process.env.NODE_ENV === 'production';
-  
+  const isBuildTime =
+    typeof window === 'undefined' && process.env.NODE_ENV === 'production';
+
   if (isBuildTime) {
     // Only return placeholder values during build/SSG phase
     return {
@@ -97,8 +102,9 @@ export const getMsalConfig = async (): Promise<Configuration> => {
  */
 export const getMsalConfigSync = (): Configuration => {
   // Check if we're in build time - use placeholder values only during static generation
-  const isBuildTime = typeof window === 'undefined' && process.env.NODE_ENV === 'production';
-  
+  const isBuildTime =
+    typeof window === 'undefined' && process.env.NODE_ENV === 'production';
+
   if (isBuildTime) {
     // Only return placeholder values during build/SSG phase
     return {
@@ -117,7 +123,9 @@ export const getMsalConfigSync = (): Configuration => {
   // Try to get from cache
   const cachedConfig = getCachedClientConfig();
   if (!cachedConfig) {
-    throw new Error('Client configuration not loaded yet. Use getMsalConfig() instead or ensure useClientConfig has completed loading.');
+    throw new Error(
+      'Client configuration not loaded yet. Use getMsalConfig() instead or ensure useClientConfig has completed loading.'
+    );
   }
 
   return createMsalConfigFromClientConfig(cachedConfig);
@@ -133,7 +141,7 @@ export const msalConfig = new Proxy({} as Configuration, {
       msalConfigInstance = getMsalConfigSync();
     }
     return msalConfigInstance[prop as keyof Configuration];
-  }
+  },
 });
 
 /**

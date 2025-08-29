@@ -1,20 +1,20 @@
 /**
  * Runtime configuration for server-side API routes
- * 
+ *
  * This module provides functions for loading configuration at runtime,
  * particularly for the /api/config endpoint that serves configuration
  * to client components in containerized deployments.
  */
 
-import { Config, loadConfig } from './config'
-import { ClientConfig } from '@/hooks/use-runtime-config'
+import { Config, loadConfig } from './config';
+import { ClientConfig } from '@/hooks/use-runtime-config';
 
 /**
  * Load runtime configuration on the server side
  * This reads environment variables at runtime and returns the full config
  */
 export async function loadRuntimeConfig(): Promise<Config> {
-  return loadConfig()
+  return loadConfig();
 }
 
 /**
@@ -39,5 +39,5 @@ export function getClientConfig(config: Config): ClientConfig {
     },
     environment: config.environment,
     debug: config.debug,
-  }
+  };
 }

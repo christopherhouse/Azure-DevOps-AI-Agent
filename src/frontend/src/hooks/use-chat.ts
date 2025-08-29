@@ -19,26 +19,23 @@ export function useChat() {
   /**
    * Add a message to the chat
    */
-  const addMessage = useCallback(
-    (message: Omit<ChatMessage, 'id'>): string => {
-      const id = uuidv4();
-      const chatMessage: ChatMessage = {
-        ...message,
-        id,
-      };
+  const addMessage = useCallback((message: Omit<ChatMessage, 'id'>): string => {
+    const id = uuidv4();
+    const chatMessage: ChatMessage = {
+      ...message,
+      id,
+    };
 
-      setChatState((prev) => ({
-        ...prev,
-        messages: [...prev.messages, chatMessage],
-      }));
+    setChatState((prev) => ({
+      ...prev,
+      messages: [...prev.messages, chatMessage],
+    }));
 
-      // Track the message
-      trackChatMessage('user', message.content.length);
+    // Track the message
+    trackChatMessage('user', message.content.length);
 
-      return id;
-    },
-    []
-  );
+    return id;
+  }, []);
 
   /**
    * Update a message by ID

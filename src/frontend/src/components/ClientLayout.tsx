@@ -9,16 +9,24 @@ import React, { useState, useEffect } from 'react';
 import { MsalProvider } from '@azure/msal-react';
 import { PublicClientApplication } from '@azure/msal-browser';
 import { createMsalConfigFromClientConfig } from '@/lib/auth-config';
-import { useClientConfig, setCachedClientConfig } from '@/hooks/use-client-config';
+import {
+  useClientConfig,
+  setCachedClientConfig,
+} from '@/hooks/use-client-config';
 
 interface ClientLayoutProps {
   children: React.ReactNode;
 }
 
 export function ClientLayout({ children }: ClientLayoutProps) {
-  const [msalInstance, setMsalInstance] = useState<PublicClientApplication | null>(null);
+  const [msalInstance, setMsalInstance] =
+    useState<PublicClientApplication | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { config: clientConfig, loading: configLoading, error: configError } = useClientConfig();
+  const {
+    config: clientConfig,
+    loading: configLoading,
+    error: configError,
+  } = useClientConfig();
 
   useEffect(() => {
     // Only initialize MSAL when client config is loaded
@@ -33,10 +41,12 @@ export function ClientLayout({ children }: ClientLayoutProps) {
 
         // Create MSAL configuration from client config
         const msalConfig = createMsalConfigFromClientConfig(clientConfig);
-        
+
         // Additional validation to ensure we're not using placeholder values
         if (msalConfig.auth.clientId === 'build-time-placeholder') {
-          throw new Error('MSAL configuration is using placeholder values. Please check your environment variables.');
+          throw new Error(
+            'MSAL configuration is using placeholder values. Please check your environment variables.'
+          );
         }
 
         const instance = new PublicClientApplication(msalConfig);
@@ -122,7 +132,9 @@ export function ClientLayout({ children }: ClientLayoutProps) {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-sm text-gray-600">Initializing authentication...</p>
+          <p className="mt-2 text-sm text-gray-600">
+            Initializing authentication...
+          </p>
         </div>
       </div>
     );
