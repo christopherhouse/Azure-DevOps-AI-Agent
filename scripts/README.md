@@ -103,7 +103,7 @@ A dedicated script for configuring Cross-Origin Resource Sharing (CORS) settings
 
 ##### configure-cors.sh
 
-- `--allowed-methods, -m`: Comma-separated list of allowed methods (default: GET,POST,PUT,DELETE,OPTIONS)
+- `--allowed-methods, -m`: Comma-separated list of allowed methods (default: *)
 - `--allow-credentials`: Allow credentials (default: true)
 - `--verbose, -v`: Enable verbose output
 

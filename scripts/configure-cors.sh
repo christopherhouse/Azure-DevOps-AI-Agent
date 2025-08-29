@@ -27,7 +27,7 @@ SCRIPT_NAME="$(basename "$0")"
 APP_NAME=""
 RESOURCE_GROUP=""
 ALLOWED_ORIGINS=""
-ALLOWED_METHODS="GET POST PUT DELETE OPTIONS"
+ALLOWED_METHODS="*"
 ALLOW_CREDENTIALS="true"
 VERBOSE=false
 
@@ -69,7 +69,7 @@ Required Options:
   --allowed-origins, -o Comma-separated list of allowed origins (e.g., https://example.com,https://app.com)
 
 Optional Options:
-  --allowed-methods, -m Comma-separated list of allowed methods (default: GET,POST,PUT,DELETE,OPTIONS)
+  --allowed-methods, -m Comma-separated list of allowed methods (default: *)
   --allow-credentials   Allow credentials (default: true)
   --verbose, -v         Enable verbose output
   --help, -h            Show this help message
