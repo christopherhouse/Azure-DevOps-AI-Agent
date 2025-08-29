@@ -55,7 +55,7 @@ describe('/api/clientConfig', () => {
           scopes: ['openid', 'profile', 'User.Read']
         },
         backend: {
-          url: 'http://localhost:8000'
+          url: 'http://localhost:8000/api'
         },
         frontend: {
           url: 'http://localhost:3000'
@@ -168,6 +168,33 @@ describe('/api/clientConfig', () => {
 
       expect(response.status).toBe(200)
       expect(data.azure.redirectUri).toBe('http://localhost:3000/auth/callback')
+    })
+
+    it('should not double-add /api suffix to backend URL', async () => {
+      process.env.BACKEND_URL = 'http://localhost:8000/api'
+
+      // Re-import the module to pick up env changes
+      jest.resetModules()
+      const module = await import('@/app/api/clientConfig/route')
+      const response = await module.GET()
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.backend.url).toBe('http://localhost:8000/api')
+    })
+
+    it('should construct redirect URI from frontend URL when provided', async () => {
+      process.env.FRONTEND_URL = 'https://myapp.region.azurecontainerapps.io'
+      delete process.env.AZURE_REDIRECT_URI
+
+      // Re-import the module to pick up env changes
+      jest.resetModules()
+      const module = await import('@/app/api/clientConfig/route')
+      const response = await module.GET()
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.azure.redirectUri).toBe('https://myapp.region.azurecontainerapps.io/auth/callback')
     })
   })
 })

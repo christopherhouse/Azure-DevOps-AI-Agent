@@ -49,7 +49,7 @@ export class ApiClient {
             config.baseURL = 'http://localhost:8000';
           }
         }
-        
+
         if (this.accessToken) {
           config.headers.Authorization = `Bearer ${this.accessToken}`;
         }

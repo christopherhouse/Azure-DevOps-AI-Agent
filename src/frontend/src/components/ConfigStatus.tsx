@@ -4,20 +4,22 @@
  * Uses the new useClientConfig hook instead of NEXT_PUBLIC_* environment variables
  */
 
-'use client'
+'use client';
 
-import { useClientConfig } from '@/hooks/use-client-config'
+import { useClientConfig } from '@/hooks/use-client-config';
 
 export function ConfigStatus() {
-  const { config, loading, error } = useClientConfig()
+  const { config, loading, error } = useClientConfig();
 
   if (loading) {
     return (
       <div className="flex items-center justify-center p-4">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2 text-sm text-gray-600">Loading configuration...</span>
+        <span className="ml-2 text-sm text-gray-600">
+          Loading configuration...
+        </span>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -40,9 +42,7 @@ export function ConfigStatus() {
             </svg>
           </div>
           <div className="ml-3">
-            <h3 className="text-lg font-medium text-red-800">
-              {error.error}
-            </h3>
+            <h3 className="text-lg font-medium text-red-800">{error.error}</h3>
           </div>
         </div>
         <div className="text-sm text-red-700">
@@ -50,12 +50,13 @@ export function ConfigStatus() {
           <p className="mt-2 text-red-600">{error.details}</p>
           <div className="mt-4 p-3 bg-red-100 rounded">
             <p className="text-xs">
-              Please check your environment configuration and contact your system administrator if this error persists.
+              Please check your environment configuration and contact your
+              system administrator if this error persists.
             </p>
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (!config) {
@@ -65,7 +66,7 @@ export function ConfigStatus() {
           <p>Configuration not available</p>
         </div>
       </div>
-    )
+    );
   }
 
   // Configuration loaded successfully
@@ -94,9 +95,14 @@ export function ConfigStatus() {
         </div>
       </div>
       <div className="text-sm text-green-700">
-        <p>Azure Tenant: <span className="font-medium">{config.azure.tenantId}</span></p>
-        <p>Backend URL: <span className="font-medium">{config.backend.url}</span></p>
+        <p>
+          Azure Tenant:{' '}
+          <span className="font-medium">{config.azure.tenantId}</span>
+        </p>
+        <p>
+          Backend URL: <span className="font-medium">{config.backend.url}</span>
+        </p>
       </div>
     </div>
-  )
+  );
 }

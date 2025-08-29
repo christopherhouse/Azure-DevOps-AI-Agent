@@ -42,6 +42,7 @@ describe('Config', () => {
     expect(config.debug).toBe(true);
     expect(config.frontendUrl).toBe('http://localhost:3000');
     expect(config.backendUrl).toBe('http://localhost:8000');
+    expect(config.api.baseUrl).toBe('http://localhost:8000/api');
 
     expect(config.azure.tenantId).toBe('test-tenant-id');
     expect(config.azure.clientId).toBe('test-client-id');
@@ -74,6 +75,7 @@ describe('Config', () => {
     expect(config.debug).toBe(false);
     expect(config.frontendUrl).toBe('http://localhost:3000');
     expect(config.backendUrl).toBe('http://localhost:8000');
+    expect(config.api.baseUrl).toBe('http://localhost:8000/api');
   });
 
   it('should parse boolean environment variables correctly', () => {
@@ -133,5 +135,22 @@ describe('Config', () => {
       });
     }
     (global as any).window = originalWindow;
+  });
+
+  it('should not double-add /api suffix to backend URL', () => {
+    process.env.NEXT_PUBLIC_BACKEND_URL = 'http://localhost:8000/api';
+
+    const config = loadConfig();
+
+    expect(config.api.baseUrl).toBe('http://localhost:8000/api');
+  });
+
+  it('should construct redirect URI from frontend URL when not explicitly set', () => {
+    process.env.NEXT_PUBLIC_FRONTEND_URL = 'https://myapp.region.azurecontainerapps.io';
+    delete process.env.NEXT_PUBLIC_AZURE_REDIRECT_URI;
+
+    const config = loadConfig();
+
+    expect(config.azure.redirectUri).toBe('https://myapp.region.azurecontainerapps.io/auth/callback');
   });
 });
