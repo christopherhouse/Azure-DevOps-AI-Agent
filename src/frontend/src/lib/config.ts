@@ -1,5 +1,9 @@
 /**
  * Application configuration
+ * 
+ * This module handles both build-time and runtime configuration loading.
+ * For containerized deployments with secret references, use the runtime config API.
+ * For local development with environment files, use the build-time config.
  */
 
 export interface Config {
@@ -29,6 +33,14 @@ export interface Config {
 
 // Cached config instance
 let configInstance: Config | null = null;
+
+/**
+ * Check if we're using build-time placeholders (indicates container deployment)
+ */
+function isUsingPlaceholders(): boolean {
+  return process.env.NEXT_PUBLIC_AZURE_TENANT_ID === 'build-time-placeholder' ||
+         process.env.NEXT_PUBLIC_AZURE_CLIENT_ID === 'build-time-placeholder';
+}
 
 export const loadConfig = (): Config => {
   // Return cached instance if available
@@ -66,6 +78,13 @@ export const loadConfig = (): Config => {
       },
     };
     return configInstance;
+  }
+
+  // Check if we're in a container with placeholders (runtime config needed)
+  if (isUsingPlaceholders()) {
+    throw new Error(
+      'Configuration uses build-time placeholders. Please use the runtime configuration API (/api/config) or useRuntimeConfig hook for client-side access.'
+    );
   }
 
   // Runtime validation - only validate required Azure environment variables at runtime

@@ -5,6 +5,7 @@
 import React from 'react';
 import { Button } from './Button';
 import { useAuth } from '@/hooks/use-auth';
+import { ConfigStatus } from './ConfigStatus';
 
 export function LoginPage() {
   const { login, isLoading, error } = useAuth();
@@ -35,6 +36,9 @@ export function LoginPage() {
             Intelligent assistant for Azure DevOps project management
           </p>
         </div>
+
+        {/* Configuration Status - shows before login form */}
+        <ConfigStatus />
 
         <div className="bg-white rounded-lg shadow-md p-8">
           <div className="space-y-6">

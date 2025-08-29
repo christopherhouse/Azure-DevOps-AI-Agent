@@ -2,7 +2,7 @@
  * Tests for MSAL configuration fix - ensuring client_id is properly passed during authentication
  */
 
-import { getMsalConfig } from '@/lib/auth-config';
+import { getMsalConfigSync } from '@/lib/auth-config';
 
 // Test environment variables
 const mockEnvVars = {
@@ -30,7 +30,7 @@ describe('MSAL Configuration Fix', () => {
   });
 
   it('should not use placeholder values in browser environment', () => {
-    const config = getMsalConfig();
+    const config = getMsalConfigSync();
 
     // Ensure real values are used, not placeholders
     expect(config.auth.clientId).toBe('test-client-id-67890');
@@ -42,13 +42,13 @@ describe('MSAL Configuration Fix', () => {
   it('should throw error when NEXT_PUBLIC_AZURE_TENANT_ID is missing in browser', () => {
     delete process.env.NEXT_PUBLIC_AZURE_TENANT_ID;
 
-    expect(() => getMsalConfig()).toThrow('Required environment variable NEXT_PUBLIC_AZURE_TENANT_ID is not set');
+    expect(() => getMsalConfigSync()).toThrow('Required environment variable NEXT_PUBLIC_AZURE_TENANT_ID is not set');
   });
 
   it('should throw error when NEXT_PUBLIC_AZURE_CLIENT_ID is missing in browser', () => {
     delete process.env.NEXT_PUBLIC_AZURE_CLIENT_ID;
 
-    expect(() => getMsalConfig()).toThrow('Required environment variable NEXT_PUBLIC_AZURE_CLIENT_ID is not set');
+    expect(() => getMsalConfigSync()).toThrow('Required environment variable NEXT_PUBLIC_AZURE_CLIENT_ID is not set');
   });
 
   it('should use placeholder values only during build time', () => {
@@ -65,7 +65,7 @@ describe('MSAL Configuration Fix', () => {
       configurable: true
     });
 
-    const config = getMsalConfig();
+    const config = getMsalConfigSync();
 
     // Should use placeholder values during build
     expect(config.auth.clientId).toBe('build-time-placeholder');
@@ -75,7 +75,7 @@ describe('MSAL Configuration Fix', () => {
   it('should construct correct redirect URI with client origin', () => {
     delete process.env.NEXT_PUBLIC_AZURE_REDIRECT_URI; // Test default behavior
 
-    const config = getMsalConfig();
+    const config = getMsalConfigSync();
 
     expect(config.auth.redirectUri).toBe('http://localhost:3000/auth/callback');
   });
@@ -83,7 +83,7 @@ describe('MSAL Configuration Fix', () => {
   it('should use explicit redirect URI when provided', () => {
     process.env.NEXT_PUBLIC_AZURE_REDIRECT_URI = 'https://custom.domain.com/auth/callback';
 
-    const config = getMsalConfig();
+    const config = getMsalConfigSync();
 
     expect(config.auth.redirectUri).toBe('https://custom.domain.com/auth/callback');
   });
