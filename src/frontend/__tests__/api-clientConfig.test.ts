@@ -68,7 +68,7 @@ describe('/api/clientConfig', () => {
       delete process.env.AZURE_AUTHORITY
       delete process.env.AZURE_REDIRECT_URI
       delete process.env.AZURE_SCOPES
-      delete process.env.FRONTEND_URL
+      // Keep FRONTEND_URL as it's now required
 
       // Re-import the module to pick up env changes
       jest.resetModules()
@@ -128,6 +128,21 @@ describe('/api/clientConfig', () => {
       expect(data.details).toContain('BACKEND_URL')
     })
 
+    it('should return error when FRONTEND_URL is missing', async () => {
+      delete process.env.FRONTEND_URL
+
+      // Re-import the module to pick up env changes
+      jest.resetModules()
+      const module = await import('@/app/api/clientConfig/route')
+      const response = await module.GET()
+      const data = await response.json()
+
+      expect(response.status).toBe(500)
+      expect(data.error).toBe('Configuration Error')
+      expect(data.message).toBe('FRONTEND_URL environment variable is not set')
+      expect(data.details).toContain('FRONTEND_URL')
+    })
+
     it('should parse scopes correctly when provided as comma-separated string', async () => {
       process.env.AZURE_SCOPES = 'scope1, scope2 , scope3'
 
@@ -156,9 +171,9 @@ describe('/api/clientConfig', () => {
       expect(data.azure.redirectUri).toBe('https://custom.app.com/callback')
     })
 
-    it('should handle missing frontend URL in redirect URI generation', async () => {
-      delete process.env.FRONTEND_URL
+    it('should construct redirect URI from frontend URL when AZURE_REDIRECT_URI is not set', async () => {
       delete process.env.AZURE_REDIRECT_URI
+      process.env.FRONTEND_URL = 'https://myapp.region.azurecontainerapps.io'
 
       // Re-import the module to pick up env changes
       jest.resetModules()
@@ -167,7 +182,7 @@ describe('/api/clientConfig', () => {
       const data = await response.json()
 
       expect(response.status).toBe(200)
-      expect(data.azure.redirectUri).toBe('http://localhost:3000/auth/callback')
+      expect(data.azure.redirectUri).toBe('https://myapp.region.azurecontainerapps.io/auth/callback')
     })
 
     it('should not double-add /api suffix to backend URL', async () => {
@@ -181,20 +196,6 @@ describe('/api/clientConfig', () => {
 
       expect(response.status).toBe(200)
       expect(data.backend.url).toBe('http://localhost:8000/api')
-    })
-
-    it('should construct redirect URI from frontend URL when provided', async () => {
-      process.env.FRONTEND_URL = 'https://myapp.region.azurecontainerapps.io'
-      delete process.env.AZURE_REDIRECT_URI
-
-      // Re-import the module to pick up env changes
-      jest.resetModules()
-      const module = await import('@/app/api/clientConfig/route')
-      const response = await module.GET()
-      const data = await response.json()
-
-      expect(response.status).toBe(200)
-      expect(data.azure.redirectUri).toBe('https://myapp.region.azurecontainerapps.io/auth/callback')
     })
   })
 })
