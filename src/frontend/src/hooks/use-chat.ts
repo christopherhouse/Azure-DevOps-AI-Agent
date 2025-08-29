@@ -37,7 +37,7 @@ export function useChat() {
 
       return id;
     },
-    [chatState.conversationId]
+    []
   );
 
   /**
