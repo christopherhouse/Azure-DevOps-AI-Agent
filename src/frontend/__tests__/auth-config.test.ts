@@ -2,8 +2,32 @@
  * Tests for MSAL configuration with new client config system
  */
 
-import { createMsalConfigFromClientConfig, getMsalConfigSync } from '@/lib/auth-config';
+import { 
+  createMsalConfigFromClientConfig, 
+  getMsalConfigSync, 
+  getLoginRequest, 
+  getTokenRequest,
+  loginRequest,
+  tokenRequest 
+} from '@/lib/auth-config';
 import { setCachedClientConfig, clearCachedClientConfig } from '@/hooks/use-client-config';
+
+// Mock client config with backend API scope
+const mockClientConfigWithBackendScope = {
+  azure: {
+    tenantId: 'test-tenant-id-12345',
+    clientId: 'test-client-id-67890',
+    authority: 'https://login.microsoftonline.com/test-tenant-id-12345',
+    redirectUri: 'http://localhost:3000/auth/callback',
+    scopes: ['openid', 'profile', 'User.Read', 'api://backend-client-id/Api.All']
+  },
+  backend: {
+    url: 'http://localhost:8000'
+  },
+  frontend: {
+    url: 'http://localhost:3000'
+  }
+};
 
 // Mock client config
 const mockClientConfig = {
@@ -102,5 +126,76 @@ describe('MSAL Configuration with Client Config', () => {
 
     const config = createMsalConfigFromClientConfig(customConfig);
     expect(config.auth.redirectUri).toBe('https://custom.domain.com/callback');
+  });
+});
+
+describe('Dynamic Auth Requests', () => {
+  beforeEach(() => {
+    clearCachedClientConfig();
+  });
+
+  afterEach(() => {
+    clearCachedClientConfig();
+  });
+
+  describe('getLoginRequest', () => {
+    it('should return login request with default scopes when no config is cached', () => {
+      const request = getLoginRequest();
+      
+      expect(request.scopes).toEqual(['openid', 'profile', 'User.Read']);
+    });
+
+    it('should return login request with scopes from cached client config', () => {
+      setCachedClientConfig(mockClientConfigWithBackendScope);
+      
+      const request = getLoginRequest();
+      
+      expect(request.scopes).toEqual(['openid', 'profile', 'User.Read', 'api://backend-client-id/Api.All']);
+    });
+
+    it('should include backend API scope when present in config', () => {
+      setCachedClientConfig(mockClientConfigWithBackendScope);
+      
+      const request = getLoginRequest();
+      
+      expect(request.scopes).toContain('api://backend-client-id/Api.All');
+    });
+  });
+
+  describe('getTokenRequest', () => {
+    it('should return token request with default scopes when no config is cached', () => {
+      const request = getTokenRequest();
+      
+      expect(request.scopes).toEqual(['openid', 'profile', 'User.Read']);
+      expect(request.account).toBe(null);
+    });
+
+    it('should return token request with scopes from cached client config', () => {
+      setCachedClientConfig(mockClientConfigWithBackendScope);
+      
+      const request = getTokenRequest();
+      
+      expect(request.scopes).toEqual(['openid', 'profile', 'User.Read', 'api://backend-client-id/Api.All']);
+      expect(request.account).toBe(null);
+    });
+
+    it('should include backend API scope when present in config', () => {
+      setCachedClientConfig(mockClientConfigWithBackendScope);
+      
+      const request = getTokenRequest();
+      
+      expect(request.scopes).toContain('api://backend-client-id/Api.All');
+    });
+  });
+
+  describe('Legacy exports (deprecated)', () => {
+    it('should maintain backward compatibility for loginRequest', () => {
+      expect(loginRequest.scopes).toEqual(['openid', 'profile', 'User.Read']);
+    });
+
+    it('should maintain backward compatibility for tokenRequest', () => {
+      expect(tokenRequest.scopes).toEqual(['openid', 'profile', 'User.Read']);
+      expect(tokenRequest.account).toBe(null);
+    });
   });
 });
