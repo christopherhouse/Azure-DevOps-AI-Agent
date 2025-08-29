@@ -65,7 +65,14 @@ describe('MSAL Configuration with Client Config', () => {
     const originalWindow = global.window;
     delete (global as any).window;
     const originalNodeEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = 'production';
+    
+    // Use Object.defineProperty to safely modify NODE_ENV
+    Object.defineProperty(process.env, 'NODE_ENV', {
+      value: 'production',
+      writable: true,
+      enumerable: true,
+      configurable: true
+    });
 
     const config = getMsalConfigSync();
 
@@ -74,7 +81,14 @@ describe('MSAL Configuration with Client Config', () => {
 
     // Restore environment
     (global as any).window = originalWindow;
-    process.env.NODE_ENV = originalNodeEnv;
+    if (originalNodeEnv !== undefined) {
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: originalNodeEnv,
+        writable: true,
+        enumerable: true,
+        configurable: true
+      });
+    }
   });
 
   it('should handle custom redirect URI in client config', () => {
