@@ -15,77 +15,98 @@ describe('Comprehensive JWT Scope Fix', () => {
     clearCachedClientConfig();
   });
 
-  it('should include backend API scope when BACKEND_CLIENT_ID is available via environment', () => {
-    // Test when BACKEND_CLIENT_ID is properly set in environment
-    const originalEnv = process.env.BACKEND_CLIENT_ID;
-    process.env.BACKEND_CLIENT_ID = 'test-backend-client-id';
+  it('should use client config scopes when available (primary scenario)', () => {
+    // Test the primary path: client config is loaded and cached
+    const clientConfig = {
+      azure: {
+        tenantId: 'test-tenant-id',
+        clientId: 'test-client-id',
+        authority: 'https://login.microsoftonline.com/test-tenant-id',
+        redirectUri: 'http://localhost:3000/auth/callback',
+        scopes: [
+          'openid',
+          'profile',
+          'User.Read',
+          'email',
+          'api://test-backend-client-id/Api.All'
+        ]
+      },
+      backend: {
+        url: 'http://localhost:8000/api'
+      },
+      frontend: {
+        url: 'http://localhost:3000'
+      }
+    };
+    
+    setCachedClientConfig(clientConfig);
+    
+    const loginReq = getLoginRequest();
+    const tokenReq = getTokenRequest();
+    
+    // Should use scopes directly from client config
+    expect(loginReq.scopes).toEqual(clientConfig.azure.scopes);
+    expect(tokenReq.scopes).toEqual(clientConfig.azure.scopes);
+    
+    // Should have all 5 required scopes
+    expect(loginReq.scopes).toHaveLength(5);
+    expect(tokenReq.scopes).toHaveLength(5);
+    
+    // Should include the backend API scope
+    expect(loginReq.scopes).toContain('api://test-backend-client-id/Api.All');
+    expect(tokenReq.scopes).toContain('api://test-backend-client-id/Api.All');
+  });
+
+  it('should fall back to basic scopes when no client config is available', () => {
+    // Test the problematic scenario: no client config cached
+    clearCachedClientConfig();
+    
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
     
     try {
-      // Simulate no cached config (config load failed) but env var available
-      clearCachedClientConfig();
-      
       const loginReq = getLoginRequest();
       const tokenReq = getTokenRequest();
       
-      // Should include backend API scope from environment fallback
-      expect(loginReq.scopes).toContain('api://test-backend-client-id/Api.All');
-      expect(tokenReq.scopes).toContain('api://test-backend-client-id/Api.All');
-      
-      // Should have all 5 required scopes
-      expect(loginReq.scopes).toHaveLength(5);
-      expect(tokenReq.scopes).toHaveLength(5);
-    } finally {
-      // Restore original environment
-      if (originalEnv !== undefined) {
-        process.env.BACKEND_CLIENT_ID = originalEnv;
-      } else {
-        delete process.env.BACKEND_CLIENT_ID;
-      }
-    }
-  });
-
-  it('should provide fallback scopes that include backend API scope when environment is available', () => {
-    // This tests the improved fallback behavior
-    const originalEnv = process.env.BACKEND_CLIENT_ID;
-    process.env.BACKEND_CLIENT_ID = 'fallback-backend-client-id';
-    
-    try {
-      // No cached config available
-      clearCachedClientConfig();
-      
-      const loginReq = getLoginRequest();
-      
-      // Verify all required scopes are present including backend API scope
+      // Should fall back to basic scopes only (no backend API scope)
       expect(loginReq.scopes).toEqual([
         'openid',
         'profile', 
         'User.Read',
-        'email',
-        'api://fallback-backend-client-id/Api.All'
+        'email'
       ]);
+      expect(tokenReq.scopes).toEqual([
+        'openid',
+        'profile', 
+        'User.Read',
+        'email'
+      ]);
+      
+      // Should have logged the issue clearly
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('SCOPE ISSUE #224')
+      );
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('JWT tokens will NOT include backend API scope')
+      );
     } finally {
-      if (originalEnv !== undefined) {
-        process.env.BACKEND_CLIENT_ID = originalEnv;
-      } else {
-        delete process.env.BACKEND_CLIENT_ID;
-      }
+      consoleErrorSpy.mockRestore();
+      consoleWarnSpy.mockRestore();
     }
   });
 
-  it('should warn when no backend client ID is available anywhere', () => {
-    // Test the scenario where both config and environment are missing
-    const originalEnv = process.env.BACKEND_CLIENT_ID;
-    delete process.env.BACKEND_CLIENT_ID;
+  it('should clearly indicate when client config is not available', () => {
+    // Test the scenario where client config is not loaded
+    clearCachedClientConfig();
     
-    // Mock console.warn to capture warning
+    // Mock console methods to capture logging
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
     const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
     
     try {
-      clearCachedClientConfig();
-      
       const loginReq = getLoginRequest();
       
-      // Should still work but with warning
+      // Should fall back to basic scopes
       expect(loginReq.scopes).toEqual([
         'openid',
         'profile',
@@ -93,15 +114,16 @@ describe('Comprehensive JWT Scope Fix', () => {
         'email'
       ]);
       
-      // Should have warned about missing backend scope
+      // Should have clearly logged the issue
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('SCOPE ISSUE #224')
+      );
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Backend API scope not available')
+        expect.stringContaining('JWT tokens will NOT include backend API scope')
       );
     } finally {
+      consoleErrorSpy.mockRestore();
       consoleWarnSpy.mockRestore();
-      if (originalEnv !== undefined) {
-        process.env.BACKEND_CLIENT_ID = originalEnv;
-      }
     }
   });
 });
