@@ -72,7 +72,7 @@ export function ChatInterface() {
               <h2 className="text-lg font-medium text-gray-900 mb-2">
                 Welcome to Azure DevOps AI Agent
               </h2>
-              <p className="text-gray-600 max-w-md mx-auto">
+              <p className="text-gray-800 max-w-md mx-auto">
                 Start a conversation by asking about your projects, work items,
                 repositories, or pipelines.
               </p>
@@ -80,7 +80,7 @@ export function ChatInterface() {
 
             {/* Example prompts */}
             <div className="max-w-2xl mx-auto">
-              <h3 className="text-sm font-medium text-gray-700 mb-3">
+              <h3 className="text-sm font-medium text-gray-800 mb-3">
                 Try asking:
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
@@ -92,7 +92,7 @@ export function ChatInterface() {
                 ].map((example, index) => (
                   <button
                     key={index}
-                    className="text-left p-3 bg-gray-50 hover:bg-gray-100 rounded-md border border-gray-200 transition-colors"
+                    className="text-left p-3 bg-gray-50 hover:bg-gray-100 rounded-md border border-gray-200 transition-colors text-gray-800"
                     onClick={() => sendMessage(example)}
                   >
                     &quot;{example}&quot;
