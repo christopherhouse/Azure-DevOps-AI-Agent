@@ -27,12 +27,14 @@ def setup_telemetry() -> trace.Tracer | None:
 
     try:
         # Create resource with service identification
-        resource = Resource.create({
-            SERVICE_NAME: settings.otel_service_name,
-            SERVICE_VERSION: settings.otel_service_version,
-            "service.instance.id": f"{settings.otel_service_name}-{settings.environment}",
-            "deployment.environment": settings.environment,
-        })
+        resource = Resource.create(
+            {
+                SERVICE_NAME: settings.otel_service_name,
+                SERVICE_VERSION: settings.otel_service_version,
+                "service.instance.id": f"{settings.otel_service_name}-{settings.environment}",
+                "deployment.environment": settings.environment,
+            }
+        )
 
         # Set up tracer provider with resource
         trace.set_tracer_provider(TracerProvider(resource=resource))
@@ -69,10 +71,7 @@ def setup_telemetry() -> trace.Tracer | None:
             logger.error(f"Failed to configure Azure Monitor: {e}")
 
         # Set up metrics provider
-        metrics.set_meter_provider(MeterProvider(
-            resource=resource,
-            metric_readers=metric_readers
-        ))
+        metrics.set_meter_provider(MeterProvider(resource=resource, metric_readers=metric_readers))
 
         # Set up comprehensive auto-instrumentation
         _setup_auto_instrumentation()
@@ -103,8 +102,8 @@ def _setup_auto_instrumentation() -> None:
         # HTTPX instrumentation (if httpx is available)
         try:
             HTTPXClientInstrumentor().instrument()
-        except Exception:
-            # HTTPX may not be used, skip silently
+        except Exception:  # nosec B110
+            # HTTPX may not be used, skip silently - this is acceptable for optional instrumentation
             pass
 
         logger.debug("Auto-instrumentation configured successfully")
