@@ -119,6 +119,14 @@ export class ApiClient {
   }
 
   /**
+   * Set the backend API token for authenticated requests (preferred method)
+   * This method is specifically for backend API tokens as part of the split token approach
+   */
+  setBackendApiToken(token: string | null) {
+    this.accessToken = token;
+  }
+
+  /**
    * Get backend health status
    */
   async getHealthStatus(): Promise<BackendStatus> {

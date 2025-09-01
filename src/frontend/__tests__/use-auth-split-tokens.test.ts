@@ -251,10 +251,12 @@ describe('useAuth Hook - Split Token Methods (Issue #232)', () => {
       mockInstance.acquireTokenSilent.mockClear();
       
       // Setup different responses for different token requests
+      // Order: initialization (main + backend), then explicit calls (oidc + backend)
       mockInstance.acquireTokenSilent
-        .mockResolvedValueOnce({ accessToken: 'main-token' }) // For initialization
-        .mockResolvedValueOnce({ accessToken: 'oidc-token' })  // For OIDC request
-        .mockResolvedValueOnce({ accessToken: 'backend-api-token' }); // For backend request
+        .mockResolvedValueOnce({ accessToken: 'main-token' })          // For initialization (generic token)
+        .mockResolvedValueOnce({ accessToken: 'init-backend-token' })  // For initialization (backend token)
+        .mockResolvedValueOnce({ accessToken: 'oidc-token' })          // For explicit OIDC request
+        .mockResolvedValueOnce({ accessToken: 'backend-api-token' });  // For explicit backend request
 
       const { result } = renderHook(() => useAuth());
 
@@ -270,8 +272,8 @@ describe('useAuth Hook - Split Token Methods (Issue #232)', () => {
 
       expect(oidcToken).toBe('oidc-token');
       expect(backendToken).toBe('backend-api-token');
-      // Should be called at least 2 times (for oidc and backend tokens)
-      expect(mockInstance.acquireTokenSilent).toHaveBeenCalledTimes(3); // initialization + oidc + backend
+      // Should be called 4 times: initialization (main + backend) + explicit calls (oidc + backend)
+      expect(mockInstance.acquireTokenSilent).toHaveBeenCalledTimes(4);
     });
   });
 });
