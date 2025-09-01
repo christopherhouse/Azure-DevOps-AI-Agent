@@ -58,6 +58,59 @@ export function useAuth() {
   }, [account, instance]);
 
   /**
+   * Acquire OIDC profile token silently (separate from backend API token)
+   * This is part of the split token approach requested in issue #232
+   */
+  const acquireOidcTokenSilently = useCallback(async (): Promise<string | null> => {
+    if (!account) return null;
+
+    try {
+      const { getOidcTokenRequest } = await import('@/lib/auth-config');
+      const tokenReq = getOidcTokenRequest();
+      const request: SilentRequest = {
+        ...tokenReq,
+        account,
+      };
+
+      const response = await instance.acquireTokenSilent(request);
+      return response.accessToken;
+    } catch (error) {
+      console.error('OIDC token acquisition failed:', error);
+      return null;
+    }
+  }, [account, instance]);
+
+  /**
+   * Acquire backend API token silently (separate from OIDC profile token)
+   * This is part of the split token approach requested in issue #232
+   */
+  const acquireBackendApiTokenSilently = useCallback(async (): Promise<string | null> => {
+    if (!account) return null;
+
+    try {
+      const { getBackendApiTokenRequest } = await import('@/lib/auth-config');
+      const tokenReq = getBackendApiTokenRequest();
+      
+      // Check if we have backend API scopes to request
+      if (!tokenReq.scopes || tokenReq.scopes.length === 0) {
+        console.warn('No backend API scopes available, skipping backend token acquisition');
+        return null;
+      }
+
+      const request: SilentRequest = {
+        ...tokenReq,
+        account,
+      };
+
+      const response = await instance.acquireTokenSilent(request);
+      return response.accessToken;
+    } catch (error) {
+      console.error('Backend API token acquisition failed:', error);
+      return null;
+    }
+  }, [account, instance]);
+
+  /**
    * Login user
    */
   const login = async () => {
@@ -186,5 +239,8 @@ export function useAuth() {
     login,
     logout,
     getAccessToken,
+    // New methods for split token approach (issue #232)
+    getOidcToken: acquireOidcTokenSilently,
+    getBackendApiToken: acquireBackendApiTokenSilently,
   };
 }

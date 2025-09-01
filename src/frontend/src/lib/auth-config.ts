@@ -173,6 +173,47 @@ function getScopes(): string[] {
 }
 
 /**
+ * Get OIDC profile scopes only (for profile information)
+ * This separates profile scopes from backend API scopes as requested in issue #232
+ */
+function getOidcScopes(): string[] {
+  const oidcScopes = ['openid', 'profile', 'User.Read', 'email'];
+  console.debug('Using OIDC profile scopes:', oidcScopes);
+  return oidcScopes;
+}
+
+/**
+ * Get backend API scopes only (for backend API access)
+ * This separates backend API scopes from OIDC profile scopes as requested in issue #232
+ */
+function getBackendApiScopes(): string[] {
+  const clientConfig = getCachedClientConfig();
+  
+  if (clientConfig?.azure.scopes) {
+    // Filter for backend API scopes - look for scopes that match api://*/pattern
+    const backendScopes = clientConfig.azure.scopes.filter(scope => 
+      scope.startsWith('api://') && scope.includes('/Api.')
+    );
+    
+    if (backendScopes.length > 0) {
+      console.debug('Using backend API scopes:', backendScopes);
+      return backendScopes;
+    }
+  }
+  
+  // Fallback: construct backend API scope from environment if available
+  const clientConfig2 = getCachedClientConfig();
+  if (clientConfig2?.backend?.url) {
+    // Try to extract client ID from backend URL or use a default pattern
+    // This is a fallback case, normally the scope should be in clientConfig.azure.scopes
+    console.warn('Backend API scope not found in client config, unable to construct fallback');
+  }
+  
+  console.warn('No backend API scopes available - backend authentication may fail!');
+  return [];
+}
+
+/**
  * Get login request with dynamic scopes from client config
  */
 export function getLoginRequest(): PopupRequest {
@@ -187,6 +228,38 @@ export function getLoginRequest(): PopupRequest {
 export function getTokenRequest(): SilentRequest {
   return {
     scopes: getScopes(),
+    account: null as any,
+  };
+}
+
+/**
+ * Get login request for OIDC profile information only
+ * This is part of the split token approach requested in issue #232
+ */
+export function getOidcLoginRequest(): PopupRequest {
+  return {
+    scopes: getOidcScopes(),
+  };
+}
+
+/**
+ * Get token request for OIDC profile information only
+ * This is part of the split token approach requested in issue #232
+ */
+export function getOidcTokenRequest(): SilentRequest {
+  return {
+    scopes: getOidcScopes(),
+    account: null as any,
+  };
+}
+
+/**
+ * Get token request for backend API access only
+ * This is part of the split token approach requested in issue #232
+ */
+export function getBackendApiTokenRequest(): SilentRequest {
+  return {
+    scopes: getBackendApiScopes(),
     account: null as any,
   };
 }
