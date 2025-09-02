@@ -261,7 +261,7 @@ jobs:
           --key-vault-name "${{ steps.deploy-infra.outputs.keyVaultName }}" \
           --cpu 1.0 \
           --memory 2Gi \
-          --min-replicas 1 \
+          --min-replicas 0 \
           --max-replicas 5 \
           --revisions-mode multiple \
           --env-var "AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4" \
@@ -302,7 +302,7 @@ jobs:
           --key-vault-name "${{ steps.deploy-infra.outputs.keyVaultName }}" \
           --cpu 0.5 \
           --memory 1Gi \
-          --min-replicas 1 \
+          --min-replicas 0 \
           --max-replicas 3 \
           --revisions-mode multiple \
           --env-var "FRONTEND_URL=https://${{ env.FRONTEND_APP_NAME }}.${{ steps.deploy-infra.outputs.environmentDefaultDomain }}" \
