@@ -1,8 +1,5 @@
 """FastAPI dependencies."""
 
-from contextlib import asynccontextmanager
-from typing import AsyncGenerator
-
 from fastapi import Depends
 from fastapi_azure_auth import SingleTenantAzureAuthorizationCodeBearer
 from fastapi_azure_auth.user import User
@@ -13,18 +10,14 @@ from app.core.config import settings
 azure_scheme = SingleTenantAzureAuthorizationCodeBearer(
     app_client_id=settings.azure_client_id,
     tenant_id=settings.azure_tenant_id,
-    scopes={
-        f"api://{settings.azure_client_id}/user_impersonation": "user_impersonation"
-    },
+    scopes={f"api://{settings.azure_client_id}/user_impersonation": "user_impersonation"},
 )
 
 # Optional authentication scheme (auto_error=False)
 optional_azure_scheme = SingleTenantAzureAuthorizationCodeBearer(
     app_client_id=settings.azure_client_id,
     tenant_id=settings.azure_tenant_id,
-    scopes={
-        f"api://{settings.azure_client_id}/user_impersonation": "user_impersonation"
-    },
+    scopes={f"api://{settings.azure_client_id}/user_impersonation": "user_impersonation"},
     auto_error=False,
 )
 

@@ -42,7 +42,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize telemetry
     setup_telemetry()
-    
+
     # Load OpenID configuration for Azure AD authentication
     await azure_scheme.openid_config.load_config()
 
