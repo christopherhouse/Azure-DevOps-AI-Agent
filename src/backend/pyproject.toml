@@ -30,6 +30,7 @@ dependencies = [
     "python-dotenv>=1.0.0",
     
     # Authentication
+    "fastapi-azure-auth>=4.2.0",
     "python-jose[cryptography]>=3.3.0",
     "cryptography>=42.0.0",
     "python-multipart>=0.0.6",

@@ -11,10 +11,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 # Import API routes
-from app.api import auth, chat, projects, workitems
+from app.api import chat, projects, workitems
 
 # Import configuration and telemetry
 from app.core.config import settings
+from app.core.dependencies import azure_scheme
 from app.core.telemetry import setup_telemetry
 
 # Import middleware
@@ -41,6 +42,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize telemetry
     setup_telemetry()
+    
+    # Load OpenID configuration for Azure AD authentication
+    await azure_scheme.openid_config.load_config()
 
     yield
 
@@ -57,6 +61,12 @@ app = FastAPI(
     lifespan=lifespan,
     docs_url="/docs" if settings.debug else None,
     redoc_url="/redoc" if settings.debug else None,
+    swagger_ui_oauth2_redirect_url="/oauth2-redirect",
+    swagger_ui_init_oauth={
+        "usePkceWithAuthorizationCodeGrant": True,
+        "clientId": settings.azure_client_id,
+        "scopes": f"api://{settings.azure_client_id}/user_impersonation",
+    },
 )
 
 # Add CORS middleware
@@ -78,7 +88,6 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler) 
 app.add_exception_handler(Exception, general_exception_handler)
 
 # Include API routes
-app.include_router(auth.router, prefix="/api/auth", tags=["authentication"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(projects.router, prefix="/api/projects", tags=["projects"])
 app.include_router(workitems.router, prefix="/api", tags=["workitems"])
