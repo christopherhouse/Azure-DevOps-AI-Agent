@@ -1,19 +1,20 @@
 /**
- * Test specifically for the JWT scope fix
- * This test validates that the backend API scope is included in authentication requests
+ * Test specifically for the JWT scope fix and Issue #236 token audience fix
+ * This test validates that the backend client ID is included in authentication requests
+ * to ensure correct audience (aud) claim in JWT tokens
  */
 
 import { getLoginRequest, getTokenRequest } from '@/lib/auth-config';
 import { setCachedClientConfig, clearCachedClientConfig } from '@/hooks/use-client-config';
 
-describe('JWT Scope Fix Validation', () => {
+describe('JWT Scope Fix and Token Audience Fix Validation', () => {
   const mockClientConfigWithBackendScope = {
     azure: {
       tenantId: 'test-tenant-id',
       clientId: 'test-client-id',
       authority: 'https://login.microsoftonline.com/test-tenant-id',
       redirectUri: 'http://localhost:3000/auth/callback',
-      scopes: ['openid', 'profile', 'User.Read', 'email', 'api://backend-client-id/Api.All']
+      scopes: ['openid', 'profile', 'User.Read', 'email', 'backend-client-id']  // Updated for Issue #236
     },
     backend: {
       url: 'http://localhost:8000/api'
@@ -31,15 +32,15 @@ describe('JWT Scope Fix Validation', () => {
     clearCachedClientConfig();
   });
 
-  it('should include backend API scope in login request when client config is loaded', () => {
+  it('should include backend client ID in login request for correct token audience (Issue #236)', () => {
     // Set up the client config as if it was loaded from /api/clientConfig
     setCachedClientConfig(mockClientConfigWithBackendScope);
 
     // Get the login request that would be used for authentication
     const loginReq = getLoginRequest();
 
-    // Verify the backend API scope is included
-    expect(loginReq.scopes).toContain('api://backend-client-id/Api.All');
+    // Verify the backend client ID is included (Issue #236 fix)
+    expect(loginReq.scopes).toContain('backend-client-id');
     
     // Verify all expected scopes are present
     expect(loginReq.scopes).toEqual([
@@ -47,19 +48,19 @@ describe('JWT Scope Fix Validation', () => {
       'profile', 
       'User.Read',
       'email',
-      'api://backend-client-id/Api.All'
+      'backend-client-id'  // Client ID only for correct audience (aud) claim
     ]);
   });
 
-  it('should include backend API scope in token request when client config is loaded', () => {
+  it('should include backend client ID in token request for correct token audience (Issue #236)', () => {
     // Set up the client config as if it was loaded from /api/clientConfig
     setCachedClientConfig(mockClientConfigWithBackendScope);
 
     // Get the token request that would be used for silent token acquisition
     const tokenReq = getTokenRequest();
 
-    // Verify the backend API scope is included
-    expect(tokenReq.scopes).toContain('api://backend-client-id/Api.All');
+    // Verify the backend client ID is included (Issue #236 fix)
+    expect(tokenReq.scopes).toContain('backend-client-id');
     
     // Verify all expected scopes are present (all 5 required scopes)
     expect(tokenReq.scopes).toEqual([
@@ -67,26 +68,27 @@ describe('JWT Scope Fix Validation', () => {
       'profile', 
       'User.Read',
       'email',
-      'api://backend-client-id/Api.All'
+      'backend-client-id'  // Client ID only for correct audience (aud) claim
     ]);
   });
 
-  it('should demonstrate the fix: backend API scope is now included in JWT token scopes', () => {
-    // Before the fix: decoded JWT would only contain "scp": "User.Read profile openid email"
-    // After the fix: decoded JWT should contain the backend API scope as well
+  it('should demonstrate Issue #236 fix: backend client ID ensures correct token audience', () => {
+    // Issue #236: audience (aud) was incorrectly set to "api://[backend-id]/Api.All"
+    // After fix: audience (aud) should be just "[backend-id]" for correct token validation
     
     setCachedClientConfig(mockClientConfigWithBackendScope);
     
     const loginReq = getLoginRequest();
     const tokenReq = getTokenRequest();
 
-    // Both requests should now include the backend API scope
-    expect(loginReq.scopes).toContain('api://backend-client-id/Api.All');
-    expect(tokenReq.scopes).toContain('api://backend-client-id/Api.All');
+    // Both requests should now include the backend client ID only (not full API URI)
+    expect(loginReq.scopes).toContain('backend-client-id');
+    expect(tokenReq.scopes).toContain('backend-client-id');
 
-    // This means the JWT token obtained using these requests will include 
-    // the backend API scope in its "scp" claim
-    console.log('✓ Backend API scope will now be included in JWT tokens');
+    // This means the JWT token obtained using these requests will have:
+    // - audience (aud) = "backend-client-id" ✓ (fixed)
+    // - scope (scp) still includes the proper permissions
+    console.log('✓ Token audience (aud) will now be correctly set to backend client ID');
     console.log('✓ Login request scopes:', loginReq.scopes);
     console.log('✓ Token request scopes:', tokenReq.scopes);
   });

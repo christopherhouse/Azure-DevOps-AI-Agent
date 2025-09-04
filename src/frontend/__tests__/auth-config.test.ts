@@ -19,7 +19,7 @@ const mockClientConfigWithBackendScope = {
     clientId: 'test-client-id-67890',
     authority: 'https://login.microsoftonline.com/test-tenant-id-12345',
     redirectUri: 'http://localhost:3000/auth/callback',
-    scopes: ['openid', 'profile', 'User.Read', 'email', 'api://backend-client-id/Api.All']
+    scopes: ['openid', 'profile', 'User.Read', 'email', 'backend-client-id']
   },
   backend: {
     url: 'http://localhost:8000'
@@ -150,15 +150,15 @@ describe('Dynamic Auth Requests', () => {
       
       const request = getLoginRequest();
       
-      expect(request.scopes).toEqual(['openid', 'profile', 'User.Read', 'email', 'api://backend-client-id/Api.All']);
+      expect(request.scopes).toEqual(['openid', 'profile', 'User.Read', 'email', 'backend-client-id']);
     });
 
-    it('should include backend API scope when present in config', () => {
+    it('should include backend client ID when present in config', () => {
       setCachedClientConfig(mockClientConfigWithBackendScope);
       
       const request = getLoginRequest();
       
-      expect(request.scopes).toContain('api://backend-client-id/Api.All');
+      expect(request.scopes).toContain('backend-client-id');
     });
   });
 
@@ -175,16 +175,16 @@ describe('Dynamic Auth Requests', () => {
       
       const request = getTokenRequest();
       
-      expect(request.scopes).toEqual(['openid', 'profile', 'User.Read', 'email', 'api://backend-client-id/Api.All']);
+      expect(request.scopes).toEqual(['openid', 'profile', 'User.Read', 'email', 'backend-client-id']);
       expect(request.account).toBe(null);
     });
 
-    it('should include backend API scope when present in config', () => {
+    it('should include backend client ID when present in config', () => {
       setCachedClientConfig(mockClientConfigWithBackendScope);
       
       const request = getTokenRequest();
       
-      expect(request.scopes).toContain('api://backend-client-id/Api.All');
+      expect(request.scopes).toContain('backend-client-id');
     });
   });
 

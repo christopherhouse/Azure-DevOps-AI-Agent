@@ -40,13 +40,13 @@ describe('Environment Variable Validation', () => {
     const response = await GET();
     const config = await response.json();
 
-    // Should include all 5 required scopes
+    // Should include all 5 required scopes with backend client ID for correct audience
     expect(config.azure.scopes).toEqual([
       'openid',
       'profile', 
       'User.Read',
       'email',
-      'api://backend-client-id/Api.All'
+      'backend-client-id'  // Client ID only for correct audience (aud) claim
     ]);
   });
 
@@ -86,8 +86,8 @@ describe('Environment Variable Validation', () => {
     expect(error.message).toContain('BACKEND_CLIENT_ID');
     
     console.log('❌ This would cause client config loading to fail');
-    console.log('❌ Frontend would fall back to default scopes without backend API scope');
+    console.log('❌ Frontend would fall back to default scopes without backend client ID');
     console.log('❌ JWT tokens would only contain: openid, profile, User.Read, email');
-    console.log('❌ Missing: api://backend-client-id/Api.All');
+    console.log('❌ Missing: backend-client-id');
   });
 });

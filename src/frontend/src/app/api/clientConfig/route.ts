@@ -56,17 +56,20 @@ export async function GET() {
       throw new Error('FRONTEND_URL environment variable is not set');
     }
 
-    // Construct scopes array with OIDC scopes and backend API scope
+    // Construct scopes array with OIDC scopes and backend client ID
+    // Using just the backend client ID as scope to set correct audience claim
+    // Per MSAL docs: audience (aud) should be the client ID, scope (scp) should be the permission
     const defaultScopes = ['openid', 'profile', 'User.Read', 'email'];
-    const backendApiScope = `api://${backendClientId}/Api.All`;
+    const backendClientIdScope = backendClientId; // Use client ID directly for correct audience
 
     const scopesArray = scopes
       ? scopes.split(',').map((scope) => scope.trim())
       : defaultScopes;
 
-    // Add backend API scope if not already present
-    if (!scopesArray.includes(backendApiScope)) {
-      scopesArray.push(backendApiScope);
+    // Add backend client ID scope if not already present
+    // This will set the audience to the backend client ID as required
+    if (!scopesArray.includes(backendClientIdScope)) {
+      scopesArray.push(backendClientIdScope);
     }
 
     // Build the response with defaults for optional values

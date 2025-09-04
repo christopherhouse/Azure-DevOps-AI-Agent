@@ -53,7 +53,7 @@ describe('/api/clientConfig', () => {
           clientId: 'test-client-id',
           authority: 'https://login.microsoftonline.com/test-tenant-id',
           redirectUri: 'http://localhost:3000/auth/callback',
-          scopes: ['openid', 'profile', 'User.Read', 'api://test-backend-client-id/Api.All']
+          scopes: ['openid', 'profile', 'User.Read', 'test-backend-client-id']  // Updated for Issue #236: client ID only for correct audience
         },
         backend: {
           url: 'http://localhost:8000/api'
@@ -80,7 +80,7 @@ describe('/api/clientConfig', () => {
       expect(response.status).toBe(200)
       expect(data.azure.authority).toBe('https://login.microsoftonline.com/test-tenant-id')
       expect(data.azure.redirectUri).toBe('http://localhost:3000/auth/callback')
-      expect(data.azure.scopes).toEqual(['openid', 'profile', 'User.Read', 'email', 'api://test-backend-client-id/Api.All'])
+      expect(data.azure.scopes).toEqual(['openid', 'profile', 'User.Read', 'email', 'test-backend-client-id'])  // Updated for Issue #236
       expect(data.frontend.url).toBe('http://localhost:3000')
     })
 
@@ -169,7 +169,7 @@ describe('/api/clientConfig', () => {
       const data = await response.json()
 
       expect(response.status).toBe(200)
-      expect(data.azure.scopes).toEqual(['scope1', 'scope2', 'scope3', 'api://test-backend-client-id/Api.All'])
+      expect(data.azure.scopes).toEqual(['scope1', 'scope2', 'scope3', 'test-backend-client-id'])  // Updated for Issue #236
     })
 
     it('should handle custom authority and redirect URI', async () => {
@@ -214,8 +214,8 @@ describe('/api/clientConfig', () => {
       expect(data.backend.url).toBe('http://localhost:8000/api')
     })
 
-    it('should not duplicate backend API scope if already present in AZURE_SCOPES', async () => {
-      process.env.AZURE_SCOPES = 'openid,profile,User.Read,api://test-backend-client-id/Api.All'
+    it('should not duplicate backend client ID if already present in AZURE_SCOPES', async () => {
+      process.env.AZURE_SCOPES = 'openid,profile,User.Read,test-backend-client-id'  // Updated for Issue #236
 
       // Re-import the module to pick up env changes
       jest.resetModules()
@@ -224,10 +224,10 @@ describe('/api/clientConfig', () => {
       const data = await response.json()
 
       expect(response.status).toBe(200)
-      expect(data.azure.scopes).toEqual(['openid', 'profile', 'User.Read', 'api://test-backend-client-id/Api.All'])
+      expect(data.azure.scopes).toEqual(['openid', 'profile', 'User.Read', 'test-backend-client-id'])  // Updated for Issue #236
       // Should not have duplicates
-      const backendApiScopes = data.azure.scopes.filter(scope => scope === 'api://test-backend-client-id/Api.All')
-      expect(backendApiScopes.length).toBe(1)
+      const backendClientIdScopes = data.azure.scopes.filter(scope => scope === 'test-backend-client-id')
+      expect(backendClientIdScopes.length).toBe(1)
     })
   })
 })
