@@ -65,7 +65,7 @@ app = FastAPI(
     swagger_ui_init_oauth={
         "usePkceWithAuthorizationCodeGrant": True,
         "clientId": settings.azure_client_id,
-        "scopes": f"api://{settings.azure_client_id}/user_impersonation",
+        "scopes": f"{settings.azure_client_id}/Api.All",
     },
 )
 

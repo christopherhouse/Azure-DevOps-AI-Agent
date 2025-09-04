@@ -10,14 +10,14 @@ from app.core.config import settings
 azure_scheme = SingleTenantAzureAuthorizationCodeBearer(
     app_client_id=settings.azure_client_id,
     tenant_id=settings.azure_tenant_id,
-    scopes={f"api://{settings.azure_client_id}/user_impersonation": "user_impersonation"},
+    scopes={f"{settings.azure_client_id}/Api.All": "Api.All"},
 )
 
 # Optional authentication scheme (auto_error=False)
 optional_azure_scheme = SingleTenantAzureAuthorizationCodeBearer(
     app_client_id=settings.azure_client_id,
     tenant_id=settings.azure_tenant_id,
-    scopes={f"api://{settings.azure_client_id}/user_impersonation": "user_impersonation"},
+    scopes={f"{settings.azure_client_id}/Api.All": "Api.All"},
     auto_error=False,
 )
 
