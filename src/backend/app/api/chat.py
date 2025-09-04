@@ -3,9 +3,9 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi_azure_auth.user import User
 
 from app.core.dependencies import get_current_user
-from app.models.auth import User
 from app.models.chat import ChatRequest, ChatResponse, Conversation
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ async def send_message(
                 "Should I set up the basic configuration?",
                 "Do you need help with the next steps?",
             ],
-            metadata={"user_id": current_user.id, "context": request.context},
+            metadata={"user_id": current_user.oid, "context": request.context},
         )
 
         return response

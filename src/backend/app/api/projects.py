@@ -3,9 +3,9 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi_azure_auth.user import User
 
 from app.core.dependencies import get_current_user
-from app.models.auth import User
 from app.models.projects import (
     Project,
     ProjectCreate,

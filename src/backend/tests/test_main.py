@@ -20,38 +20,22 @@ def test_root_endpoint(client):
     assert "version" in data
 
 
-def test_authentication_flow(client):
-    """Test complete authentication flow."""
-    # Test login
-    response = client.post("/api/auth/token", json={"azure_token": "mock-token"})
-    assert response.status_code == 200
-    token_data = response.json()
-    assert "access_token" in token_data
-    assert token_data["token_type"] == "bearer"
-    assert token_data["expires_in"] == 3600
-
-    # Test getting user info
-    token = token_data["access_token"]
-    response = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
-    assert response.status_code == 200
-    user_data = response.json()
-    assert user_data["id"] == "mock-user-123"
-    assert user_data["email"] == "mock@example.com"
-    assert user_data["name"] == "Mock User"
+def test_authentication_endpoints_removed(unauthenticated_client):
+    """Test that the old authentication endpoints are removed."""
+    # Test that /api/auth/token no longer exists
+    response = unauthenticated_client.post("/api/auth/token", json={"azure_token": "mock-token"})
+    assert response.status_code == 404
+    
+    # Test that /api/auth/me no longer exists
+    response = unauthenticated_client.get("/api/auth/me", headers={"Authorization": "Bearer mock-token"})
+    assert response.status_code == 404
 
 
-def test_authentication_invalid_token(client):
-    """Test authentication with invalid token."""
-    response = client.get("/api/auth/me", headers={"Authorization": "Bearer invalid-token"})
-    # Should return 500 because our auth service doesn't handle invalid tokens gracefully
-    # In production, this would be 401, but for this test we expect the server error
-    assert response.status_code in [401, 500]
-
-
-def test_authentication_no_token(client):
-    """Test authentication without token."""
-    response = client.get("/api/auth/me")
-    assert response.status_code == 403
+def test_authentication_required_endpoints(unauthenticated_client):
+    """Test that protected endpoints require authentication."""
+    # Test chat endpoint without auth header should fail
+    response = unauthenticated_client.post("/api/chat/message", json={"message": "test"})
+    assert response.status_code == 401  # Unauthorized
 
 
 def test_chat_message(client, auth_headers):
@@ -179,14 +163,14 @@ def test_security_headers(client):
     assert "X-Process-Time" in response.headers
 
 
-def test_error_handling(client):
+def test_error_handling(client, unauthenticated_client):
     """Test error handling."""
     # Test 404
-    response = client.get("/nonexistent")
+    response = unauthenticated_client.get("/nonexistent")
     assert response.status_code == 404
 
-    # Test validation error
-    response = client.post("/api/auth/token", json={})
+    # Test validation error with chat endpoint
+    response = client.post("/api/chat/message", json={}, headers={"Authorization": "Bearer mock-token"})
     assert response.status_code == 422
     data = response.json()
     assert "error" in data
