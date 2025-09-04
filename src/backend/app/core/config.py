@@ -39,12 +39,6 @@ class Settings(BaseSettings):
     )
     otel_service_version: str = Field(default="1.0.0", description="OpenTelemetry service version")
 
-    # CORS
-    allowed_origins: list[str] = Field(
-        default=["http://localhost:3000", "http://localhost:7860"],
-        description="Allowed CORS origins",
-    )
-
     # Security
     jwt_secret_key: str = Field(description="JWT secret key")
     jwt_algorithm: str = Field(default="HS256", description="JWT algorithm")
