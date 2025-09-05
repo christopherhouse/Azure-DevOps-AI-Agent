@@ -143,12 +143,18 @@ def test_workitems_create(client, auth_headers):
     assert data["state"] == "New"
 
 
-def test_cors_headers(client):
-    """Test CORS headers are present."""
-    # Test with a simple GET request since OPTIONS may not be supported for all endpoints
+def test_cors_headers_not_set_by_backend(client):
+    """Test that CORS headers are NOT set by the backend (handled by Azure Container Apps)."""
+    # Test with a simple GET request
     response = client.get("/health")
     assert response.status_code == 200
-    # CORS headers are added by FastAPI CORS middleware
+    
+    # Verify that common CORS headers are NOT set by the backend
+    # Azure Container Apps will handle CORS instead
+    assert "Access-Control-Allow-Origin" not in response.headers
+    assert "Access-Control-Allow-Methods" not in response.headers
+    assert "Access-Control-Allow-Headers" not in response.headers
+    assert "Access-Control-Allow-Credentials" not in response.headers
 
 
 def test_security_headers(client):
