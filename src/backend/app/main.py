@@ -14,7 +14,7 @@ from app.api import chat, projects, workitems
 
 # Import configuration and telemetry
 from app.core.config import settings
-from app.core.dependencies import azure_scheme
+from app.core.dependencies import azure_scheme, get_mock_user
 from app.core.telemetry import setup_telemetry
 
 # Import middleware
@@ -31,6 +31,10 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+# Feature flag to disable authentication for testing/development
+# Set to True to bypass Azure AD authentication and use a mock user
+DISABLE_AUTH = True
 
 
 @asynccontextmanager
@@ -71,6 +75,11 @@ app = FastAPI(
 # Add custom middleware
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
+
+# Feature flag: Disable authentication if DISABLE_AUTH is True
+if DISABLE_AUTH:
+    logger.warning("⚠️  AUTHENTICATION DISABLED - Using mock user for all endpoints")
+    app.dependency_overrides[azure_scheme] = get_mock_user
 
 # Add exception handlers
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)  # type: ignore
