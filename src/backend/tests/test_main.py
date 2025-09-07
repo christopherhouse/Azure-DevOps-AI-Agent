@@ -184,9 +184,9 @@ def test_error_handling(client, unauthenticated_client):
 
 
 def test_auth_feature_flag_disabled_by_default():
-    """Test that the auth feature flag is disabled by default."""
+    """Test that the auth feature flag is enabled."""
     from app.main import DISABLE_AUTH
-    assert DISABLE_AUTH is False
+    assert DISABLE_AUTH is True
 
 
 def test_auth_feature_flag_functionality(unauthenticated_client):

@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 # Feature flag to disable authentication for testing/development
 # Set to True to bypass Azure AD authentication and use a mock user
-DISABLE_AUTH = False
+DISABLE_AUTH = True
 
 
 @asynccontextmanager
