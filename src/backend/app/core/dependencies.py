@@ -36,3 +36,26 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
 async def get_optional_user(user: User | None = Depends(optional_azure_scheme)) -> User | None:
     """Get current user if authenticated, otherwise None."""
     return user
+
+
+async def get_mock_user() -> User:
+    """Get a mock user for when authentication is disabled via feature flag."""
+    return User(
+        claims={},
+        preferred_username="mock-user@example.com",
+        roles=["User"],
+        aud="mock-client-id",
+        tid="mock-tenant-id",
+        access_token="mock-access-token",
+        is_guest=False,
+        iat=1537231048,
+        nbf=1537231048,
+        exp=1537234948,
+        iss="https://login.microsoftonline.com/mock-tenant-id/v2.0",
+        aio="mock-aio",
+        sub="mock-user-123",
+        oid="mock-user-123",
+        uti="mock-uti",
+        rh="mock-rh",
+        ver="2.0",
+    )

@@ -181,3 +181,21 @@ def test_error_handling(client, unauthenticated_client):
     data = response.json()
     assert "error" in data
     assert data["error"]["type"] == "validation_error"
+
+
+def test_auth_feature_flag_disabled_by_default():
+    """Test that the auth feature flag is disabled by default."""
+    from app.main import DISABLE_AUTH
+    assert DISABLE_AUTH is False
+
+
+def test_auth_feature_flag_functionality(unauthenticated_client):
+    """Test that the mock user function works correctly."""
+    from app.core.dependencies import get_mock_user
+    import asyncio
+    
+    # Test that the mock user function returns expected values
+    mock_user = asyncio.run(get_mock_user())
+    assert mock_user.oid == "mock-user-123"
+    assert mock_user.preferred_username == "mock-user@example.com"
+    assert mock_user.access_token == "mock-access-token"
