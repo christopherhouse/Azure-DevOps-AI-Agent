@@ -46,7 +46,7 @@ async def get_mock_user() -> User:
         roles=["User"],
         aud="mock-client-id",
         tid="mock-tenant-id",
-        access_token="mock-access-token",
+        access_token="mock-access-token",  # nosec B106
         is_guest=False,
         iat=1537231048,
         nbf=1537231048,

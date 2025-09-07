@@ -22,6 +22,12 @@ This document explains the bandit security configuration for the Azure DevOps AI
 
 **Location**: `src/backend/app/services/auth_service.py:105`
 
+### 4. B106 - False Positive on Mock Access Token (LOW Severity)
+**Issue**: Mock access token in test dependencies was flagged as a hardcoded password.
+**Resolution**: Added `# nosec B106` suppression as this is clearly a mock value for testing/development purposes, not a real access token.
+
+**Location**: `src/backend/app/core/dependencies.py:49`
+
 ## Configuration Files
 
 ### .bandit Configuration
