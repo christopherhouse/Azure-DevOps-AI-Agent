@@ -1,0 +1,136 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace AzureDevOpsAI.Backend.Configuration;
+
+/// <summary>
+/// Application configuration settings.
+/// </summary>
+public class AppSettings
+{
+    /// <summary>
+    /// Application name.
+    /// </summary>
+    public string AppName { get; set; } = "Azure DevOps AI Agent Backend";
+
+    /// <summary>
+    /// Application version.
+    /// </summary>
+    public string AppVersion { get; set; } = "1.0.0";
+
+    /// <summary>
+    /// Enable debug mode.
+    /// </summary>
+    public bool Debug { get; set; } = false;
+
+    /// <summary>
+    /// Environment name.
+    /// </summary>
+    public string Environment { get; set; } = "development";
+
+    /// <summary>
+    /// Server host.
+    /// </summary>
+    public string Host { get; set; } = "0.0.0.0";
+
+    /// <summary>
+    /// Server port.
+    /// </summary>
+    public int Port { get; set; } = 8000;
+}
+
+/// <summary>
+/// Azure authentication configuration.
+/// </summary>
+public class AzureAuthSettings
+{
+    /// <summary>
+    /// Azure tenant ID.
+    /// </summary>
+    [Required]
+    public string TenantId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Azure client ID.
+    /// </summary>
+    [Required]
+    public string ClientId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Azure client secret.
+    /// </summary>
+    public string? ClientSecret { get; set; }
+
+    /// <summary>
+    /// JWT authority URL.
+    /// </summary>
+    public string Authority => $"https://login.microsoftonline.com/{TenantId}/v2.0";
+
+    /// <summary>
+    /// JWT audience.
+    /// </summary>
+    public string Audience => ClientId;
+}
+
+/// <summary>
+/// Azure DevOps configuration.
+/// </summary>
+public class AzureDevOpsSettings
+{
+    /// <summary>
+    /// Azure DevOps organization.
+    /// </summary>
+    public string? Organization { get; set; }
+
+    /// <summary>
+    /// Azure DevOps Personal Access Token.
+    /// </summary>
+    public string? Pat { get; set; }
+}
+
+/// <summary>
+/// Application Insights configuration.
+/// </summary>
+public class ApplicationInsightsSettings
+{
+    /// <summary>
+    /// Application Insights connection string.
+    /// </summary>
+    public string? ConnectionString { get; set; }
+
+    /// <summary>
+    /// OpenTelemetry service name.
+    /// </summary>
+    public string ServiceName { get; set; } = "azure-devops-ai-backend";
+
+    /// <summary>
+    /// OpenTelemetry service version.
+    /// </summary>
+    public string ServiceVersion { get; set; } = "1.0.0";
+}
+
+/// <summary>
+/// Security configuration.
+/// </summary>
+public class SecuritySettings
+{
+    /// <summary>
+    /// JWT secret key.
+    /// </summary>
+    [Required]
+    public string JwtSecretKey { get; set; } = string.Empty;
+
+    /// <summary>
+    /// JWT algorithm.
+    /// </summary>
+    public string JwtAlgorithm { get; set; } = "HS256";
+
+    /// <summary>
+    /// JWT expiration time in minutes.
+    /// </summary>
+    public int JwtExpireMinutes { get; set; } = 60;
+
+    /// <summary>
+    /// Feature flag to disable authentication for testing/development.
+    /// </summary>
+    public bool DisableAuth { get; set; } = true;
+}
