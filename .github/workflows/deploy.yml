@@ -264,15 +264,13 @@ jobs:
           --min-replicas 0 \
           --max-replicas 5 \
           --revisions-mode multiple \
-          --env-var "AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4" \
-          --env-var "AZURE_DEVOPS_ORGANIZATION=${{ env.AZURE_DEVOPS_ORG }}" \
-          --env-var "ENVIRONMENT=${{ inputs.environment }}" \
-          --env-var "AZURE_OPENAI_ENDPOINT=${{ steps.deploy-infra.outputs.openAIEndpoint }}" \
-          --secret-ref "AZURE_TENANT_ID=entra-tenant-id" \
-          --secret-ref "AZURE_CLIENT_ID=backend-client-id" \
-          --secret-ref "AZURE_CLIENT_SECRET=backend-client-secret" \
-          --secret-ref "JWT_SECRET_KEY=jwt-secret-key" \
-          --secret-ref "APPLICATIONINSIGHTS_CONNECTION_STRING=app-insights-connection-string" \
+          --env-var "App__Environment=${{ inputs.environment }}" \
+          --env-var "AzureDevOps__Organization=${{ env.AZURE_DEVOPS_ORG }}" \
+          --secret-ref "AzureAuth__TenantId=entra-tenant-id" \
+          --secret-ref "AzureAuth__ClientId=backend-client-id" \
+          --secret-ref "AzureAuth__ClientSecret=backend-client-secret" \
+          --secret-ref "Security__JwtSecretKey=jwt-secret-key" \
+          --secret-ref "ApplicationInsights__ConnectionString=app-insights-connection-string" \
           --verbose
           
     - name: Configure Backend CORS Settings
