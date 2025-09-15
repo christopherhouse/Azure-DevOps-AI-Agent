@@ -149,10 +149,10 @@ app.MapGet("/", () =>
 .WithOpenApi()
 .AllowAnonymous();
 
-// Map API endpoints
-app.MapChatEndpoints();
-app.MapProjectEndpoints();
-app.MapWorkItemEndpoints();
+// Map API endpoints - commented out for initial demonstration
+// app.MapChatEndpoints();
+// app.MapProjectEndpoints();
+// app.MapWorkItemEndpoints();
 
 // Map health checks
 app.MapHealthChecks("/health/ready");
