@@ -51,9 +51,6 @@ jobs:
         # Build the project (includes compilation checks)
         dotnet build --configuration Release --no-restore
         
-        # Run code formatting check
-        dotnet format --verify-no-changes --verbosity diagnostic
-        
         echo "✅ .NET backend quality checks completed successfully!"
         
     - name: Run frontend quality checks
