@@ -158,3 +158,6 @@ app.MapGet("/", () =>
 app.MapHealthChecks("/health/ready");
 
 app.Run();
+
+// Make Program class accessible for testing
+public partial class Program { }

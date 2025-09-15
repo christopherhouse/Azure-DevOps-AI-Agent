@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzureDevOpsAI.Backend", "AzureDevOpsAI.Backend\AzureDevOpsAI.Backend.csproj", "{59946149-5AEA-41FB-A36C-F05F797C137D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzureDevOpsAI.Backend.Tests", "AzureDevOpsAI.Backend.Tests\AzureDevOpsAI.Backend.Tests.csproj", "{B715BB78-AF71-475E-82EF-37DDD32FD9E8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{59946149-5AEA-41FB-A36C-F05F797C137D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{59946149-5AEA-41FB-A36C-F05F797C137D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{59946149-5AEA-41FB-A36C-F05F797C137D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B715BB78-AF71-475E-82EF-37DDD32FD9E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B715BB78-AF71-475E-82EF-37DDD32FD9E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B715BB78-AF71-475E-82EF-37DDD32FD9E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B715BB78-AF71-475E-82EF-37DDD32FD9E8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
