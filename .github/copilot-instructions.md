@@ -4,11 +4,12 @@ This document provides comprehensive guidance for GitHub Copilot to work efficie
 
 ## 🎯 Repository Overview
 
+
 **Azure DevOps AI Agent** is a conversational AI solution for Azure DevOps administrative tasks, built with:
 - **Frontend**: Next.js TypeScript application with Microsoft Entra ID authentication  
-- **Backend**: FastAPI with Azure OpenAI and Semantic Kernel integration
+- **Backend**: .NET Web API (C#) with Azure OpenAI and Semantic Kernel integration, located in `/src/backend/dotnet`
 - **Infrastructure**: Azure Container Apps deployed via Bicep and Azure Verified Modules (AVM)
-- **Languages**: TypeScript/JavaScript (frontend), Python 3.11+ (backend), with comprehensive type hints and async/await patterns
+- **Languages**: TypeScript/JavaScript (frontend), C# (.NET backend)
 
 **Repository Size**: ~500 source files across frontend, backend, infrastructure, and documentation
 
@@ -32,69 +33,66 @@ npm run lint
 npm run format
 ```
 
-### Backend Package Manager: uv (NOT pip)
-**ALWAYS use `uv` instead of pip** - this is the most critical difference from typical Python projects:
+### Backend Package Manager: .NET CLI
+**Backend uses .NET CLI for build, test, and run commands:**
 
 ```bash
-# Install uv first
-curl -LsSf https://astral.sh/uv/install.sh | sh
+# Install .NET SDK (if not already installed)
+# See https://learn.microsoft.com/en-us/dotnet/core/install/linux
 
-# Install dependencies (NEVER use pip install -r requirements.txt)
-cd src/backend && uv sync --group dev
-cd src/frontend && npm install
+# Restore dependencies (backend)
+cd src/backend/dotnet/AzureDevOpsAI.Backend && dotnet restore
 
-# Run commands through uv (backend only)
-uv run pytest
-uv run uvicorn app.main:app --reload
-uv run ruff check app/
+# Build backend
+dotnet build
+
+# Run backend development server
+dotnet run --project AzureDevOpsAI.Backend
+
+# Run backend tests
+cd ../AzureDevOpsAI.Backend.Tests && dotnet test
 
 # Run commands through npm (frontend)
+cd ../../../frontend && npm install
 npm run dev
 npm test
 npm run lint
 ```
 
 ### Environment Setup
-**ALWAYS copy .env.example before running tests or development servers:**
+**ALWAYS copy .env.example before running frontend tests or development servers:**
 ```bash
-cp .env.example .env.test  # Required for backend test environment
-cp .env.example .env       # Required for backend development
+cp .env.example .env       # Required for frontend development
 # Frontend environment variables are managed via Next.js config
 ```
 
 ### Version Requirements
 - **Frontend**: Node.js 18+ (LTS recommended), npm 8+
-- **Backend**: Python 3.11+
-- **Target**: Python 3.11 (used in containers and CI)
-- **Installed via uv**: Automatically downloads Python 3.11 if needed
+- **Backend**: .NET 8.0+ (LTS recommended)
 
 ## 📋 Development Workflow Commands
 
 ### Quality Checks (MUST pass before commits)
 ```bash
-# Backend - Format and lint code
-cd src/backend && uv run ruff format app/
-cd src/backend && uv run ruff check app/
+
+# Backend - Build, test, and code quality
+cd src/backend/dotnet/AzureDevOpsAI.Backend && dotnet build
+cd ../AzureDevOpsAI.Backend.Tests && dotnet test
 
 # Frontend - Format and lint code
 cd src/frontend && npm run format
 cd src/frontend && npm run lint
 
-# Backend - Type checking
-cd src/backend && uv run mypy app --ignore-missing-imports
-
 # Frontend - Type checking (built into Next.js build process)
 cd src/frontend && npm run type-check
-
-# Backend - Security scan
-cd src/backend && uv run bandit -r app -f json -o bandit-report.json
 ```
 ```
 
 ### Testing
 ```bash
-# Backend tests (from src/backend/)
-uv run pytest tests/ --cov=app --cov-report=term-missing
+
+# Backend tests (from src/backend/dotnet/)
+cd src/backend/dotnet/AzureDevOpsAI.Backend.Tests && dotnet test
 
 # Frontend tests (from src/frontend/)  
 npm test
@@ -102,22 +100,23 @@ npm test
 # Frontend test coverage
 npm run test:coverage
 
-# Backend coverage requirement: 25% minimum (currently ~72%)
+# Backend coverage requirement: 25% minimum (use .NET coverage tools)
 # Frontend coverage requirement: 5% minimum (expanding test coverage)
 ```
 
 ### Running Development Servers
 ```bash
-# Terminal 1 - Backend (from src/backend/)
-uv run uvicorn app.main:app --reload --port 8000 --host 0.0.0.0
+
+# Terminal 1 - Backend (from src/backend/dotnet/)
+cd src/backend/dotnet/AzureDevOpsAI.Backend && dotnet run
 
 # Terminal 2 - Frontend (from src/frontend/)
 npm run dev
 
 # Access points:
 # - Frontend UI: http://localhost:3000
-# - Backend API: http://localhost:8000
-# - API Docs: http://localhost:8000/docs
+# - Backend API: http://localhost:5000 (default .NET port)
+# - API Docs: Swagger UI at http://localhost:5000/swagger
 ```
 
 ## 🏗️ Infrastructure Commands
@@ -145,12 +144,13 @@ az deployment group validate \
 │   ├── ci.yml                 # Main build/test/publish pipeline  
 │   ├── infrastructure.yml     # Azure infrastructure deployment
 │   └── deploy.yml            # Application deployment
-├── src/backend/               # FastAPI application
-│   ├── app/main.py           # FastAPI app entry point
-│   ├── app/api/              # API route modules
-│   ├── app/services/         # Business logic services
-│   ├── app/models/           # Pydantic models
-│   └── tests/                # Backend tests
+├── src/backend/dotnet/       # .NET Web API backend
+│   ├── AzureDevOpsAI.Backend/        # Main backend project
+│   │   ├── Program.cs                # .NET API entry point
+│   │   ├── Endpoints/                # API endpoints
+│   │   ├── Models/                   # Data models
+│   │   └── ...
+│   ├── AzureDevOpsAI.Backend.Tests/  # Backend tests
 ├── src/frontend/              # Next.js TypeScript application
 │   ├── src/app/               # Next.js App Router pages
 │   │   ├── page.tsx          # Main application page
@@ -178,19 +178,19 @@ az deployment group validate \
 ```
 
 ### Configuration Files
-- **Backend Build**: `src/backend/pyproject.toml` (contains ruff, mypy, pytest config)
-- **Backend Dependencies**: `src/backend/uv.lock` (lockfiles), `src/backend/pyproject.toml` (dependencies)
+- **Backend Build**: `src/backend/dotnet/AzureDevOpsAI.Backend.csproj` (project file)
+- **Backend Dependencies**: Managed via NuGet in `.csproj` files
 - **Frontend Build**: `src/frontend/next.config.js`, `src/frontend/tailwind.config.js`, `src/frontend/jest.config.js`
 - **Frontend Dependencies**: Currently missing `package.json` and `package-lock.json` files
-- **Environment**: `.env.example` (template), `.env.test` (backend test environment)
-- **Security**: `.bandit` (backend security scan configuration)
+- **Environment**: `.env.example` (template)
+- **Security**: .NET code analysis and security tools (e.g., SonarQube, dotnet analyzers)
 - **Docker**: `src/*/Dockerfile` (multi-stage builds)
 
 ## 🔍 CI/CD Pipeline Details
 
 ### GitHub Actions Workflows
 1. **ci.yml** (Main Pipeline - ~8-10 minutes):
-   - Backend quality checks (ruff, mypy, bandit)
+   - Backend quality checks (dotnet build, analyzers, code coverage)
    - Frontend quality checks (ESLint, TypeScript, Prettier)
    - Backend tests with Redis service
    - Frontend tests (Jest)
@@ -204,11 +204,10 @@ az deployment group validate \
    - Smoke testing
 
 ### Common CI Failures & Solutions
-**Backend Issues:**
-- **uv sync fails**: Check uv.lock files are committed
-- **Backend tests fail with auth errors**: Ensure .env.test is properly configured  
-- **Bandit security fails**: Review security scan output, add `# nosec` for false positives
-- **Type checking fails**: Add missing type hints or mypy ignores
+**Backend Issues (.NET):**
+- **dotnet restore/build fails**: Check .csproj and NuGet package references
+- **Backend tests fail**: Ensure test project is properly configured
+- **Code analysis fails**: Review analyzer output and fix issues
 - **Coverage below 25%**: Add tests or adjust coverage threshold
 
 **Frontend Issues:**
@@ -234,12 +233,10 @@ az deployment group validate \
 ## 📦 Technology Stack Details
 
 ### Backend Dependencies (key modules)
-- **fastapi**: Web framework with OpenAPI
-- **azure-identity**: Azure authentication
-- **azure-monitor-opentelemetry**: Telemetry and logging
-- **structlog**: Structured logging
-- **httpx**: Async HTTP client
-- **pydantic**: Data validation and serialization
+- **ASP.NET Core**: Web API framework
+- **Azure.Identity**: Azure authentication
+- **Azure.Monitor.OpenTelemetry**: Telemetry and logging
+- **Swashbuckle.AspNetCore**: Swagger/OpenAPI documentation
 
 ### Frontend Dependencies (key modules)  
 - **next**: React framework with built-in optimization
@@ -261,11 +258,11 @@ az deployment group validate \
 ## ⚠️ Common Pitfalls & Solutions
 
 ### Build Issues
-**Backend:**
-1. **"uv command not found"**: Install uv via curl script or package manager
-2. **"No module named 'app'"**: Run commands from correct directory (src/backend/)
-3. **"ImportError during tests"**: Ensure test environment has .env.test file
-4. **"Coverage below threshold"**: Tests pass but coverage calculation may need adjustment
+**Backend (.NET):**
+1. **"dotnet command not found"**: Install .NET SDK from Microsoft
+2. **Build errors**: Run `dotnet build` from the correct project directory
+3. **Test failures**: Run `dotnet test` from the test project directory
+4. **Coverage below threshold**: Use .NET coverage tools to analyze test coverage
 
 **Frontend:**
 1. **"npm command not found"**: Install Node.js (includes npm)
@@ -286,12 +283,12 @@ az deployment group validate \
 
 ## 📝 Code Quality Standards
 
-### Backend Code Requirements (Python)
-- **Type hints**: Required on all functions and methods
+### Backend Code Requirements (.NET/C#)
+- **Type hints**: Use C# strong typing
 - **Async patterns**: Use async/await for I/O operations
-- **Pydantic models**: Required for API request/response validation
+- **Models**: Use C# classes for request/response validation
 - **Error handling**: Comprehensive exception handling with logging
-- **Documentation**: Docstrings for public methods and complex logic
+- **Documentation**: XML comments for public methods and complex logic
 
 ### Frontend Code Requirements (TypeScript/React)
 - **TypeScript**: Strict type checking enabled, avoid `any` type
@@ -306,9 +303,9 @@ az deployment group validate \
 - **Backend Coverage**: Minimum 25% (target 90%)
 - **Frontend Coverage**: Minimum 5% (expanding test coverage)
 - **Test organization**: Unit, integration, and e2e test separation
-- **Backend fixtures**: Reusable test data and authentication mocking with pytest
+- **Backend fixtures**: Use xUnit/NUnit/MSTest for backend tests and mocking
 - **Frontend testing**: React Testing Library for component tests
-- **Async testing**: Use pytest-asyncio for backend, async/await patterns for frontend
+- **Async testing**: Use async/await patterns for backend and frontend
 
 ## 🎯 Next.js/React Best Practices
 
@@ -348,10 +345,10 @@ az deployment group validate \
 
 ### When Adding New Features
 **Backend:**
-1. Start with Pydantic models for data validation
+1. Start with C# models for data validation
 2. Implement service layer with proper error handling
-3. Add API endpoints with OpenAPI documentation  
-4. Write tests with appropriate mocking
+3. Add API endpoints with Swagger/OpenAPI documentation  
+4. Write tests using xUnit/NUnit/MSTest with appropriate mocking
 5. Update documentation and run quality checks
 
 **Frontend:**
@@ -393,9 +390,7 @@ GitHub Copilot agents have access to several MCP (Model Context Protocol) server
 ```
 
 **Example scenarios**:
-- Adding new Azure OpenAI features: Get Context7 docs for `/azure/azure-sdk-for-python`
 - Next.js/React UI improvements: Get Context7 docs for `/vercel/next.js` or `/facebook/react`
-- FastAPI endpoint patterns: Get Context7 docs for `/tiangolo/fastapi`
 - MSAL authentication: Get Context7 docs for `/azuread/microsoft-authentication-library-for-js`
 
 ### GitHub MCP Server
