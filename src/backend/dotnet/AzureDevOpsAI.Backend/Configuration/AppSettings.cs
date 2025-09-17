@@ -109,6 +109,49 @@ public class ApplicationInsightsSettings
 }
 
 /// <summary>
+/// Azure OpenAI configuration.
+/// </summary>
+public class AzureOpenAISettings
+{
+    /// <summary>
+    /// Azure OpenAI endpoint.
+    /// </summary>
+    [Required]
+    public string Endpoint { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Azure OpenAI API key (optional if using managed identity).
+    /// </summary>
+    public string? ApiKey { get; set; }
+
+    /// <summary>
+    /// Azure OpenAI chat deployment name.
+    /// </summary>
+    [Required]
+    public string ChatDeploymentName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Azure OpenAI API version.
+    /// </summary>
+    public string ApiVersion { get; set; } = "2024-02-01";
+
+    /// <summary>
+    /// Maximum tokens for chat completion.
+    /// </summary>
+    public int MaxTokens { get; set; } = 4000;
+
+    /// <summary>
+    /// Temperature for chat completion (0.0 to 1.0).
+    /// </summary>
+    public double Temperature { get; set; } = 0.7;
+
+    /// <summary>
+    /// Use managed identity for authentication instead of API key.
+    /// </summary>
+    public bool UseManagedIdentity { get; set; } = true;
+}
+
+/// <summary>
 /// Security configuration.
 /// </summary>
 public class SecuritySettings

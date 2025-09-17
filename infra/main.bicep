@@ -404,3 +404,4 @@ output frontendManagedIdentityClientId string = frontendManagedIdentity.outputs.
 output frontendManagedIdentityResourceId string = frontendManagedIdentity.outputs.resourceId
 output aiManagedIdentityClientId string = aiManagedIdentity.outputs.clientId
 output openAIEndpoint string = openAI.outputs.endpoint
+output openAIDeploymentName string = 'gpt-4o'
