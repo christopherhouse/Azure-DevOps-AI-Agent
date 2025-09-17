@@ -25,6 +25,8 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   timestamp: Date;
   conversationId?: string;
+  citations?: Citation[];
+  suggestions?: string[];
 }
 
 export interface ChatState {
@@ -32,6 +34,14 @@ export interface ChatState {
   isLoading: boolean;
   error: string | null;
   conversationId: string | null;
+}
+
+// Citation types
+export interface Citation {
+  title: string;
+  url?: string;
+  type?: string;
+  description?: string;
 }
 
 // API types
@@ -52,6 +62,7 @@ export interface ChatResponse {
   conversation_id: string;
   timestamp: string;
   suggestions?: string[];
+  citations?: Citation[];
   metadata?: Record<string, any>;
 }
 

@@ -93,6 +93,8 @@ export function useChat() {
             role: 'assistant',
             timestamp: new Date(response.data.timestamp),
             conversationId: response.data.conversation_id,
+            citations: response.data.citations,
+            suggestions: response.data.suggestions,
           });
 
           setChatState((prev) => ({ ...prev, isLoading: false }));

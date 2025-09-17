@@ -104,7 +104,11 @@ export function ChatInterface() {
         ) : (
           <div>
             {messages.map((message) => (
-              <ChatMessageComponent key={message.id} message={message} />
+              <ChatMessageComponent 
+                key={message.id} 
+                message={message} 
+                onSuggestionClick={sendMessage}
+              />
             ))}
 
             {isLoading && (
