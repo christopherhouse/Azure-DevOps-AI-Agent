@@ -65,12 +65,13 @@ public static class WorkItemEndpoints
         string projectId,
         HttpContext context,
         IOptions<SecuritySettings> securitySettings,
-        ILogger logger,
         [FromQuery] int skip = 0,
         [FromQuery] int limit = 100,
         [FromQuery] string? workItemType = null,
         [FromQuery] string? state = null)
     {
+        var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("WorkItemEndpoints");
+        
         try
         {
             // Validate parameters
@@ -129,9 +130,10 @@ public static class WorkItemEndpoints
         string projectId,
         [FromBody] WorkItemCreate request,
         HttpContext context,
-        IOptions<SecuritySettings> securitySettings,
-        ILogger logger)
+        IOptions<SecuritySettings> securitySettings)
     {
+        var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("WorkItemEndpoints");
+        
         try
         {
             // Validate request
@@ -187,9 +189,10 @@ public static class WorkItemEndpoints
         string projectId,
         int workItemId,
         HttpContext context,
-        IOptions<SecuritySettings> securitySettings,
-        ILogger logger)
+        IOptions<SecuritySettings> securitySettings)
     {
+        var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("WorkItemEndpoints");
+        
         try
         {
             var userId = GetCurrentUserId(context, securitySettings.Value);
@@ -230,9 +233,10 @@ public static class WorkItemEndpoints
         int workItemId,
         [FromBody] WorkItemUpdate request,
         HttpContext context,
-        IOptions<SecuritySettings> securitySettings,
-        ILogger logger)
+        IOptions<SecuritySettings> securitySettings)
     {
+        var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("WorkItemEndpoints");
+        
         try
         {
             var userId = GetCurrentUserId(context, securitySettings.Value);
@@ -274,9 +278,10 @@ public static class WorkItemEndpoints
         string projectId,
         int workItemId,
         HttpContext context,
-        IOptions<SecuritySettings> securitySettings,
-        ILogger logger)
+        IOptions<SecuritySettings> securitySettings)
     {
+        var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("WorkItemEndpoints");
+        
         try
         {
             var userId = GetCurrentUserId(context, securitySettings.Value);
