@@ -141,12 +141,13 @@ public class AIService : IAIService
             // Add AI response to history
             chatHistory.AddAssistantMessage(response.Content);
 
-            // Create response object
+            // Create response object with citations
             var chatResponse = new ChatResponse
             {
                 Message = response.Content,
                 ConversationId = conversationId,
-                Suggestions = GenerateSuggestions(message, response.Content)
+                Suggestions = GenerateSuggestions(message, response.Content),
+                Citations = GenerateCitations(message, response.Content)
             };
 
             _logger.LogInformation("Successfully processed chat message for conversation {ConversationId}", conversationId);
@@ -228,5 +229,120 @@ public class AIService : IAIService
         }
 
         return suggestions.Take(3).ToList(); // Return top 3 suggestions
+    }
+
+    /// <summary>
+    /// Generate citations based on the user message and AI response.
+    /// </summary>
+    private List<Citation> GenerateCitations(string userMessage, string aiResponse)
+    {
+        var citations = new List<Citation>();
+        var lowerMessage = userMessage.ToLowerInvariant();
+
+        // Add contextual citations based on keywords in the user message
+        if (lowerMessage.Contains("pipeline") || lowerMessage.Contains("ci/cd") || lowerMessage.Contains("yaml"))
+        {
+            citations.Add(new Citation
+            {
+                Title = "Azure Pipelines Documentation",
+                Url = "https://docs.microsoft.com/en-us/azure/devops/pipelines/",
+                Type = "documentation",
+                Description = "Official Microsoft documentation for Azure Pipelines, including YAML syntax and best practices"
+            });
+
+            citations.Add(new Citation
+            {
+                Title = "YAML Schema Reference",
+                Url = "https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/",
+                Type = "reference",
+                Description = "Complete YAML schema reference for Azure Pipelines"
+            });
+        }
+
+        if (lowerMessage.Contains("work item") || lowerMessage.Contains("backlog") || lowerMessage.Contains("board") || lowerMessage.Contains("agile"))
+        {
+            citations.Add(new Citation
+            {
+                Title = "Azure Boards Documentation",
+                Url = "https://docs.microsoft.com/en-us/azure/devops/boards/",
+                Type = "documentation",
+                Description = "Official documentation for Azure Boards work item tracking and project management"
+            });
+
+            citations.Add(new Citation
+            {
+                Title = "Work Item Types and Workflow",
+                Url = "https://docs.microsoft.com/en-us/azure/devops/boards/work-items/guidance/",
+                Type = "guide",
+                Description = "Guidance on work item types, states, and workflow customization"
+            });
+        }
+
+        if (lowerMessage.Contains("repository") || lowerMessage.Contains("git") || lowerMessage.Contains("branch") || lowerMessage.Contains("pull request"))
+        {
+            citations.Add(new Citation
+            {
+                Title = "Azure Repos Documentation",
+                Url = "https://docs.microsoft.com/en-us/azure/devops/repos/",
+                Type = "documentation", 
+                Description = "Official documentation for Azure Repos Git repositories and version control"
+            });
+
+            citations.Add(new Citation
+            {
+                Title = "Branch Policies and Pull Requests",
+                Url = "https://docs.microsoft.com/en-us/azure/devops/repos/git/branch-policies/",
+                Type = "guide",
+                Description = "Guide to setting up branch policies and pull request workflows"
+            });
+        }
+
+        if (lowerMessage.Contains("test") || lowerMessage.Contains("testing"))
+        {
+            citations.Add(new Citation
+            {
+                Title = "Azure Test Plans Documentation",
+                Url = "https://docs.microsoft.com/en-us/azure/devops/test/",
+                Type = "documentation",
+                Description = "Official documentation for Azure Test Plans and testing in Azure DevOps"
+            });
+        }
+
+        if (lowerMessage.Contains("artifact") || lowerMessage.Contains("package") || lowerMessage.Contains("feed"))
+        {
+            citations.Add(new Citation
+            {
+                Title = "Azure Artifacts Documentation",
+                Url = "https://docs.microsoft.com/en-us/azure/devops/artifacts/",
+                Type = "documentation",
+                Description = "Official documentation for Azure Artifacts package management"
+            });
+        }
+
+        // Always include general Azure DevOps documentation if no specific citations
+        if (citations.Count == 0)
+        {
+            citations.Add(new Citation
+            {
+                Title = "Azure DevOps Documentation",
+                Url = "https://docs.microsoft.com/en-us/azure/devops/",
+                Type = "documentation",
+                Description = "Official Microsoft Azure DevOps documentation and learning resources"
+            });
+        }
+
+        // Add best practices reference for most queries
+        if (!lowerMessage.Contains("what is") && !lowerMessage.Contains("introduction"))
+        {
+            citations.Add(new Citation
+            {
+                Title = "Azure DevOps Best Practices",
+                Url = "https://docs.microsoft.com/en-us/azure/devops/learn/",
+                Type = "best-practices",
+                Description = "Collection of best practices and guidance for Azure DevOps implementation"
+            });
+        }
+
+        return citations.Take(3).ToList(); // Return top 3 most relevant citations
     }
 }

@@ -59,6 +59,33 @@ public class ChatRequest
 }
 
 /// <summary>
+/// Citation model for AI responses.
+/// </summary>
+public class Citation
+{
+    /// <summary>
+    /// Citation title or source name.
+    /// </summary>
+    [Required]
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Citation URL or reference.
+    /// </summary>
+    public string? Url { get; set; }
+
+    /// <summary>
+    /// Citation type (documentation, example, feature, etc.).
+    /// </summary>
+    public string? Type { get; set; }
+
+    /// <summary>
+    /// Brief description of the cited content.
+    /// </summary>
+    public string? Description { get; set; }
+}
+
+/// <summary>
 /// Chat response model.
 /// </summary>
 public class ChatResponse
@@ -79,6 +106,11 @@ public class ChatResponse
     /// Suggested follow-up actions.
     /// </summary>
     public List<string>? Suggestions { get; set; }
+
+    /// <summary>
+    /// Citations for the AI response.
+    /// </summary>
+    public List<Citation>? Citations { get; set; }
 
     /// <summary>
     /// Response metadata.
