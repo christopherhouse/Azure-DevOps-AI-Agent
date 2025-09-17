@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using AzureDevOpsAI.Backend.Models;
 using AzureDevOpsAI.Backend.Configuration;
 using AzureDevOpsAI.Backend.Middleware;
+using AzureDevOpsAI.Backend.Services;
 using Microsoft.Extensions.Options;
 
 namespace AzureDevOpsAI.Backend.Endpoints;
@@ -50,7 +51,8 @@ public static class ChatEndpoints
     private static async Task<IResult> SendMessageAsync(
         [FromBody] ChatRequest request,
         HttpContext context,
-        IOptions<SecuritySettings> securitySettings)
+        IOptions<SecuritySettings> securitySettings,
+        IAIService aiService)
     {
         try
         {
@@ -75,28 +77,22 @@ public static class ChatEndpoints
 
             logger.LogInformation("Processing chat message for user {UserId}", userId);
 
-            // Generate conversation ID if not provided
-            var conversationId = request.ConversationId ?? Guid.NewGuid().ToString();
+            // Process message using AI service
+            var response = await aiService.ProcessChatMessageAsync(
+                request.Message, 
+                request.ConversationId);
 
-            // Mock AI response (replace with actual AI integration later)
-            var response = new ChatResponse
-            {
-                Message = $"I received your message: '{request.Message}'. This is a mock response from the C# backend.",
-                ConversationId = conversationId,
-                Suggestions = new List<string>
-                {
-                    "Create a new project",
-                    "List existing projects",
-                    "Create a work item"
-                }
-            };
+            logger.LogInformation("Successfully processed chat message for user {UserId}, conversation {ConversationId}", 
+                userId, response.ConversationId);
 
             return Results.Ok(response);
         }
         catch (Exception ex)
         {
-            // Log error (implementation simplified for initial conversion)
-            return Results.Problem("An error occurred while processing the chat message");
+            var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("ChatEndpoints");
+            logger.LogError(ex, "Error processing chat message");
+            
+            return Results.Problem("An error occurred while processing the chat message. Please try again later.");
         }
     }
 

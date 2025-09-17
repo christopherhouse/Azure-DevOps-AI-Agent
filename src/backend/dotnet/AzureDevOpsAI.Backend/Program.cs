@@ -1,6 +1,7 @@
 using AzureDevOpsAI.Backend.Configuration;
 using AzureDevOpsAI.Backend.Endpoints;
 using AzureDevOpsAI.Backend.Middleware;
+using AzureDevOpsAI.Backend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -18,6 +19,10 @@ builder.Services.Configure<AzureAuthSettings>(builder.Configuration.GetSection("
 builder.Services.Configure<AzureDevOpsSettings>(builder.Configuration.GetSection("AzureDevOps"));
 builder.Services.Configure<ApplicationInsightsSettings>(builder.Configuration.GetSection("ApplicationInsights"));
 builder.Services.Configure<SecuritySettings>(builder.Configuration.GetSection("Security"));
+builder.Services.Configure<AzureOpenAISettings>(builder.Configuration.GetSection("AzureOpenAI"));
+
+// Add AI services
+builder.Services.AddSingleton<IAIService, AIService>();
 
 // Add OpenTelemetry (Azure Monitor will be configured via environment variables)
 builder.Services.AddOpenTelemetry()
