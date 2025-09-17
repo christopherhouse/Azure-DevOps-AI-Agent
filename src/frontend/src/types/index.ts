@@ -43,13 +43,16 @@ export interface ApiResponse<T = any> {
 
 export interface ChatRequest {
   message: string;
-  conversationId?: string;
+  conversation_id?: string;
+  context?: Record<string, any>;
 }
 
 export interface ChatResponse {
-  response: string;
-  conversationId: string;
+  message: string;
+  conversation_id: string;
   timestamp: string;
+  suggestions?: string[];
+  metadata?: Record<string, any>;
 }
 
 // Backend status types
