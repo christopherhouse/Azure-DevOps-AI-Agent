@@ -64,10 +64,11 @@ public static class ProjectEndpoints
     private static async Task<IResult> GetProjectsAsync(
         HttpContext context,
         IOptions<SecuritySettings> securitySettings,
-        [FromServices] ILogger logger,
         [FromQuery] int skip = 0,
         [FromQuery] int limit = 100)
     {
+        var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("ProjectEndpoints");
+        
         try
         {
             // Validate parameters
@@ -124,9 +125,10 @@ public static class ProjectEndpoints
     private static async Task<IResult> CreateProjectAsync(
         [FromBody] ProjectCreate request,
         HttpContext context,
-        IOptions<SecuritySettings> securitySettings,
-        [FromServices] ILogger logger)
+        IOptions<SecuritySettings> securitySettings)
     {
+        var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("ProjectEndpoints");
+        
         try
         {
             // Validate request
@@ -174,9 +176,10 @@ public static class ProjectEndpoints
     private static async Task<IResult> GetProjectAsync(
         string projectId,
         HttpContext context,
-        IOptions<SecuritySettings> securitySettings,
-        [FromServices] ILogger logger)
+        IOptions<SecuritySettings> securitySettings)
     {
+        var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("ProjectEndpoints");
+        
         try
         {
             var userId = GetCurrentUserId(context, securitySettings.Value);
@@ -211,9 +214,10 @@ public static class ProjectEndpoints
         string projectId,
         [FromBody] ProjectUpdate request,
         HttpContext context,
-        IOptions<SecuritySettings> securitySettings,
-        [FromServices] ILogger logger)
+        IOptions<SecuritySettings> securitySettings)
     {
+        var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("ProjectEndpoints");
+        
         try
         {
             var userId = GetCurrentUserId(context, securitySettings.Value);
@@ -247,9 +251,10 @@ public static class ProjectEndpoints
     private static async Task<IResult> DeleteProjectAsync(
         string projectId,
         HttpContext context,
-        IOptions<SecuritySettings> securitySettings,
-        [FromServices] ILogger logger)
+        IOptions<SecuritySettings> securitySettings)
     {
+        var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("ProjectEndpoints");
+        
         try
         {
             var userId = GetCurrentUserId(context, securitySettings.Value);
