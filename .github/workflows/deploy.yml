@@ -178,6 +178,7 @@ jobs:
         frontend_identity_resource_id=$(echo $deployment_output | jq -r '.frontendManagedIdentityResourceId.value')
         key_vault_name=$(echo $deployment_output | jq -r '.keyVaultName.value')
         openai_endpoint=$(echo $deployment_output | jq -r '.openAIEndpoint.value')
+        openai_deployment_name=$(echo $deployment_output | jq -r '.openAIDeploymentName.value')
         
         # Get the container apps environment default domain to construct FQDNs
         environment_default_domain=$(az containerapp env show \
@@ -194,6 +195,7 @@ jobs:
         echo "frontendManagedIdentityResourceId=${frontend_identity_resource_id}" >> $GITHUB_OUTPUT
         echo "keyVaultName=${key_vault_name}" >> $GITHUB_OUTPUT
         echo "openAIEndpoint=${openai_endpoint}" >> $GITHUB_OUTPUT
+        echo "openAIDeploymentName=${openai_deployment_name}" >> $GITHUB_OUTPUT
         echo "environmentDefaultDomain=${environment_default_domain}" >> $GITHUB_OUTPUT
         
         echo "✅ Infrastructure deployed successfully"
@@ -206,6 +208,7 @@ jobs:
         echo "🔑 Frontend Identity Resource ID: ${frontend_identity_resource_id}"
         echo "🗝️ Key Vault: ${key_vault_name}"
         echo "🤖 OpenAI Endpoint: ${openai_endpoint}"
+        echo "🤖 OpenAI Deployment: ${openai_deployment_name}"
         
     - name: Login to GitHub Container Registry
       uses: docker/login-action@v3
@@ -266,6 +269,11 @@ jobs:
           --revisions-mode multiple \
           --env-var "App__Environment=${{ inputs.environment }}" \
           --env-var "AzureDevOps__Organization=${{ env.AZURE_DEVOPS_ORG }}" \
+          --env-var "AzureOpenAI__Endpoint=${{ steps.deploy-infra.outputs.openAIEndpoint }}" \
+          --env-var "AzureOpenAI__ChatDeploymentName=${{ steps.deploy-infra.outputs.openAIDeploymentName }}" \
+          --env-var "AzureOpenAI__UseManagedIdentity=true" \
+          --env-var "AzureOpenAI__Temperature=0.7" \
+          --env-var "AzureOpenAI__MaxTokens=4000" \
           --secret-ref "AzureAuth__TenantId=entra-tenant-id" \
           --secret-ref "AzureAuth__ClientId=backend-client-id" \
           --secret-ref "AzureAuth__ClientSecret=backend-client-secret" \
