@@ -6,8 +6,8 @@ build-backend = "hatchling.build"
 name = "azure-devops-ai-agent-backend"
 version = "1.0.0"
 description = "Backend API for Azure DevOps AI Agent with Entra ID authentication"
-readme = "../../README.md"
-license = {file = "../../LICENSE"}
+readme = "../../../README.md"
+license = {file = "../../../LICENSE"}
 authors = [
     {name = "Christopher House"}
 ]
