@@ -75,24 +75,24 @@ export function useChat() {
         // Send to backend
         const response = await apiClient.sendMessage({
           message: content.trim(),
-          conversationId: chatState.conversationId || undefined,
+          conversation_id: chatState.conversationId || undefined,
         });
 
         if (response.success && response.data) {
           // Update conversation ID if this is the first message
-          if (!chatState.conversationId && response.data.conversationId) {
+          if (!chatState.conversationId && response.data.conversation_id) {
             setChatState((prev) => ({
               ...prev,
-              conversationId: response.data!.conversationId,
+              conversationId: response.data!.conversation_id,
             }));
           }
 
           // Add assistant response
           addMessage({
-            content: response.data.response,
+            content: response.data.message,
             role: 'assistant',
             timestamp: new Date(response.data.timestamp),
-            conversationId: response.data.conversationId,
+            conversationId: response.data.conversation_id,
           });
 
           setChatState((prev) => ({ ...prev, isLoading: false }));
@@ -165,10 +165,10 @@ export function useChat() {
         if (response.success && response.data) {
           const messages: ChatMessage[] = response.data.map((msg) => ({
             id: uuidv4(),
-            content: msg.response,
+            content: msg.message,
             role: 'assistant',
             timestamp: new Date(msg.timestamp),
-            conversationId: msg.conversationId,
+            conversationId: msg.conversation_id,
           }));
 
           setChatState((prev) => ({
