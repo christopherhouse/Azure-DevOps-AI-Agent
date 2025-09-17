@@ -64,7 +64,7 @@ public static class ProjectEndpoints
     private static async Task<IResult> GetProjectsAsync(
         HttpContext context,
         IOptions<SecuritySettings> securitySettings,
-        ILogger logger,
+        [FromServices] ILogger logger,
         [FromQuery] int skip = 0,
         [FromQuery] int limit = 100)
     {
@@ -125,7 +125,7 @@ public static class ProjectEndpoints
         [FromBody] ProjectCreate request,
         HttpContext context,
         IOptions<SecuritySettings> securitySettings,
-        ILogger logger)
+        [FromServices] ILogger logger)
     {
         try
         {
@@ -175,7 +175,7 @@ public static class ProjectEndpoints
         string projectId,
         HttpContext context,
         IOptions<SecuritySettings> securitySettings,
-        ILogger logger)
+        [FromServices] ILogger logger)
     {
         try
         {
@@ -212,7 +212,7 @@ public static class ProjectEndpoints
         [FromBody] ProjectUpdate request,
         HttpContext context,
         IOptions<SecuritySettings> securitySettings,
-        ILogger logger)
+        [FromServices] ILogger logger)
     {
         try
         {
@@ -248,7 +248,7 @@ public static class ProjectEndpoints
         string projectId,
         HttpContext context,
         IOptions<SecuritySettings> securitySettings,
-        ILogger logger)
+        [FromServices] ILogger logger)
     {
         try
         {

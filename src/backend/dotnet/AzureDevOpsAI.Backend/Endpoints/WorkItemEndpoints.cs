@@ -65,7 +65,7 @@ public static class WorkItemEndpoints
         string projectId,
         HttpContext context,
         IOptions<SecuritySettings> securitySettings,
-        ILogger logger,
+        [FromServices] ILogger logger,
         [FromQuery] int skip = 0,
         [FromQuery] int limit = 100,
         [FromQuery] string? workItemType = null,
@@ -130,7 +130,7 @@ public static class WorkItemEndpoints
         [FromBody] WorkItemCreate request,
         HttpContext context,
         IOptions<SecuritySettings> securitySettings,
-        ILogger logger)
+        [FromServices] ILogger logger)
     {
         try
         {
@@ -188,7 +188,7 @@ public static class WorkItemEndpoints
         int workItemId,
         HttpContext context,
         IOptions<SecuritySettings> securitySettings,
-        ILogger logger)
+        [FromServices] ILogger logger)
     {
         try
         {
@@ -231,7 +231,7 @@ public static class WorkItemEndpoints
         [FromBody] WorkItemUpdate request,
         HttpContext context,
         IOptions<SecuritySettings> securitySettings,
-        ILogger logger)
+        [FromServices] ILogger logger)
     {
         try
         {
@@ -275,7 +275,7 @@ public static class WorkItemEndpoints
         int workItemId,
         HttpContext context,
         IOptions<SecuritySettings> securitySettings,
-        ILogger logger)
+        [FromServices] ILogger logger)
     {
         try
         {
