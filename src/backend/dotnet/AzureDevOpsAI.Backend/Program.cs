@@ -13,6 +13,15 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
+// Add Application Insights logging if connection string is available
+var applicationInsightsConnectionString = builder.Configuration.GetSection("ApplicationInsights")["ConnectionString"];
+if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
+{
+    builder.Logging.AddApplicationInsights(
+        configureTelemetryConfiguration: (config) => config.ConnectionString = applicationInsightsConnectionString,
+        configureApplicationInsightsLoggerOptions: (options) => { });
+}
+
 // Add configuration
 builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("App"));
 builder.Services.Configure<AzureAuthSettings>(builder.Configuration.GetSection("AzureAuth"));
@@ -24,9 +33,20 @@ builder.Services.Configure<AzureOpenAISettings>(builder.Configuration.GetSection
 // Add AI services
 builder.Services.AddSingleton<IAIService, AIService>();
 
-// Add OpenTelemetry (Azure Monitor will be configured via environment variables)
-builder.Services.AddOpenTelemetry()
-    .WithTracing(tracing => tracing.AddSource("AzureDevOpsAI.Backend"));
+// Add Application Insights
+var applicationInsightsSettings = builder.Configuration.GetSection("ApplicationInsights").Get<ApplicationInsightsSettings>();
+if (!string.IsNullOrEmpty(applicationInsightsSettings?.ConnectionString))
+{
+    builder.Services.AddApplicationInsightsTelemetry(options =>
+    {
+        options.ConnectionString = applicationInsightsSettings.ConnectionString;
+    });
+}
+else
+{
+    // Add default Application Insights services even without connection string
+    builder.Services.AddApplicationInsightsTelemetry();
+}
 
 // Add authentication
 var azureAuthSettings = builder.Configuration.GetSection("AzureAuth").Get<AzureAuthSettings>();

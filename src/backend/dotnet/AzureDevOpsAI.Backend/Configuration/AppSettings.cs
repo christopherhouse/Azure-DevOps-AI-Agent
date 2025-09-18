@@ -96,16 +96,6 @@ public class ApplicationInsightsSettings
     /// Application Insights connection string.
     /// </summary>
     public string? ConnectionString { get; set; }
-
-    /// <summary>
-    /// OpenTelemetry service name.
-    /// </summary>
-    public string ServiceName { get; set; } = "azure-devops-ai-backend";
-
-    /// <summary>
-    /// OpenTelemetry service version.
-    /// </summary>
-    public string ServiceVersion { get; set; } = "1.0.0";
 }
 
 /// <summary>
