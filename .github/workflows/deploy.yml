@@ -252,6 +252,21 @@ jobs:
       run: |
         echo "🚀 Deploying backend container app using custom script..."
         
+        # Get Application Insights connection string using Azure CLI
+        APP_INSIGHTS_NAME="azdo-ai-agent-${{ inputs.environment }}-ai"
+        APP_INSIGHTS_CONNECTION_STRING=$(az monitor app-insights component show \
+          --app "${APP_INSIGHTS_NAME}" \
+          -g "${{ env.AZURE_RESOURCE_GROUP }}" \
+          --query connectionString \
+          -o tsv)
+        
+        if [[ -z "$APP_INSIGHTS_CONNECTION_STRING" || "$APP_INSIGHTS_CONNECTION_STRING" == "null" ]]; then
+          echo "❌ Failed to retrieve Application Insights connection string"
+          exit 1
+        fi
+        
+        echo "✅ Retrieved Application Insights connection string for ${APP_INSIGHTS_NAME}"
+        
         ./scripts/deploy-containerapp.sh \
           --environment "${{ steps.deploy-infra.outputs.containerAppsEnvironmentName }}" \
           --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
@@ -274,11 +289,11 @@ jobs:
           --env-var "AzureOpenAI__UseManagedIdentity=true" \
           --env-var "AzureOpenAI__Temperature=0.7" \
           --env-var "AzureOpenAI__MaxTokens=4000" \
+          --env-var "ApplicationInsights__ConnectionString=${APP_INSIGHTS_CONNECTION_STRING}" \
           --secret-ref "AzureAuth__TenantId=entra-tenant-id" \
           --secret-ref "AzureAuth__ClientId=backend-client-id" \
           --secret-ref "AzureAuth__ClientSecret=backend-client-secret" \
           --secret-ref "Security__JwtSecretKey=jwt-secret-key" \
-          --secret-ref "ApplicationInsights__ConnectionString=app-insights-connection-string" \
           --verbose
           
     - name: Configure Backend CORS Settings
