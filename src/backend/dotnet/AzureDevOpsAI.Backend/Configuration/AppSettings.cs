@@ -141,9 +141,10 @@ public class AzureOpenAISettings
     public bool UseManagedIdentity { get; set; } = true;
 
     /// <summary>
-    /// Azure client ID for User Assigned Managed Identity (optional, required when using UAMI).
+    /// Azure client ID for User Assigned Managed Identity (required when using UAMI).
     /// </summary>
-    public string? ClientId { get; set; }
+    [Required]
+    public string ClientId { get; set; } = string.Empty;
 }
 
 /// <summary>

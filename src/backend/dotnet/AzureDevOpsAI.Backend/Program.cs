@@ -28,7 +28,17 @@ builder.Services.Configure<AzureAuthSettings>(builder.Configuration.GetSection("
 builder.Services.Configure<AzureDevOpsSettings>(builder.Configuration.GetSection("AzureDevOps"));
 builder.Services.Configure<ApplicationInsightsSettings>(builder.Configuration.GetSection("ApplicationInsights"));
 builder.Services.Configure<SecuritySettings>(builder.Configuration.GetSection("Security"));
-builder.Services.Configure<AzureOpenAISettings>(builder.Configuration.GetSection("AzureOpenAI"));
+builder.Services.Configure<AzureOpenAISettings>(options =>
+{
+    builder.Configuration.GetSection("AzureOpenAI").Bind(options);
+    
+    // Override ClientId with ManagedIdentityClientId environment variable if provided
+    var managedIdentityClientId = builder.Configuration["ManagedIdentityClientId"];
+    if (!string.IsNullOrEmpty(managedIdentityClientId))
+    {
+        options.ClientId = managedIdentityClientId;
+    }
+});
 
 // Add AI services
 builder.Services.AddSingleton<IAIService, AIService>();
@@ -119,8 +129,8 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline
 app.UseMiddleware<RequestLoggingMiddleware>();
-app.UseMiddleware<SecurityHeadersMiddleware>();
-app.UseMiddleware<ErrorHandlingMiddleware>();
+// app.UseMiddleware<SecurityHeadersMiddleware>();
+// app.UseMiddleware<ErrorHandlingMiddleware>();
 
 // Swagger configuration
 if (app.Environment.IsDevelopment() || securitySettings?.DisableAuth == true)
