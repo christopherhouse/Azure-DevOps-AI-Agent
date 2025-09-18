@@ -99,8 +99,8 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline
 app.UseMiddleware<RequestLoggingMiddleware>();
-app.UseMiddleware<SecurityHeadersMiddleware>();
-app.UseMiddleware<ErrorHandlingMiddleware>();
+// app.UseMiddleware<SecurityHeadersMiddleware>();
+// app.UseMiddleware<ErrorHandlingMiddleware>();
 
 // Swagger configuration
 if (app.Environment.IsDevelopment() || securitySettings?.DisableAuth == true)
