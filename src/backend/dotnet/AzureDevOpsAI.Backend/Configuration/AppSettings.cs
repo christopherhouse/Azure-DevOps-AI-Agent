@@ -138,7 +138,7 @@ public class AzureOpenAISettings
     /// <summary>
     /// Use managed identity for authentication instead of API key.
     /// </summary>
-    public bool UseManagedIdentity { get; set; } = true;
+    public bool UseManagedIdentity { get; set; } = false;
 
     /// <summary>
     /// Azure client ID for User Assigned Managed Identity (required when using UAMI).

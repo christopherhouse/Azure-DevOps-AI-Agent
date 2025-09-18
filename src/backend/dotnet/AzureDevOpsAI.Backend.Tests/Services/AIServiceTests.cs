@@ -147,4 +147,14 @@ public class AIServiceTests
         // New conversation should have empty history initially
         history.Count.Should().Be(0);
     }
+
+    [Fact]
+    public void DefaultConfiguration_ShouldUseApiKeyAuthentication_NotManagedIdentity()
+    {
+        // Arrange & Act
+        var settings = new AzureOpenAISettings();
+
+        // Assert
+        settings.UseManagedIdentity.Should().BeFalse("Default configuration should use API key authentication instead of Managed Identity");
+    }
 }
