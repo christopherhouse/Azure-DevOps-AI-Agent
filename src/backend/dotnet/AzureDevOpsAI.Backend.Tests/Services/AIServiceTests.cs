@@ -18,7 +18,8 @@ public class AIServiceTests
             Endpoint = "https://test.openai.azure.com/",
             ApiKey = "test-key",
             ChatDeploymentName = "gpt-4",
-            UseManagedIdentity = false
+            UseManagedIdentity = false,
+            ClientId = null // Not needed when using API key
         };
 
         var mockOptions = new Mock<IOptions<AzureOpenAISettings>>();
@@ -31,6 +32,40 @@ public class AIServiceTests
 
         // Assert
         exception.Should().BeNull("Constructor should succeed with valid configuration");
+    }
+
+    [Fact]
+    public void Constructor_ShouldConfigureUserAssignedManagedIdentity_WhenClientIdProvided()
+    {
+        // Arrange
+        var azureOpenAISettings = new AzureOpenAISettings
+        {
+            Endpoint = "https://test.openai.azure.com/",
+            ChatDeploymentName = "gpt-4",
+            UseManagedIdentity = true,
+            ClientId = "12345678-1234-1234-1234-123456789012" // UAMI client ID
+        };
+
+        var mockOptions = new Mock<IOptions<AzureOpenAISettings>>();
+        mockOptions.Setup(o => o.Value).Returns(azureOpenAISettings);
+
+        var mockLogger = new Mock<ILogger<AIService>>();
+
+        // Act & Assert - Should not throw exception during construction
+        var exception = Record.Exception(() => new AIService(mockOptions.Object, mockLogger.Object));
+
+        // Assert
+        exception.Should().BeNull("Constructor should succeed with UAMI configuration");
+        
+        // Verify that the logger was called with UAMI client ID info
+        mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("User Assigned Managed Identity client ID")),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
 
     [Theory]
@@ -47,7 +82,8 @@ public class AIServiceTests
             ChatDeploymentName = "gpt-4",
             UseManagedIdentity = false,
             MaxTokens = 1000,
-            Temperature = 0.7
+            Temperature = 0.7,
+            ClientId = null // Not needed when using API key
         };
 
         var mockOptions = new Mock<IOptions<AzureOpenAISettings>>();
@@ -91,7 +127,8 @@ public class AIServiceTests
             Endpoint = "https://test.openai.azure.com/",
             ApiKey = "test-key",
             ChatDeploymentName = "gpt-4",
-            UseManagedIdentity = false
+            UseManagedIdentity = false,
+            ClientId = null // Not needed when using API key
         };
 
         var mockOptions = new Mock<IOptions<AzureOpenAISettings>>();
