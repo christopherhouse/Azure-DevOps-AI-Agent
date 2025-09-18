@@ -288,7 +288,7 @@ jobs:
           --env-var "AzureDevOps__Organization=${{ env.AZURE_DEVOPS_ORG }}" \
           --env-var "AzureOpenAI__Endpoint=${{ steps.deploy-infra.outputs.openAIEndpoint }}" \
           --env-var "AzureOpenAI__ChatDeploymentName=${{ steps.deploy-infra.outputs.openAIDeploymentName }}" \
-          --env-var "AzureOpenAI__UseManagedIdentity=true" \
+          --env-var "AzureOpenAI__UseManagedIdentity=false" \
           --env-var "AzureOpenAI__Temperature=0.7" \
           --env-var "AzureOpenAI__MaxTokens=4000" \
           --env-var "ManagedIdentityClientId=${{ steps.deploy-infra.outputs.backendManagedIdentityClientId }}" \
@@ -296,6 +296,7 @@ jobs:
           --secret-ref "AzureAuth__TenantId=entra-tenant-id" \
           --secret-ref "AzureAuth__ClientId=backend-client-id" \
           --secret-ref "AzureAuth__ClientSecret=backend-client-secret" \
+          --secret-ref "AzureOpenAI__ApiKey=azure-openai-key" \
           --secret-ref "Security__JwtSecretKey=jwt-secret-key" \
           --verbose
           
