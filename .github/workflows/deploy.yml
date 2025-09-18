@@ -291,6 +291,7 @@ jobs:
           --env-var "AzureOpenAI__UseManagedIdentity=true" \
           --env-var "AzureOpenAI__Temperature=0.7" \
           --env-var "AzureOpenAI__MaxTokens=4000" \
+          --env-var "ManagedIdentityClientId=${{ steps.deploy-infra.outputs.backendManagedIdentityClientId }}" \
           --env-var "ApplicationInsights__ConnectionString=${APP_INSIGHTS_CONNECTION_STRING}" \
           --secret-ref "AzureAuth__TenantId=entra-tenant-id" \
           --secret-ref "AzureAuth__ClientId=backend-client-id" \

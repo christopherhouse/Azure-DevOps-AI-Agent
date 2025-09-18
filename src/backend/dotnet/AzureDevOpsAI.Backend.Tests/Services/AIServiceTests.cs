@@ -19,7 +19,7 @@ public class AIServiceTests
             ApiKey = "test-key",
             ChatDeploymentName = "gpt-4",
             UseManagedIdentity = false,
-            ClientId = null // Not needed when using API key
+            ClientId = "test-client-id" // Required field
         };
 
         var mockOptions = new Mock<IOptions<AzureOpenAISettings>>();
@@ -83,7 +83,7 @@ public class AIServiceTests
             UseManagedIdentity = false,
             MaxTokens = 1000,
             Temperature = 0.7,
-            ClientId = null // Not needed when using API key
+            ClientId = "test-client-id" // Required field
         };
 
         var mockOptions = new Mock<IOptions<AzureOpenAISettings>>();
@@ -128,7 +128,7 @@ public class AIServiceTests
             ApiKey = "test-key",
             ChatDeploymentName = "gpt-4",
             UseManagedIdentity = false,
-            ClientId = null // Not needed when using API key
+            ClientId = "test-client-id" // Required field
         };
 
         var mockOptions = new Mock<IOptions<AzureOpenAISettings>>();
