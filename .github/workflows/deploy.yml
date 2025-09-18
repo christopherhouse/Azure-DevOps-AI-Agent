@@ -177,6 +177,7 @@ jobs:
         frontend_identity_client_id=$(echo $deployment_output | jq -r '.frontendManagedIdentityClientId.value')
         frontend_identity_resource_id=$(echo $deployment_output | jq -r '.frontendManagedIdentityResourceId.value')
         key_vault_name=$(echo $deployment_output | jq -r '.keyVaultName.value')
+        application_insights_name=$(echo $deployment_output | jq -r '.applicationInsightsName.value')
         openai_endpoint=$(echo $deployment_output | jq -r '.openAIEndpoint.value')
         openai_deployment_name=$(echo $deployment_output | jq -r '.openAIDeploymentName.value')
         
@@ -194,6 +195,7 @@ jobs:
         echo "frontendManagedIdentityClientId=${frontend_identity_client_id}" >> $GITHUB_OUTPUT
         echo "frontendManagedIdentityResourceId=${frontend_identity_resource_id}" >> $GITHUB_OUTPUT
         echo "keyVaultName=${key_vault_name}" >> $GITHUB_OUTPUT
+        echo "applicationInsightsName=${application_insights_name}" >> $GITHUB_OUTPUT
         echo "openAIEndpoint=${openai_endpoint}" >> $GITHUB_OUTPUT
         echo "openAIDeploymentName=${openai_deployment_name}" >> $GITHUB_OUTPUT
         echo "environmentDefaultDomain=${environment_default_domain}" >> $GITHUB_OUTPUT
@@ -207,6 +209,7 @@ jobs:
         echo "🔑 Frontend Identity Client ID: ${frontend_identity_client_id}"
         echo "🔑 Frontend Identity Resource ID: ${frontend_identity_resource_id}"
         echo "🗝️ Key Vault: ${key_vault_name}"
+        echo "📊 Application Insights: ${application_insights_name}"
         echo "🤖 OpenAI Endpoint: ${openai_endpoint}"
         echo "🤖 OpenAI Deployment: ${openai_deployment_name}"
         
@@ -253,9 +256,8 @@ jobs:
         echo "🚀 Deploying backend container app using custom script..."
         
         # Get Application Insights connection string using Azure CLI
-        APP_INSIGHTS_NAME="azdo-ai-agent-${{ inputs.environment }}-ai"
         APP_INSIGHTS_CONNECTION_STRING=$(az monitor app-insights component show \
-          --app "${APP_INSIGHTS_NAME}" \
+          --app "${{ steps.deploy-infra.outputs.applicationInsightsName }}" \
           -g "${{ env.AZURE_RESOURCE_GROUP }}" \
           --query connectionString \
           -o tsv)
@@ -265,7 +267,7 @@ jobs:
           exit 1
         fi
         
-        echo "✅ Retrieved Application Insights connection string for ${APP_INSIGHTS_NAME}"
+        echo "✅ Retrieved Application Insights connection string for ${{ steps.deploy-infra.outputs.applicationInsightsName }}"
         
         ./scripts/deploy-containerapp.sh \
           --environment "${{ steps.deploy-infra.outputs.containerAppsEnvironmentName }}" \

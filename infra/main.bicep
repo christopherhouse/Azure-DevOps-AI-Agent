@@ -397,6 +397,7 @@ output containerAppsEnvironmentName string = containerAppsEnvironment.outputs.na
 output containerAppsEnvironmentId string = containerAppsEnvironment.outputs.resourceId
 output containerRegistryLoginServer string = containerRegistry.outputs.loginServer
 output keyVaultName string = keyVault.outputs.name
+output applicationInsightsName string = applicationInsights.outputs.name
 output applicationInsightsConnectionString string = applicationInsights.outputs.connectionString
 output backendManagedIdentityClientId string = backendManagedIdentity.outputs.clientId
 output backendManagedIdentityResourceId string = backendManagedIdentity.outputs.resourceId
