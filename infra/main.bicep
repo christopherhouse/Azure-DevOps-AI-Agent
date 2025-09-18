@@ -336,6 +336,12 @@ module openAI 'br/public:avm/res/cognitive-services/account:0.10.1' = {
         principalType: 'ServicePrincipal'
         description: 'Assign Cognitive Services User role to AI Services Managed Identity'
       }
+      {
+        principalId: backendManagedIdentity.outputs.principalId
+        roleDefinitionIdOrName: '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd' // Cognitive Services OpenAI User
+        principalType: 'ServicePrincipal'
+        description: 'Assign Cognitive Services OpenAI User role to Backend Managed Identity'
+      }
     ]
     deployments: [
       {
