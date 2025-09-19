@@ -478,7 +478,6 @@ jobs:
       FRONTEND_CLIENT_ID: ${{ secrets.FRONTEND_CLIENT_ID_DEV }}
       BACKEND_CLIENT_ID: ${{ secrets.BACKEND_CLIENT_ID_DEV }}
       BACKEND_CLIENT_SECRET: ${{ secrets.BACKEND_CLIENT_SECRET_DEV }}
-      AZURE_OPENAI_KEY: ${{ secrets.AZURE_OPENAI_KEY_DEV }}
       JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY_DEV }}
   deploy-prod:
     name: Deploy to Production
@@ -500,7 +499,6 @@ jobs:
       FRONTEND_CLIENT_ID: ${{ secrets.FRONTEND_CLIENT_ID_PROD }}
       BACKEND_CLIENT_ID: ${{ secrets.BACKEND_CLIENT_ID_PROD }}
       BACKEND_CLIENT_SECRET: ${{ secrets.BACKEND_CLIENT_SECRET_PROD }}
-      AZURE_OPENAI_KEY: ${{ secrets.AZURE_OPENAI_KEY_PROD }}
       JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY_PROD }}
 
   notify-completion:

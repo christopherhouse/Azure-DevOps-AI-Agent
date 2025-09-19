@@ -88,7 +88,8 @@ For each environment (`dev`, `prod`), configure these in GitHub → Settings →
 - `BACKEND_CLIENT_ID`
 - `AZURE_TENANT_ID`
 - `BACKEND_CLIENT_SECRET`
-- `AZURE_OPENAI_KEY`
+
+**Note**: `AZURE_OPENAI_KEY` is no longer needed as a GitHub secret. The deployment workflow automatically retrieves the API key from the deployed Azure OpenAI resource.
 
 **📖 Full Guide**: [Deployment Secrets Configuration](../deployment-secrets-configuration.md)
 

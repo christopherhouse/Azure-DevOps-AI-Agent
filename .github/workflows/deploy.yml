@@ -42,9 +42,6 @@ on:
       BACKEND_CLIENT_SECRET:
         description: 'Backend Entra ID client secret'
         required: true
-      AZURE_OPENAI_KEY:
-        description: 'Azure OpenAI API key'
-        required: true
       JWT_SECRET_KEY:
         description: 'JWT secret key for backend authentication'
         required: true
@@ -105,7 +102,7 @@ jobs:
         
         # Set secure parameter values from repository secrets passed from CI workflow
         BACKEND_CLIENT_SECRET="${{ secrets.BACKEND_CLIENT_SECRET }}"
-        AZURE_OPENAI_KEY="${{ secrets.AZURE_OPENAI_KEY }}"
+        # Azure OpenAI key will be retrieved from the deployed resource via Azure CLI
         FRONTEND_CLIENT_ID="${{ secrets.FRONTEND_CLIENT_ID }}"
         BACKEND_CLIENT_ID="${{ secrets.BACKEND_CLIENT_ID }}"
         AZURE_TENANT_ID="${{ secrets.AZURE_TENANT_ID }}"
@@ -140,13 +137,6 @@ jobs:
           echo "📚 This should contain the client secret of your backend Entra ID application"
           exit 1
         fi
-        if [[ -z "$AZURE_OPENAI_KEY" ]]; then
-          echo "❌ Error: Azure OpenAI key is not configured"
-          echo "💡 Configure either:"
-          echo "   - Repository secret: AZURE_OPENAI_KEY_${{ inputs.environment == 'dev' && 'DEV' || 'PROD' }} in repository secrets"
-          echo "📚 This should contain your Azure OpenAI service access key"
-          exit 1
-        fi
         if [[ -z "$JWT_SECRET_KEY" ]]; then
           echo "❌ Error: JWT secret key is not configured"
           echo "💡 Configure either:"
@@ -160,7 +150,6 @@ jobs:
           --template-file infra/main.bicep \
           --parameters infra/parameters/main.${{ inputs.environment }}.bicepparam \
           --parameters backendClientSecret="${BACKEND_CLIENT_SECRET}" \
-          --parameters azureOpenAIKey="${AZURE_OPENAI_KEY}" \
           --parameters frontendClientId="${FRONTEND_CLIENT_ID}" \
           --parameters backendClientId="${BACKEND_CLIENT_ID}" \
           --parameters entraIdTenantId="${AZURE_TENANT_ID}" \
@@ -180,6 +169,37 @@ jobs:
         application_insights_name=$(echo $deployment_output | jq -r '.applicationInsightsName.value')
         openai_endpoint=$(echo $deployment_output | jq -r '.openAIEndpoint.value')
         openai_deployment_name=$(echo $deployment_output | jq -r '.openAIDeploymentName.value')
+        openai_resource_name=$(echo $deployment_output | jq -r '.openAIResourceName.value')
+        
+        # Get Azure OpenAI API key from the deployed resource
+        echo "Getting Azure OpenAI API key from resource '${openai_resource_name}'..."
+        openai_key=$(az cognitiveservices account keys list \
+          --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+          --name "${openai_resource_name}" \
+          --query 'key1' \
+          --output tsv)
+        
+        if [[ -z "$openai_key" || "$openai_key" == "null" ]]; then
+          echo "❌ Failed to retrieve Azure OpenAI API key from resource '${openai_resource_name}'"
+          exit 1
+        fi
+        
+        echo "✅ Successfully retrieved Azure OpenAI API key"
+        
+        # Create azure-openai-key secret in Key Vault
+        echo "Creating 'azure-openai-key' secret in Key Vault '${key_vault_name}'..."
+        az keyvault secret set \
+          --vault-name "${key_vault_name}" \
+          --name "azure-openai-key" \
+          --value "${openai_key}" \
+          --output none
+        
+        if [[ $? -eq 0 ]]; then
+          echo "✅ Successfully created 'azure-openai-key' secret in Key Vault"
+        else
+          echo "❌ Failed to create 'azure-openai-key' secret in Key Vault"
+          exit 1
+        fi
         
         # Get the container apps environment default domain to construct FQDNs
         environment_default_domain=$(az containerapp env show \
