@@ -2,6 +2,10 @@ using System.ComponentModel;
 using System.Text.Json;
 using Microsoft.SemanticKernel;
 using AzureDevOpsAI.Backend.Models;
+using AzureDevOpsAI.Backend.Configuration;
+using Azure.Identity;
+using Azure.Core;
+using Microsoft.Extensions.Options;
 
 namespace AzureDevOpsAI.Backend.Plugins;
 
@@ -12,33 +16,60 @@ public class ProjectPlugin
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<ProjectPlugin> _logger;
+    private readonly DefaultAzureCredential _azureCredential;
+    private const string AzureDevOpsScope = "499b84ac-1321-427f-aa17-267ca6975798/.default"; // Azure DevOps service scope
 
-    public ProjectPlugin(HttpClient httpClient, ILogger<ProjectPlugin> logger)
+    public ProjectPlugin(HttpClient httpClient, ILogger<ProjectPlugin> logger, IOptions<AzureOpenAISettings> azureOpenAISettings)
     {
         _httpClient = httpClient;
         _logger = logger;
+        
+        // Configure the same managed identity credential as used in AIService
+        var credentialOptions = new DefaultAzureCredentialOptions();
+        credentialOptions.ManagedIdentityClientId = azureOpenAISettings.Value.ClientId;
+        _azureCredential = new DefaultAzureCredential(credentialOptions);
+        
+        _logger.LogInformation("ProjectPlugin configured with User Assigned Managed Identity client ID: {ClientId}", azureOpenAISettings.Value.ClientId);
+    }
+
+    /// <summary>
+    /// Get Azure DevOps access token using managed identity.
+    /// </summary>
+    private async Task<string> GetAzureDevOpsAccessTokenAsync()
+    {
+        try
+        {
+            var tokenRequestContext = new TokenRequestContext(new[] { AzureDevOpsScope });
+            var accessToken = await _azureCredential.GetTokenAsync(tokenRequestContext);
+            return accessToken.Token;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to acquire Azure DevOps access token using managed identity");
+            throw;
+        }
     }
 
     /// <summary>
     /// Get available process templates for an Azure DevOps organization.
     /// </summary>
     /// <param name="organization">The Azure DevOps organization name</param>
-    /// <param name="personalAccessToken">Personal Access Token for authentication</param>
     /// <returns>List of available process templates</returns>
     [KernelFunction("get_process_templates")]
     [Description("Get the available process templates for an Azure DevOps organization. This is used to find the correct template ID when creating a new project.")]
     public async Task<string> GetProcessTemplatesAsync(
-        [Description("The Azure DevOps organization name")] string organization,
-        [Description("Personal Access Token for Azure DevOps authentication")] string personalAccessToken)
+        [Description("The Azure DevOps organization name")] string organization)
     {
         try
         {
             _logger.LogInformation("Getting process templates for organization: {Organization}", organization);
 
-            // Set up authentication header
-            var byteArray = System.Text.Encoding.ASCII.GetBytes($":{personalAccessToken}");
+            // Get access token using managed identity
+            var accessToken = await GetAzureDevOpsAccessTokenAsync();
+
+            // Set up authentication header with Bearer token
             _httpClient.DefaultRequestHeaders.Authorization = 
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
 
             // Make API call to get process templates
             var url = $"https://dev.azure.com/{organization}/_apis/work/processes?api-version=7.1";
@@ -94,7 +125,6 @@ public class ProjectPlugin
     /// <param name="projectName">The name of the project to create</param>
     /// <param name="description">Description of the project (optional)</param>
     /// <param name="processTemplateId">The process template type ID to use</param>
-    /// <param name="personalAccessToken">Personal Access Token for authentication</param>
     /// <param name="visibility">Project visibility (Private or Public), defaults to Private</param>
     /// <returns>Result of the project creation operation</returns>
     [KernelFunction("create_project")]
@@ -104,7 +134,6 @@ public class ProjectPlugin
         [Description("The name of the project to create")] string projectName,
         [Description("Description of the project (optional)")] string? description,
         [Description("The process template type ID (use get_process_templates to find available IDs)")] string processTemplateId,
-        [Description("Personal Access Token for Azure DevOps authentication")] string personalAccessToken,
         [Description("Project visibility: Private or Public (defaults to Private)")] string visibility = "Private")
     {
         try
@@ -128,10 +157,12 @@ public class ProjectPlugin
                 return "Error: Invalid visibility value. Use 'Private' or 'Public'.";
             }
 
-            // Set up authentication header
-            var byteArray = System.Text.Encoding.ASCII.GetBytes($":{personalAccessToken}");
+            // Get access token using managed identity
+            var accessToken = await GetAzureDevOpsAccessTokenAsync();
+
+            // Set up authentication header with Bearer token
             _httpClient.DefaultRequestHeaders.Authorization = 
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
 
             // Create the project request payload
             var projectRequest = new
@@ -234,31 +265,31 @@ public class ProjectPlugin
     /// </summary>
     /// <param name="organization">The Azure DevOps organization name</param>
     /// <param name="templateName">The name or partial name of the process template to find</param>
-    /// <param name="personalAccessToken">Personal Access Token for authentication</param>
     /// <returns>The process template ID if found, or an error message</returns>
     [KernelFunction("find_process_template")]
     [Description("Find a process template by name (e.g., 'Agile', 'Scrum', 'CMMI'). Returns the template ID needed for project creation.")]
     public async Task<string> FindProcessTemplateAsync(
         [Description("The Azure DevOps organization name")] string organization,
-        [Description("The name or partial name of the process template to find")] string templateName,
-        [Description("Personal Access Token for Azure DevOps authentication")] string personalAccessToken)
+        [Description("The name or partial name of the process template to find")] string templateName)
     {
         try
         {
             _logger.LogInformation("Finding process template '{TemplateName}' in organization: {Organization}", templateName, organization);
 
             // Get all process templates first
-            var templatesResult = await GetProcessTemplatesAsync(organization, personalAccessToken);
+            var templatesResult = await GetProcessTemplatesAsync(organization);
             
             if (templatesResult.StartsWith("Error:"))
             {
                 return templatesResult;
             }
 
-            // Set up authentication header for direct API call
-            var byteArray = System.Text.Encoding.ASCII.GetBytes($":{personalAccessToken}");
+            // Get access token using managed identity for direct API call
+            var accessToken = await GetAzureDevOpsAccessTokenAsync();
+
+            // Set up authentication header with Bearer token
             _httpClient.DefaultRequestHeaders.Authorization = 
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
 
             var url = $"https://dev.azure.com/{organization}/_apis/work/processes?api-version=7.1";
             var response = await _httpClient.GetAsync(url);

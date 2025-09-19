@@ -84,7 +84,7 @@ public class AIService : IAIService
 
         // Register plugins
         var httpClient = httpClientFactory.CreateClient();
-        var projectPlugin = new ProjectPlugin(httpClient, loggerFactory.CreateLogger<ProjectPlugin>());
+        var projectPlugin = new ProjectPlugin(httpClient, loggerFactory.CreateLogger<ProjectPlugin>(), azureOpenAISettings);
         _kernel.ImportPluginFromObject(projectPlugin, nameof(ProjectPlugin));
 
         _logger.LogInformation("AI Service initialized with Azure OpenAI endpoint: {Endpoint}, Deployment: {Deployment}", 
