@@ -27,6 +27,7 @@ export interface ChatMessage {
   conversationId?: string;
   citations?: Citation[];
   suggestions?: string[];
+  thoughtProcessId?: string;
 }
 
 export interface ChatState {
@@ -64,6 +65,36 @@ export interface ChatResponse {
   suggestions?: string[];
   citations?: Citation[];
   metadata?: Record<string, any>;
+  thoughtProcessId?: string;
+}
+
+// Thought process types
+export interface ThoughtStep {
+  id: string;
+  description: string;
+  type: string;
+  timestamp: string;
+  details?: Record<string, any>;
+}
+
+export interface ToolInvocation {
+  toolName: string;
+  parameters?: Record<string, any>;
+  result?: any;
+  status: string;
+  errorMessage?: string;
+  timestamp: string;
+}
+
+export interface ThoughtProcess {
+  id: string;
+  conversationId: string;
+  messageId: string;
+  steps: ThoughtStep[];
+  toolInvocations: ToolInvocation[];
+  startTime: string;
+  endTime?: string;
+  durationMs?: number;
 }
 
 // Backend status types

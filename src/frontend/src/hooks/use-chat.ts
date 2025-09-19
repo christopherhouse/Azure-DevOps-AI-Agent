@@ -95,6 +95,7 @@ export function useChat() {
             conversationId: response.data.conversation_id,
             citations: response.data.citations,
             suggestions: response.data.suggestions,
+            thoughtProcessId: response.data.thoughtProcessId,
           });
 
           setChatState((prev) => ({ ...prev, isLoading: false }));
