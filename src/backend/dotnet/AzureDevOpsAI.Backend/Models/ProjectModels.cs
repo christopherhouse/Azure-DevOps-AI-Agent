@@ -145,3 +145,78 @@ public class ProjectList
     /// </summary>
     public int Count { get; set; }
 }
+
+/// <summary>
+/// Process template customization type enum.
+/// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum ProcessCustomizationType
+{
+    System,
+    Inherited,
+    Custom
+}
+
+/// <summary>
+/// Process template model.
+/// </summary>
+public class ProcessTemplate
+{
+    /// <summary>
+    /// Process template type ID.
+    /// </summary>
+    [Required]
+    public string TypeId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Process template reference name.
+    /// </summary>
+    public string? ReferenceName { get; set; }
+
+    /// <summary>
+    /// Process template name.
+    /// </summary>
+    [Required]
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Process template description.
+    /// </summary>
+    public string? Description { get; set; }
+
+    /// <summary>
+    /// Parent process type ID.
+    /// </summary>
+    public string? ParentProcessTypeId { get; set; }
+
+    /// <summary>
+    /// Indicates if the process is enabled.
+    /// </summary>
+    public bool IsEnabled { get; set; }
+
+    /// <summary>
+    /// Indicates if this is the default process.
+    /// </summary>
+    public bool IsDefault { get; set; }
+
+    /// <summary>
+    /// Process customization type.
+    /// </summary>
+    public ProcessCustomizationType CustomizationType { get; set; }
+}
+
+/// <summary>
+/// Process templates list response model.
+/// </summary>
+public class ProcessTemplateList
+{
+    /// <summary>
+    /// List of process templates.
+    /// </summary>
+    public List<ProcessTemplate> Value { get; set; } = new();
+
+    /// <summary>
+    /// Total count of process templates.
+    /// </summary>
+    public int Count { get; set; }
+}

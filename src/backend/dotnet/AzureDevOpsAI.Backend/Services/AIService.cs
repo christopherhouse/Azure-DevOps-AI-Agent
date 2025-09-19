@@ -4,6 +4,7 @@ using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
 using Azure.Identity;
 using AzureDevOpsAI.Backend.Configuration;
 using AzureDevOpsAI.Backend.Models;
+using AzureDevOpsAI.Backend.Plugins;
 using Microsoft.Extensions.Options;
 using System.Reflection;
 
@@ -44,7 +45,7 @@ public class AIService : IAIService
     private readonly string _systemPrompt;
     private readonly Dictionary<string, ChatHistory> _conversationHistory = new();
 
-    public AIService(IOptions<AzureOpenAISettings> azureOpenAISettings, ILogger<AIService> logger)
+    public AIService(IOptions<AzureOpenAISettings> azureOpenAISettings, ILogger<AIService> logger, IHttpClientFactory httpClientFactory, ILoggerFactory loggerFactory)
     {
         _azureOpenAISettings = azureOpenAISettings.Value;
         _logger = logger;
@@ -80,6 +81,11 @@ public class AIService : IAIService
 
         _kernel = builder.Build();
         _chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
+
+        // Register plugins
+        var httpClient = httpClientFactory.CreateClient();
+        var projectPlugin = new ProjectPlugin(httpClient, loggerFactory.CreateLogger<ProjectPlugin>());
+        _kernel.ImportPluginFromObject(projectPlugin, nameof(ProjectPlugin));
 
         _logger.LogInformation("AI Service initialized with Azure OpenAI endpoint: {Endpoint}, Deployment: {Deployment}", 
             _azureOpenAISettings.Endpoint, _azureOpenAISettings.ChatDeploymentName);

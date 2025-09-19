@@ -41,6 +41,7 @@ builder.Services.Configure<AzureOpenAISettings>(options =>
 });
 
 // Add AI services
+builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IAIService, AIService>();
 
 // Add Application Insights
