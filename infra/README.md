@@ -158,19 +158,20 @@ The GitHub Actions workflow (`.github/workflows/infrastructure.yml`) is configur
 
 ### Required Secrets
 
-The following secrets are automatically populated by the deployment workflow from GitHub secrets:
+The following secrets are automatically populated by the deployment workflow:
 
-- `azure-openai-key`: OpenAI service access key (from `AZURE_OPENAI_KEY`)
-- `entra-tenant-id`: Microsoft Entra ID tenant ID (from `AZURE_TENANT_ID`) 
-- `frontend-client-id`: Frontend application client ID (from `FRONTEND_CLIENT_ID`)
-- `backend-client-id`: Backend application client ID (from `BACKEND_CLIENT_ID`)
-- `backend-client-secret`: Backend application client secret (from `BACKEND_CLIENT_SECRET`)
+- `azure-openai-key`: OpenAI service access key (automatically retrieved from deployed Azure OpenAI resource)
+- `entra-tenant-id`: Microsoft Entra ID tenant ID (from `AZURE_TENANT_ID` GitHub secret) 
+- `frontend-client-id`: Frontend application client ID (from `FRONTEND_CLIENT_ID` GitHub secret)
+- `backend-client-id`: Backend application client ID (from `BACKEND_CLIENT_ID` GitHub secret)
+- `backend-client-secret`: Backend application client secret (from `BACKEND_CLIENT_SECRET` GitHub secret)
 - `app-insights-connection-string`: Application Insights connection string (auto-generated)
 
 For local development or manual setup, you can set these secrets manually:
 
 ```bash
-# Set Azure OpenAI API key
+# Set Azure OpenAI API key (normally auto-retrieved by deployment workflow)
+# Get your key: az cognitiveservices account keys list --resource-group <rg> --name <openai-resource-name>
 az keyvault secret set \
   --vault-name azdo-ai-agent-dev-kv \
   --name azure-openai-key \

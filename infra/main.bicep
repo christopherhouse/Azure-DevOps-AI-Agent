@@ -57,9 +57,10 @@ param backendClientId string
 @secure()
 param backendClientSecret string = 'MOCK-CLIENT-SECRET-REPLACE-WITH-REAL-VALUE'
 
-@description('Azure OpenAI API key')
-@secure()
-param azureOpenAIKey string = 'MOCK-OPENAI-KEY-REPLACE-WITH-REAL-VALUE'
+// Azure OpenAI API key will be retrieved and set via Azure CLI in the deployment workflow
+// @description('Azure OpenAI API key')
+// @secure()
+// param azureOpenAIKey string = 'MOCK-OPENAI-KEY-REPLACE-WITH-REAL-VALUE'
 
 @description('JWT secret key for authentication')
 @secure()
@@ -261,10 +262,7 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.12.1' = {
       }
     ]
     secrets: [
-      {
-        name: 'azure-openai-key'
-        value: azureOpenAIKey
-      }
+      // azure-openai-key secret will be created via Azure CLI in the deployment workflow
       {
         name: 'entra-tenant-id'
         value: entraIdTenantId
@@ -412,3 +410,4 @@ output frontendManagedIdentityResourceId string = frontendManagedIdentity.output
 output aiManagedIdentityClientId string = aiManagedIdentity.outputs.clientId
 output openAIEndpoint string = openAI.outputs.endpoint
 output openAIDeploymentName string = 'gpt-4o'
+output openAIResourceName string = openAI.outputs.name
