@@ -43,6 +43,13 @@ public static class ChatEndpoints
             .Produces<Conversation>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status404NotFound)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized);
+
+        chatGroup.MapGet("/thought-process/{thoughtProcessId}", GetThoughtProcessAsync)
+            .WithName("GetThoughtProcess")
+            .WithSummary("Get thought process for a message")
+            .Produces<ThoughtProcess>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized);
     }
 
     /// <summary>
@@ -154,6 +161,47 @@ public static class ChatEndpoints
         {
             // Log error (implementation simplified for initial conversion)
             return Results.Problem("An error occurred while getting the conversation");
+        }
+    }
+
+    /// <summary>
+    /// Get thought process for a specific message.
+    /// </summary>
+    private static async Task<IResult> GetThoughtProcessAsync(
+        string thoughtProcessId,
+        HttpContext context,
+        IOptions<SecuritySettings> securitySettings,
+        IAIService aiService)
+    {
+        try
+        {
+            var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("ChatEndpoints");
+            var userId = GetCurrentUserId(context, securitySettings.Value);
+
+            logger.LogInformation("Getting thought process {ThoughtProcessId} for user {UserId}", thoughtProcessId, userId);
+
+            var thoughtProcess = await aiService.GetThoughtProcessAsync(thoughtProcessId);
+
+            return Results.Ok(thoughtProcess);
+        }
+        catch (KeyNotFoundException)
+        {
+            return Results.NotFound(new ErrorResponse
+            {
+                Error = new ErrorDetails
+                {
+                    Code = 404,
+                    Message = $"Thought process with ID '{thoughtProcessId}' not found",
+                    Type = "not_found"
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("ChatEndpoints");
+            logger.LogError(ex, "Error getting thought process {ThoughtProcessId}", thoughtProcessId);
+            
+            return Results.Problem("An error occurred while getting the thought process");
         }
     }
 

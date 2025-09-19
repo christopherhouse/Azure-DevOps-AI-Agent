@@ -31,6 +31,14 @@ public interface IAIService
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Chat history</returns>
     Task<ChatHistory> GetChatHistoryAsync(string conversationId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get thought process for a specific message.
+    /// </summary>
+    /// <param name="thoughtProcessId">Thought process ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Thought process details</returns>
+    Task<ThoughtProcess> GetThoughtProcessAsync(string thoughtProcessId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -44,6 +52,7 @@ public class AIService : IAIService
     private readonly ILogger<AIService> _logger;
     private readonly string _systemPrompt;
     private readonly Dictionary<string, ChatHistory> _conversationHistory = new();
+    private readonly Dictionary<string, ThoughtProcess> _thoughtProcesses = new();
 
     public AIService(IOptions<AzureOpenAISettings> azureOpenAISettings, ILogger<AIService> logger, IHttpClientFactory httpClientFactory, ILoggerFactory loggerFactory)
     {
@@ -115,13 +124,52 @@ public class AIService : IAIService
     /// </summary>
     public async Task<ChatResponse> ProcessChatMessageAsync(string message, string? conversationId = null, CancellationToken cancellationToken = default)
     {
+        var startTime = DateTime.UtcNow;
+        var thoughtProcessId = Guid.NewGuid().ToString();
+        var messageId = Guid.NewGuid().ToString();
+        
         try
         {
             // Generate conversation ID if not provided
             conversationId ??= Guid.NewGuid().ToString();
 
+            // Initialize thought process tracking
+            var thoughtProcess = new ThoughtProcess
+            {
+                Id = thoughtProcessId,
+                ConversationId = conversationId,
+                MessageId = messageId,
+                StartTime = startTime
+            };
+
+            // Track initial analysis
+            thoughtProcess.Steps.Add(new ThoughtStep
+            {
+                Id = Guid.NewGuid().ToString(),
+                Description = "Analyzing user message",
+                Type = "analysis",
+                Details = new Dictionary<string, object>
+                {
+                    ["message_length"] = message.Length,
+                    ["conversation_id"] = conversationId
+                }
+            });
+
             // Get or create chat history for conversation
             var chatHistory = GetOrCreateChatHistory(conversationId);
+
+            // Track planning step
+            thoughtProcess.Steps.Add(new ThoughtStep
+            {
+                Id = Guid.NewGuid().ToString(),
+                Description = "Planning response approach",
+                Type = "planning",
+                Details = new Dictionary<string, object>
+                {
+                    ["history_length"] = chatHistory.Count,
+                    ["has_system_prompt"] = !string.IsNullOrEmpty(_systemPrompt)
+                }
+            });
 
             // Add user message to history
             chatHistory.AddUserMessage(message);
@@ -135,6 +183,22 @@ public class AIService : IAIService
                 FrequencyPenalty = 0.0,
                 PresencePenalty = 0.0
             };
+
+            // Track reasoning step
+            thoughtProcess.Steps.Add(new ThoughtStep
+            {
+                Id = Guid.NewGuid().ToString(),
+                Description = "Generating AI response using Azure OpenAI",
+                Type = "reasoning",
+                Details = new Dictionary<string, object>
+                {
+                    ["model_settings"] = new
+                    {
+                        MaxTokens = executionSettings.MaxTokens,
+                        Temperature = executionSettings.Temperature
+                    }
+                }
+            });
 
             _logger.LogInformation("Processing chat message for conversation {ConversationId}", conversationId);
 
@@ -150,14 +214,44 @@ public class AIService : IAIService
                 throw new InvalidOperationException("AI service returned empty response");
             }
 
+            // Track response generation completion
+            thoughtProcess.Steps.Add(new ThoughtStep
+            {
+                Id = Guid.NewGuid().ToString(),
+                Description = "AI response generated successfully",
+                Type = "completion",
+                Details = new Dictionary<string, object>
+                {
+                    ["response_length"] = response.Content.Length,
+                    ["tokens_used"] = response.Metadata?.GetValueOrDefault("Usage", null) ?? "unknown"
+                }
+            });
+
             // Add AI response to history
             chatHistory.AddAssistantMessage(response.Content);
+
+            // Track post-processing
+            thoughtProcess.Steps.Add(new ThoughtStep
+            {
+                Id = Guid.NewGuid().ToString(),
+                Description = "Generating suggestions and citations",
+                Type = "post_processing"
+            });
+
+            // Finalize thought process
+            var endTime = DateTime.UtcNow;
+            thoughtProcess.EndTime = endTime;
+            thoughtProcess.DurationMs = (long)(endTime - startTime).TotalMilliseconds;
+
+            // Store thought process
+            _thoughtProcesses[thoughtProcessId] = thoughtProcess;
 
             // Create response object with citations
             var chatResponse = new ChatResponse
             {
                 Message = response.Content,
                 ConversationId = conversationId,
+                ThoughtProcessId = thoughtProcessId,
                 Suggestions = GenerateSuggestions(message, response.Content),
                 Citations = GenerateCitations(message, response.Content)
             };
@@ -169,6 +263,25 @@ public class AIService : IAIService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing chat message for conversation {ConversationId}", conversationId);
+            
+            // Store error in thought process if it was created
+            if (_thoughtProcesses.ContainsKey(thoughtProcessId))
+            {
+                _thoughtProcesses[thoughtProcessId].Steps.Add(new ThoughtStep
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Description = "Error occurred during processing",
+                    Type = "error",
+                    Details = new Dictionary<string, object>
+                    {
+                        ["error_message"] = ex.Message,
+                        ["error_type"] = ex.GetType().Name
+                    }
+                });
+                _thoughtProcesses[thoughtProcessId].EndTime = DateTime.UtcNow;
+                _thoughtProcesses[thoughtProcessId].DurationMs = (long)(DateTime.UtcNow - startTime).TotalMilliseconds;
+            }
+            
             throw;
         }
     }
@@ -180,6 +293,21 @@ public class AIService : IAIService
     {
         await Task.CompletedTask; // Make method async for interface compatibility
         return _conversationHistory.GetValueOrDefault(conversationId) ?? new ChatHistory();
+    }
+
+    /// <summary>
+    /// Get thought process for a specific message.
+    /// </summary>
+    public async Task<ThoughtProcess> GetThoughtProcessAsync(string thoughtProcessId, CancellationToken cancellationToken = default)
+    {
+        await Task.CompletedTask; // Make method async for interface compatibility
+        
+        if (_thoughtProcesses.TryGetValue(thoughtProcessId, out var thoughtProcess))
+        {
+            return thoughtProcess;
+        }
+        
+        throw new KeyNotFoundException($"Thought process with ID '{thoughtProcessId}' not found");
     }
 
     /// <summary>
