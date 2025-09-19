@@ -9,6 +9,25 @@ namespace AzureDevOpsAI.Backend.Tests.Services;
 
 public class AIServiceTests
 {
+    private static (Mock<IOptions<AzureOpenAISettings>>, Mock<ILogger<AIService>>, Mock<IHttpClientFactory>, Mock<ILoggerFactory>) CreateMocks(AzureOpenAISettings settings)
+    {
+        var mockOptions = new Mock<IOptions<AzureOpenAISettings>>();
+        mockOptions.Setup(o => o.Value).Returns(settings);
+
+        var mockLogger = new Mock<ILogger<AIService>>();
+        var mockHttpClientFactory = new Mock<IHttpClientFactory>();
+        var mockLoggerFactory = new Mock<ILoggerFactory>();
+        
+        // Setup HttpClient mock
+        var mockHttpClient = new Mock<HttpClient>();
+        mockHttpClientFactory.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(mockHttpClient.Object);
+        
+        // Setup LoggerFactory mock
+        var mockPluginLogger = new Mock<ILogger>();
+        mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>())).Returns(mockPluginLogger.Object);
+
+        return (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory);
+    }
     [Fact]
     public void Constructor_ShouldLoadSystemPrompt_WhenInitialized()
     {
@@ -22,13 +41,10 @@ public class AIServiceTests
             ClientId = "test-client-id" // Required field
         };
 
-        var mockOptions = new Mock<IOptions<AzureOpenAISettings>>();
-        mockOptions.Setup(o => o.Value).Returns(azureOpenAISettings);
-
-        var mockLogger = new Mock<ILogger<AIService>>();
+        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory) = CreateMocks(azureOpenAISettings);
 
         // Act & Assert - Should not throw exception during construction
-        var exception = Record.Exception(() => new AIService(mockOptions.Object, mockLogger.Object));
+        var exception = Record.Exception(() => new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object));
 
         // Assert
         exception.Should().BeNull("Constructor should succeed with valid configuration");
@@ -46,13 +62,10 @@ public class AIServiceTests
             ClientId = "12345678-1234-1234-1234-123456789012" // UAMI client ID
         };
 
-        var mockOptions = new Mock<IOptions<AzureOpenAISettings>>();
-        mockOptions.Setup(o => o.Value).Returns(azureOpenAISettings);
-
-        var mockLogger = new Mock<ILogger<AIService>>();
+        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory) = CreateMocks(azureOpenAISettings);
 
         // Act & Assert - Should not throw exception during construction
-        var exception = Record.Exception(() => new AIService(mockOptions.Object, mockLogger.Object));
+        var exception = Record.Exception(() => new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object));
 
         // Assert
         exception.Should().BeNull("Constructor should succeed with UAMI configuration");
@@ -86,17 +99,14 @@ public class AIServiceTests
             ClientId = "test-client-id" // Required field
         };
 
-        var mockOptions = new Mock<IOptions<AzureOpenAISettings>>();
-        mockOptions.Setup(o => o.Value).Returns(azureOpenAISettings);
-
-        var mockLogger = new Mock<ILogger<AIService>>();
+        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory) = CreateMocks(azureOpenAISettings);
 
         // Note: This test will fail with actual Azure OpenAI calls due to missing credentials
         // In a real test environment, you would mock the Semantic Kernel components
         // For now, we'll just test the service construction and configuration
         
         // Act & Assert - Constructor should not throw
-        var service = new AIService(mockOptions.Object, mockLogger.Object);
+        var service = new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object);
         
         // Assert that service is created
         service.Should().NotBeNull();
@@ -131,12 +141,9 @@ public class AIServiceTests
             ClientId = "test-client-id" // Required field
         };
 
-        var mockOptions = new Mock<IOptions<AzureOpenAISettings>>();
-        mockOptions.Setup(o => o.Value).Returns(azureOpenAISettings);
+        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory) = CreateMocks(azureOpenAISettings);
 
-        var mockLogger = new Mock<ILogger<AIService>>();
-
-        var service = new AIService(mockOptions.Object, mockLogger.Object);
+        var service = new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object);
         var conversationId = Guid.NewGuid().ToString();
 
         // Act
