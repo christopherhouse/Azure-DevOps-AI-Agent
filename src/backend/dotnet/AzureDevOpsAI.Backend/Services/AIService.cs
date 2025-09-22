@@ -2,6 +2,7 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
 using Azure.Identity;
+using Azure.Core;
 using AzureDevOpsAI.Backend.Configuration;
 using AzureDevOpsAI.Backend.Models;
 using AzureDevOpsAI.Backend.Plugins;
@@ -50,14 +51,21 @@ public class AIService : IAIService
     private readonly IChatCompletionService _chatCompletionService;
     private readonly AzureOpenAISettings _azureOpenAISettings;
     private readonly ILogger<AIService> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILoggerFactory _loggerFactory;
+    private readonly IServiceProvider _serviceProvider;
     private readonly string _systemPrompt;
     private readonly Dictionary<string, ChatHistory> _conversationHistory = new();
     private readonly Dictionary<string, ThoughtProcess> _thoughtProcesses = new();
 
-    public AIService(IOptions<AzureOpenAISettings> azureOpenAISettings, ILogger<AIService> logger, IHttpClientFactory httpClientFactory, ILoggerFactory loggerFactory)
+    public AIService(IOptions<AzureOpenAISettings> azureOpenAISettings, ILogger<AIService> logger, 
+        IHttpClientFactory httpClientFactory, ILoggerFactory loggerFactory, IServiceProvider serviceProvider)
     {
         _azureOpenAISettings = azureOpenAISettings.Value;
         _logger = logger;
+        _httpClientFactory = httpClientFactory;
+        _loggerFactory = loggerFactory;
+        _serviceProvider = serviceProvider;
 
         // Load system prompt from embedded resource
         _systemPrompt = LoadSystemPrompt();
@@ -91,13 +99,62 @@ public class AIService : IAIService
         _kernel = builder.Build();
         _chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
 
-        // Register plugins
-        var httpClient = httpClientFactory.CreateClient();
-        var projectPlugin = new ProjectPlugin(httpClient, loggerFactory.CreateLogger<ProjectPlugin>(), azureOpenAISettings);
-        _kernel.ImportPluginFromObject(projectPlugin, nameof(ProjectPlugin));
-
+        // Note: Plugins are now registered per request in ProcessChatMessageAsync to include user context
+        
         _logger.LogInformation("AI Service initialized with Azure OpenAI endpoint: {Endpoint}, Deployment: {Deployment}", 
             _azureOpenAISettings.Endpoint, _azureOpenAISettings.ChatDeploymentName);
+    }
+
+    /// <summary>
+    /// Register plugins with current user authentication context.
+    /// </summary>
+    private void RegisterPluginsWithUserContext()
+    {
+        try
+        {
+            // Clear any existing plugins
+            _kernel.Plugins.Clear();
+            
+            // Get current user authentication context from service provider
+            IUserAuthenticationContext? userAuthContext = null;
+            try
+            {
+                using var scope = _serviceProvider.CreateScope();
+                userAuthContext = scope.ServiceProvider.GetRequiredService<IUserAuthenticationContext>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to get user authentication context, plugins will use managed identity fallback");
+            }
+            
+            // Register plugins with user context (or null for fallback)
+            var httpClient = _httpClientFactory.CreateClient();
+            var projectPlugin = new ProjectPlugin(
+                httpClient, 
+                _loggerFactory.CreateLogger<ProjectPlugin>(), 
+                Microsoft.Extensions.Options.Options.Create(_azureOpenAISettings),
+                userAuthContext ?? new MockUserAuthenticationContext());
+                
+            _kernel.ImportPluginFromObject(projectPlugin, nameof(ProjectPlugin));
+            
+            _logger.LogDebug("Plugins registered with user authentication context");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to register plugins with user context");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Mock implementation for testing scenarios where no user context is available.
+    /// </summary>
+    private class MockUserAuthenticationContext : IUserAuthenticationContext
+    {
+        public void SetUserToken(string accessToken) { }
+        public TokenCredential? GetUserTokenCredential() => null;
+        public string? GetCurrentUserId() => null;
+        public void ClearUserContext() { }
     }
 
     /// <summary>
@@ -202,6 +259,9 @@ public class AIService : IAIService
             });
 
             _logger.LogInformation("Processing chat message for conversation {ConversationId}", conversationId);
+
+            // Register plugins with current user authentication context
+            RegisterPluginsWithUserContext();
 
             // Get AI response
             var response = await _chatCompletionService.GetChatMessageContentAsync(
