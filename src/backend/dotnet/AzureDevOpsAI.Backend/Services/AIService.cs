@@ -181,7 +181,8 @@ public class AIService : IAIService
                 Temperature = _azureOpenAISettings.Temperature,
                 TopP = 1.0,
                 FrequencyPenalty = 0.0,
-                PresencePenalty = 0.0
+                PresencePenalty = 0.0,
+                FunctionChoiceBehavior = FunctionChoiceBehavior.Auto()
             };
 
             // Track reasoning step
