@@ -42,7 +42,8 @@ builder.Services.Configure<AzureOpenAISettings>(options =>
 
 // Add AI services
 builder.Services.AddHttpClient();
-builder.Services.AddSingleton<IAIService, AIService>();
+builder.Services.AddScoped<IUserAuthenticationContext, UserAuthenticationContext>();
+builder.Services.AddScoped<IAIService, AIService>();
 
 // Add Application Insights
 var applicationInsightsSettings = builder.Configuration.GetSection("ApplicationInsights").Get<ApplicationInsightsSettings>();

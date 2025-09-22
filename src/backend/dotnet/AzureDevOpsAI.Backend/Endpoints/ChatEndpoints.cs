@@ -59,7 +59,8 @@ public static class ChatEndpoints
         [FromBody] ChatRequest request,
         HttpContext context,
         IOptions<SecuritySettings> securitySettings,
-        IAIService aiService)
+        IAIService aiService,
+        IUserAuthenticationContext userAuthContext)
     {
         try
         {
@@ -77,6 +78,18 @@ public static class ChatEndpoints
                         Type = "validation_error"
                     }
                 });
+            }
+
+            // Extract and set user token for OBO flow
+            var userToken = ExtractUserTokenFromRequest(context, securitySettings.Value);
+            if (!string.IsNullOrEmpty(userToken))
+            {
+                userAuthContext.SetUserToken(userToken);
+                logger.LogDebug("Set user authentication context for OBO flow");
+            }
+            else
+            {
+                logger.LogWarning("No user token found, plugins will use managed identity fallback");
             }
 
             // Get user ID (mock for now)
@@ -100,6 +113,12 @@ public static class ChatEndpoints
             logger.LogError(ex, "Error processing chat message");
             
             return Results.Problem("An error occurred while processing the chat message. Please try again later.");
+        }
+        finally
+        {
+            // Clear user context after request
+            var userAuthContextService = context.RequestServices.GetService<IUserAuthenticationContext>();
+            userAuthContextService?.ClearUserContext();
         }
     }
 
@@ -218,5 +237,30 @@ public static class ChatEndpoints
         // Extract user ID from JWT claims when authentication is enabled
         var userIdClaim = context.User?.FindFirst("sub") ?? context.User?.FindFirst("oid");
         return userIdClaim?.Value ?? "unknown-user";
+    }
+
+    /// <summary>
+    /// Extract user's Bearer token from Authorization header.
+    /// </summary>
+    private static string? ExtractUserTokenFromRequest(HttpContext context, SecuritySettings securitySettings)
+    {
+        if (securitySettings.DisableAuth)
+        {
+            return null; // No token in auth-disabled mode
+        }
+
+        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader))
+        {
+            return null;
+        }
+
+        // Extract Bearer token
+        if (authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            return authHeader.Substring("Bearer ".Length).Trim();
+        }
+
+        return null;
     }
 }

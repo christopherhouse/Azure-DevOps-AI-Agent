@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.SemanticKernel;
 using AzureDevOpsAI.Backend.Models;
 using AzureDevOpsAI.Backend.Configuration;
+using AzureDevOpsAI.Backend.Services;
 using Azure.Identity;
 using Azure.Core;
 using Microsoft.Extensions.Options;
@@ -17,14 +18,17 @@ public class ProjectPlugin
     private readonly HttpClient _httpClient;
     private readonly ILogger<ProjectPlugin> _logger;
     private readonly DefaultAzureCredential _azureCredential;
+    private readonly IUserAuthenticationContext _userAuthContext;
     private const string AzureDevOpsScope = "499b84ac-1321-427f-aa17-267ca6975798/.default"; // Azure DevOps service scope
 
-    public ProjectPlugin(HttpClient httpClient, ILogger<ProjectPlugin> logger, IOptions<AzureOpenAISettings> azureOpenAISettings)
+    public ProjectPlugin(HttpClient httpClient, ILogger<ProjectPlugin> logger, 
+        IOptions<AzureOpenAISettings> azureOpenAISettings, IUserAuthenticationContext userAuthContext)
     {
         _httpClient = httpClient;
         _logger = logger;
+        _userAuthContext = userAuthContext;
         
-        // Configure the same managed identity credential as used in AIService
+        // Configure the same managed identity credential as used in AIService (fallback)
         var credentialOptions = new DefaultAzureCredentialOptions();
         credentialOptions.ManagedIdentityClientId = azureOpenAISettings.Value.ClientId;
         _azureCredential = new DefaultAzureCredential(credentialOptions);
@@ -33,19 +37,41 @@ public class ProjectPlugin
     }
 
     /// <summary>
-    /// Get Azure DevOps access token using managed identity.
+    /// Get Azure DevOps access token using OBO flow with user's token, or managed identity as fallback.
     /// </summary>
     private async Task<string> GetAzureDevOpsAccessTokenAsync()
     {
         try
         {
-            var tokenRequestContext = new TokenRequestContext(new[] { AzureDevOpsScope });
-            var accessToken = await _azureCredential.GetTokenAsync(tokenRequestContext);
-            return accessToken.Token;
+            // Try to get user's token credential for OBO flow first
+            var userTokenCredential = _userAuthContext.GetUserTokenCredential();
+            var userId = _userAuthContext.GetCurrentUserId();
+            
+            if (userTokenCredential != null)
+            {
+                _logger.LogInformation("Using OBO flow to acquire Azure DevOps token for user: {UserId}", userId ?? "unknown");
+                
+                var tokenRequestContext = new TokenRequestContext(new[] { AzureDevOpsScope });
+                var accessToken = await userTokenCredential.GetTokenAsync(tokenRequestContext, CancellationToken.None);
+                
+                _logger.LogDebug("Successfully acquired Azure DevOps token via OBO flow for user: {UserId}", userId ?? "unknown");
+                return accessToken.Token;
+            }
+            else
+            {
+                _logger.LogWarning("No user authentication context available, falling back to managed identity");
+                
+                // Fallback to managed identity (original behavior)
+                var tokenRequestContext = new TokenRequestContext(new[] { AzureDevOpsScope });
+                var accessToken = await _azureCredential.GetTokenAsync(tokenRequestContext, CancellationToken.None);
+                
+                _logger.LogDebug("Successfully acquired Azure DevOps token via managed identity (fallback)");
+                return accessToken.Token;
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to acquire Azure DevOps access token using managed identity");
+            _logger.LogError(ex, "Failed to acquire Azure DevOps access token");
             throw;
         }
     }
