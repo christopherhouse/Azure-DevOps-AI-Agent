@@ -58,10 +58,20 @@ public class UserAuthenticationContext : IUserAuthenticationContext
     /// </summary>
     public void SetUserToken(string accessToken)
     {
-        _userAccessToken = accessToken;
-        _userId = ExtractUserIdFromToken(accessToken);
-        
-        _logger.LogDebug("User authentication context set for user: {UserId}", _userId ?? "unknown");
+        // Validate token before storing
+        var userId = ExtractUserIdFromToken(accessToken);
+        if (userId != null)
+        {
+            _userAccessToken = accessToken;
+            _userId = userId;
+            _logger.LogDebug("User authentication context set for user: {UserId}", _userId);
+        }
+        else
+        {
+            _logger.LogWarning("Invalid or malformed access token provided");
+            _userAccessToken = null;
+            _userId = null;
+        }
     }
 
     /// <summary>
