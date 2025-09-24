@@ -44,6 +44,11 @@ public class AppSettings
 public class AzureAuthSettings
 {
     /// <summary>
+    /// Azure AD instance URL (e.g., https://login.microsoftonline.com/).
+    /// </summary>
+    public string Instance { get; set; } = "https://login.microsoftonline.com/";
+
+    /// <summary>
     /// Azure tenant ID.
     /// </summary>
     [Required]
@@ -63,7 +68,7 @@ public class AzureAuthSettings
     /// <summary>
     /// JWT authority URL.
     /// </summary>
-    public string Authority => $"https://login.microsoftonline.com/{TenantId}/v2.0";
+    public string Authority => $"{Instance.TrimEnd('/')}/{TenantId}/v2.0";
 
     /// <summary>
     /// JWT audience.

@@ -3,6 +3,8 @@ using AzureDevOpsAI.Backend.Endpoints;
 using AzureDevOpsAI.Backend.Middleware;
 using AzureDevOpsAI.Backend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Identity.Web;
+using Microsoft.Identity.Abstractions;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -54,6 +56,7 @@ builder.Services.Configure<AzureOpenAISettings>(options =>
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IUserAuthenticationContext, UserAuthenticationContext>();
 builder.Services.AddScoped<IAIService, AIService>();
+builder.Services.AddScoped<IAzureDevOpsApiService, AzureDevOpsApiService>();
 
 // Add Application Insights
 var applicationInsightsSettings = builder.Configuration.GetSection("ApplicationInsights").Get<ApplicationInsightsSettings>();
@@ -76,17 +79,27 @@ var securitySettings = builder.Configuration.GetSection("Security").Get<Security
 
 if (azureAuthSettings != null && !securitySettings?.DisableAuth == true)
 {
+    // Configure Microsoft Identity Web for web API with token acquisition for downstream APIs
+    builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration, "AzureAuth")
+        .EnableTokenAcquisitionToCallDownstreamApi()
+        .AddInMemoryTokenCaches(); // Use in-memory token cache for development
+
+    builder.Services.AddAuthorization();
+}
+else
+{
+    // Fallback to basic JWT Bearer authentication when Microsoft Identity Web is disabled
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
-            options.Authority = azureAuthSettings.Authority;
-            options.Audience = azureAuthSettings.Audience;
+            options.Authority = azureAuthSettings?.Authority;
+            options.Audience = azureAuthSettings?.Audience;
             options.TokenValidationParameters = new TokenValidationParameters
             {
-                ValidateIssuer = true,
-                ValidateAudience = true,
+                ValidateIssuer = azureAuthSettings != null,
+                ValidateAudience = azureAuthSettings != null,
                 ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
+                ValidateIssuerSigningKey = azureAuthSettings != null,
                 ClockSkew = TimeSpan.FromMinutes(5)
             };
         });
