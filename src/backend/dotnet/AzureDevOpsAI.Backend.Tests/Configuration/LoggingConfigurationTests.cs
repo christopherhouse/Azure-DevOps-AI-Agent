@@ -10,11 +10,11 @@ namespace AzureDevOpsAI.Backend.Tests.Configuration;
 /// <summary>
 /// Tests for logging configuration to ensure all ILogger instances output to both console and Application Insights.
 /// </summary>
-public class LoggingConfigurationTests : IClassFixture<WebApplicationFactory<Program>>
+public class LoggingConfigurationTests : IClassFixture<TestWebApplicationFactory<Program>>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly TestWebApplicationFactory<Program> _factory;
 
-    public LoggingConfigurationTests(WebApplicationFactory<Program> factory)
+    public LoggingConfigurationTests(TestWebApplicationFactory<Program> factory)
     {
         _factory = factory;
     }

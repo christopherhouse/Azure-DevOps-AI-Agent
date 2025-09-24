@@ -8,11 +8,11 @@ using AzureDevOpsAI.Backend.Configuration;
 
 namespace AzureDevOpsAI.Backend.Tests.Configuration;
 
-public class ApplicationInsightsTests : IClassFixture<WebApplicationFactory<Program>>
+public class ApplicationInsightsTests : IClassFixture<TestWebApplicationFactory<Program>>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly TestWebApplicationFactory<Program> _factory;
 
-    public ApplicationInsightsTests(WebApplicationFactory<Program> factory)
+    public ApplicationInsightsTests(TestWebApplicationFactory<Program> factory)
     {
         _factory = factory;
     }
