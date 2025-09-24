@@ -54,18 +54,21 @@ public class AIService : IAIService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILoggerFactory _loggerFactory;
     private readonly IUserAuthenticationContext _userAuthenticationContext;
+    private readonly IAzureDevOpsApiService _azureDevOpsApiService;
     private readonly string _systemPrompt;
     private readonly Dictionary<string, ChatHistory> _conversationHistory = new();
     private readonly Dictionary<string, ThoughtProcess> _thoughtProcesses = new();
 
     public AIService(IOptions<AzureOpenAISettings> azureOpenAISettings, ILogger<AIService> logger, 
-        IHttpClientFactory httpClientFactory, ILoggerFactory loggerFactory, IUserAuthenticationContext userAuthenticationContext)
+        IHttpClientFactory httpClientFactory, ILoggerFactory loggerFactory, IUserAuthenticationContext userAuthenticationContext,
+        IAzureDevOpsApiService azureDevOpsApiService)
     {
         _azureOpenAISettings = azureOpenAISettings.Value;
         _logger = logger;
         _httpClientFactory = httpClientFactory;
         _loggerFactory = loggerFactory;
         _userAuthenticationContext = userAuthenticationContext;
+        _azureDevOpsApiService = azureDevOpsApiService;
 
         // Load system prompt from embedded resource
         _systemPrompt = LoadSystemPrompt();
@@ -118,13 +121,10 @@ public class AIService : IAIService
             // Use the injected user authentication context from the current request scope
             var userAuthContext = _userAuthenticationContext;
             
-            // Register plugins with user context (or mock for fallback if no user context)
-            var httpClient = _httpClientFactory.CreateClient();
+            // Register plugins with the Azure DevOps API service
             var projectPlugin = new ProjectPlugin(
-                httpClient, 
-                _loggerFactory.CreateLogger<ProjectPlugin>(), 
-                Microsoft.Extensions.Options.Options.Create(_azureOpenAISettings),
-                userAuthContext ?? new MockUserAuthenticationContext());
+                _azureDevOpsApiService,
+                _loggerFactory.CreateLogger<ProjectPlugin>());
                 
             _kernel.ImportPluginFromObject(projectPlugin, nameof(ProjectPlugin));
             
