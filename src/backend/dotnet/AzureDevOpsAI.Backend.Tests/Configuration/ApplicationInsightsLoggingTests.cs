@@ -9,11 +9,11 @@ namespace AzureDevOpsAI.Backend.Tests.Configuration;
 /// <summary>
 /// Tests to verify that logging is properly configured for both console and Application Insights.
 /// </summary>
-public class ApplicationInsightsLoggingTests : IClassFixture<WebApplicationFactory<Program>>
+public class ApplicationInsightsLoggingTests : IClassFixture<TestWebApplicationFactory<Program>>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly TestWebApplicationFactory<Program> _factory;
 
-    public ApplicationInsightsLoggingTests(WebApplicationFactory<Program> factory)
+    public ApplicationInsightsLoggingTests(TestWebApplicationFactory<Program> factory)
     {
         _factory = factory;
     }

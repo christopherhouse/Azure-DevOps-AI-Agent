@@ -12,11 +12,11 @@ namespace AzureDevOpsAI.Backend.Tests.Configuration;
 /// Integration tests to demonstrate that the logging configuration fix works end-to-end.
 /// These tests verify that the issue "Logging output to console and application insights" is fully resolved.
 /// </summary>
-public class LoggingIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
+public class LoggingIntegrationTests : IClassFixture<TestWebApplicationFactory<Program>>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly TestWebApplicationFactory<Program> _factory;
 
-    public LoggingIntegrationTests(WebApplicationFactory<Program> factory)
+    public LoggingIntegrationTests(TestWebApplicationFactory<Program> factory)
     {
         _factory = factory;
     }
