@@ -108,26 +108,28 @@ public class AIService : IAIService
     /// <summary>
     /// Register plugins with current user authentication context.
     /// </summary>
-    private void RegisterPluginsWithUserContext()
+    private void RegisterPluginsWithUserContext(IUserAuthenticationContext? userAuthContext = null)
     {
         try
         {
             // Clear any existing plugins
             _kernel.Plugins.Clear();
             
-            // Get current user authentication context from service provider
-            IUserAuthenticationContext? userAuthContext = null;
-            try
+            // Use provided user context or try to get it from current request scope
+            if (userAuthContext == null)
             {
-                using var scope = _serviceProvider.CreateScope();
-                userAuthContext = scope.ServiceProvider.GetRequiredService<IUserAuthenticationContext>();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to get user authentication context, plugins will use managed identity fallback");
+                try
+                {
+                    // Try to get from current request scope (not creating a new scope)
+                    userAuthContext = _serviceProvider.GetService<IUserAuthenticationContext>();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to get user authentication context from current scope, plugins will use managed identity fallback");
+                }
             }
             
-            // Register plugins with user context (or null for fallback)
+            // Register plugins with user context (or mock for fallback)
             var httpClient = _httpClientFactory.CreateClient();
             var projectPlugin = new ProjectPlugin(
                 httpClient, 
@@ -137,7 +139,7 @@ public class AIService : IAIService
                 
             _kernel.ImportPluginFromObject(projectPlugin, nameof(ProjectPlugin));
             
-            _logger.LogDebug("Plugins registered with user authentication context");
+            _logger.LogDebug("Plugins registered with user authentication context: {HasUserContext}", userAuthContext != null);
         }
         catch (Exception ex)
         {
@@ -260,8 +262,11 @@ public class AIService : IAIService
 
             _logger.LogInformation("Processing chat message for conversation {ConversationId}", conversationId);
 
+            // Get current user authentication context from the request scope
+            var userAuthContext = _serviceProvider.GetService<IUserAuthenticationContext>();
+            
             // Register plugins with current user authentication context
-            RegisterPluginsWithUserContext();
+            RegisterPluginsWithUserContext(userAuthContext);
 
             // Get AI response
             var response = await _chatCompletionService.GetChatMessageContentAsync(
