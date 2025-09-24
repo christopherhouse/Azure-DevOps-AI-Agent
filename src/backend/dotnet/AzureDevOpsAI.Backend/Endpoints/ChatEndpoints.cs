@@ -244,22 +244,42 @@ public static class ChatEndpoints
     /// </summary>
     private static string? ExtractUserTokenFromRequest(HttpContext context, SecuritySettings securitySettings)
     {
+        var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("ChatEndpoints.ExtractUserToken");
+        
+        logger.LogDebug("ExtractUserTokenFromRequest called - starting token extraction");
+
         if (securitySettings.DisableAuth)
         {
+            logger.LogDebug("Authentication is disabled, returning null token");
             return null; // No token in auth-disabled mode
         }
 
+        logger.LogDebug("Authentication is enabled, checking Authorization header");
+        
         var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
         if (string.IsNullOrEmpty(authHeader))
         {
+            logger.LogWarning("No Authorization header found in request");
             return null;
         }
+
+        logger.LogDebug("Authorization header found, header length: {HeaderLength}", authHeader.Length);
 
         // Extract Bearer token
         if (authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
         {
-            return authHeader.Substring("Bearer ".Length).Trim();
+            var token = authHeader.Substring("Bearer ".Length).Trim();
+            var tokenLength = token.Length;
+            var tokenPreview = tokenLength > 20 ? token.Substring(0, 20) + "..." : token;
+            
+            logger.LogInformation("Bearer token successfully extracted, token length: {TokenLength}, preview: {TokenPreview}", 
+                tokenLength, tokenPreview);
+            
+            return token;
         }
+
+        logger.LogWarning("Authorization header does not contain a valid Bearer token. Header starts with: {HeaderStart}", 
+            authHeader.Length > 20 ? authHeader.Substring(0, 20) + "..." : authHeader);
 
         return null;
     }
