@@ -53,19 +53,19 @@ public class AIService : IAIService
     private readonly ILogger<AIService> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILoggerFactory _loggerFactory;
-    private readonly IServiceProvider _serviceProvider;
+    private readonly IUserAuthenticationContext _userAuthenticationContext;
     private readonly string _systemPrompt;
     private readonly Dictionary<string, ChatHistory> _conversationHistory = new();
     private readonly Dictionary<string, ThoughtProcess> _thoughtProcesses = new();
 
     public AIService(IOptions<AzureOpenAISettings> azureOpenAISettings, ILogger<AIService> logger, 
-        IHttpClientFactory httpClientFactory, ILoggerFactory loggerFactory, IServiceProvider serviceProvider)
+        IHttpClientFactory httpClientFactory, ILoggerFactory loggerFactory, IUserAuthenticationContext userAuthenticationContext)
     {
         _azureOpenAISettings = azureOpenAISettings.Value;
         _logger = logger;
         _httpClientFactory = httpClientFactory;
         _loggerFactory = loggerFactory;
-        _serviceProvider = serviceProvider;
+        _userAuthenticationContext = userAuthenticationContext;
 
         // Load system prompt from embedded resource
         _systemPrompt = LoadSystemPrompt();
@@ -108,28 +108,17 @@ public class AIService : IAIService
     /// <summary>
     /// Register plugins with current user authentication context.
     /// </summary>
-    private void RegisterPluginsWithUserContext(IUserAuthenticationContext? userAuthContext = null)
+    private void RegisterPluginsWithUserContext()
     {
         try
         {
             // Clear any existing plugins
             _kernel.Plugins.Clear();
             
-            // Use provided user context or try to get it from current request scope
-            if (userAuthContext == null)
-            {
-                try
-                {
-                    // Try to get from current request scope (not creating a new scope)
-                    userAuthContext = _serviceProvider.GetService<IUserAuthenticationContext>();
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to get user authentication context from current scope, plugins will use managed identity fallback");
-                }
-            }
+            // Use the injected user authentication context from the current request scope
+            var userAuthContext = _userAuthenticationContext;
             
-            // Register plugins with user context (or mock for fallback)
+            // Register plugins with user context (or mock for fallback if no user context)
             var httpClient = _httpClientFactory.CreateClient();
             var projectPlugin = new ProjectPlugin(
                 httpClient, 
@@ -139,7 +128,8 @@ public class AIService : IAIService
                 
             _kernel.ImportPluginFromObject(projectPlugin, nameof(ProjectPlugin));
             
-            _logger.LogDebug("Plugins registered with user authentication context: {HasUserContext}", userAuthContext != null);
+            _logger.LogDebug("Plugins registered with user authentication context: {HasUserToken}", 
+                userAuthContext?.GetUserTokenCredential() != null);
         }
         catch (Exception ex)
         {
@@ -262,11 +252,8 @@ public class AIService : IAIService
 
             _logger.LogInformation("Processing chat message for conversation {ConversationId}", conversationId);
 
-            // Get current user authentication context from the request scope
-            var userAuthContext = _serviceProvider.GetService<IUserAuthenticationContext>();
-            
-            // Register plugins with current user authentication context
-            RegisterPluginsWithUserContext(userAuthContext);
+            // Register plugins with the injected user authentication context
+            RegisterPluginsWithUserContext();
 
             // Get AI response
             var response = await _chatCompletionService.GetChatMessageContentAsync(
