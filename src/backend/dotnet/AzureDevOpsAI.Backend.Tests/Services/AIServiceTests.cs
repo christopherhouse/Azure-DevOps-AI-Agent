@@ -31,17 +31,18 @@ public class AIServiceTests
         return (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory);
     }
 
-    private static (Mock<IOptions<AzureOpenAISettings>>, Mock<ILogger<AIService>>, Mock<IHttpClientFactory>, Mock<ILoggerFactory>, Mock<IUserAuthenticationContext>) CreateMocksWithUserAuth(AzureOpenAISettings settings)
+    private static (Mock<IOptions<AzureOpenAISettings>>, Mock<ILogger<AIService>>, Mock<IHttpClientFactory>, Mock<ILoggerFactory>, Mock<IUserAuthenticationContext>, Mock<IAzureDevOpsApiService>) CreateMocksWithUserAuth(AzureOpenAISettings settings)
     {
         var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory) = CreateMocks(settings);
         
         var mockUserAuthContext = new Mock<IUserAuthenticationContext>();
+        var mockAzureDevOpsApiService = new Mock<IAzureDevOpsApiService>();
         
         // Setup default behavior for user auth context
         mockUserAuthContext.Setup(x => x.GetUserTokenCredential()).Returns((TokenCredential?)null);
         mockUserAuthContext.Setup(x => x.GetCurrentUserId()).Returns((string?)null);
         
-        return (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockUserAuthContext);
+        return (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockUserAuthContext, mockAzureDevOpsApiService);
     }
     [Fact]
     public void Constructor_ShouldLoadSystemPrompt_WhenInitialized()
@@ -56,10 +57,10 @@ public class AIServiceTests
             ClientId = "test-client-id" // Required field
         };
 
-        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockUserAuthContext) = CreateMocksWithUserAuth(azureOpenAISettings);
+        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockUserAuthContext, mockAzureDevOpsApiService) = CreateMocksWithUserAuth(azureOpenAISettings);
 
         // Act & Assert - Should not throw exception during construction
-        var exception = Record.Exception(() => new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockUserAuthContext.Object));
+        var exception = Record.Exception(() => new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockUserAuthContext.Object, mockAzureDevOpsApiService.Object));
 
         // Assert
         exception.Should().BeNull("Constructor should succeed with valid configuration");
@@ -77,10 +78,10 @@ public class AIServiceTests
             ClientId = "12345678-1234-1234-1234-123456789012" // UAMI client ID
         };
 
-        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockUserAuthContext) = CreateMocksWithUserAuth(azureOpenAISettings);
+        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockUserAuthContext, mockAzureDevOpsApiService) = CreateMocksWithUserAuth(azureOpenAISettings);
 
         // Act & Assert - Should not throw exception during construction
-        var exception = Record.Exception(() => new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockUserAuthContext.Object));
+        var exception = Record.Exception(() => new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockUserAuthContext.Object, mockAzureDevOpsApiService.Object));
 
         // Assert
         exception.Should().BeNull("Constructor should succeed with UAMI configuration");
@@ -114,14 +115,14 @@ public class AIServiceTests
             ClientId = "test-client-id" // Required field
         };
 
-        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockUserAuthContext) = CreateMocksWithUserAuth(azureOpenAISettings);
+        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockUserAuthContext, mockAzureDevOpsApiService) = CreateMocksWithUserAuth(azureOpenAISettings);
 
         // Note: This test will fail with actual Azure OpenAI calls due to missing credentials
         // In a real test environment, you would mock the Semantic Kernel components
         // For now, we'll just test the service construction and configuration
         
         // Act & Assert - Constructor should not throw
-        var service = new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockUserAuthContext.Object);
+        var service = new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockUserAuthContext.Object, mockAzureDevOpsApiService.Object);
         
         // Assert that service is created
         service.Should().NotBeNull();
@@ -141,10 +142,10 @@ public class AIServiceTests
             ClientId = "test-client-id"
         };
 
-        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockUserAuthContext) = CreateMocksWithUserAuth(azureOpenAISettings);
+        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockUserAuthContext, mockAzureDevOpsApiService) = CreateMocksWithUserAuth(azureOpenAISettings);
 
         // Act
-        var service = new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockUserAuthContext.Object);
+        var service = new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockUserAuthContext.Object, mockAzureDevOpsApiService.Object);
 
         // Assert
         // We can't directly access the system prompt, but we can verify the service was constructed
@@ -184,9 +185,9 @@ public class AIServiceTests
             ClientId = "test-client-id" // Required field
         };
 
-        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockUserAuthContext) = CreateMocksWithUserAuth(azureOpenAISettings);
+        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockUserAuthContext, mockAzureDevOpsApiService) = CreateMocksWithUserAuth(azureOpenAISettings);
 
-        var service = new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockUserAuthContext.Object);
+        var service = new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockUserAuthContext.Object, mockAzureDevOpsApiService.Object);
         var conversationId = Guid.NewGuid().ToString();
 
         // Act
