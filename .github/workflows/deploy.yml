@@ -313,6 +313,9 @@ jobs:
           --env-var "AzureOpenAI__MaxTokens=4000" \
           --env-var "ManagedIdentityClientId=${{ steps.deploy-infra.outputs.backendManagedIdentityClientId }}" \
           --env-var "ApplicationInsights__ConnectionString=${APP_INSIGHTS_CONNECTION_STRING}" \
+          --env-var "AzureAuth__Instance=https://login.microsoftonline.com/" \
+          --env-var "AzureAuth__Audience=${{ secrets.BACKEND_CLIENT_ID }}" \
+          --env-var "Security__DisableAuth=false" \
           --secret-ref "AzureAuth__TenantId=entra-tenant-id" \
           --secret-ref "AzureAuth__ClientId=backend-client-id" \
           --secret-ref "AzureAuth__ClientSecret=backend-client-secret" \
