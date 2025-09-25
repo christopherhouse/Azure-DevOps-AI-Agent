@@ -112,6 +112,24 @@ export interface AppError {
   details?: Record<string, any>;
 }
 
+// MFA challenge types
+export interface MfaChallengeDetails {
+  claimsChallenge: string;
+  scopes: string[];
+  correlationId?: string;
+  errorCode: string;
+  classification: string;
+}
+
+export interface MfaChallengeError {
+  error: {
+    code: number;
+    message: string;
+    type: 'mfa_required';
+    details: MfaChallengeDetails;
+  };
+}
+
 // UI Component types
 export interface LoadingProps {
   size?: 'small' | 'medium' | 'large';
