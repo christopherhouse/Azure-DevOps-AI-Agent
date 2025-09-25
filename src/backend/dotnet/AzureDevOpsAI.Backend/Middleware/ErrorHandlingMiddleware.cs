@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using AzureDevOpsAI.Backend.Models;
 
 namespace AzureDevOpsAI.Backend.Middleware;
 
@@ -75,6 +76,24 @@ public class ErrorHandlingMiddleware
 
         switch (exception)
         {
+            case MfaChallengeException mfaEx:
+                response.Error.Code = (int)HttpStatusCode.Unauthorized;
+                response.Error.Message = "Multi-factor authentication is required";
+                response.Error.Type = "mfa_required";
+                response.Error.Details = new
+                {
+                    claimsChallenge = mfaEx.ClaimsChallenge,
+                    scopes = mfaEx.Scopes,
+                    correlationId = mfaEx.CorrelationId,
+                    errorCode = mfaEx.MsalException.ErrorCode,
+                    classification = mfaEx.MsalException.Classification.ToString()
+                };
+                context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                // Add WWW-Authenticate header for OAuth2 compliance
+                context.Response.Headers["WWW-Authenticate"] = 
+                    $"Bearer error=\"insufficient_claims\", error_description=\"{mfaEx.ClaimsChallenge}\"";
+                break;
+            
             case ArgumentException argEx:
                 response.Error.Code = (int)HttpStatusCode.BadRequest;
                 response.Error.Message = argEx.Message;
