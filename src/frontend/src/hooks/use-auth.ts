@@ -8,6 +8,7 @@ import { InteractionStatus, SilentRequest } from '@azure/msal-browser';
 import { getLoginRequest, getTokenRequest } from '@/lib/auth-config';
 import { trackAuthEvent } from '@/lib/telemetry';
 import { apiClient } from '@/services/api-client';
+import { MfaHandler } from '@/services/mfa-handler';
 import type { User, AuthState } from '@/types';
 
 export function useAuth() {
@@ -192,6 +193,13 @@ export function useAuth() {
           apiClient.setBackendApiToken(accessToken);
         }
 
+        // Initialize MFA handler for automatic challenge handling
+        const mfaHandler = new MfaHandler({
+          msalInstance: instance,
+          account: account
+        });
+        apiClient.setMfaHandler(mfaHandler);
+
         setAuthState({
           isAuthenticated: true,
           user,
@@ -213,7 +221,7 @@ export function useAuth() {
     };
 
     updateAuthState();
-  }, [account, inProgress, acquireTokenSilently, acquireBackendApiTokenSilently]);
+  }, [account, inProgress, acquireTokenSilently, acquireBackendApiTokenSilently, instance]);
 
   // Effect to refresh token periodically
   useEffect(() => {

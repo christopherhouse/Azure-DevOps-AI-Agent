@@ -6,6 +6,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { getCachedClientConfig } from '@/hooks/use-client-config';
 import { trackApiCall, trackException } from '@/lib/telemetry';
+import { MfaHandler, MfaHandlerOptions } from '@/services/mfa-handler';
 import type {
   ApiResponse,
   ChatRequest,
@@ -25,6 +26,7 @@ declare module 'axios' {
 export class ApiClient {
   private client: AxiosInstance;
   private accessToken: string | null = null;
+  private mfaHandler: MfaHandler | null = null;
 
   constructor() {
     // Initialize axios client with a placeholder URL
@@ -77,7 +79,7 @@ export class ApiClient {
 
         return response;
       },
-      (error) => {
+      async (error) => {
         // Track failed API calls
         const response = error.response;
         const startTime = error.config?.metadata?.startTime || Date.now();
@@ -90,6 +92,27 @@ export class ApiClient {
           duration,
           false
         );
+
+        // Handle MFA challenge if we have a handler configured and it's an MFA error
+        if (this.mfaHandler && this.mfaHandler.isMfaChallengeError(error)) {
+          try {
+            console.log('MFA challenge detected, attempting to handle...');
+            const newToken = await this.mfaHandler.handleMfaChallengeFromError(error);
+            
+            // Update our token and retry the request
+            this.setAccessToken(newToken);
+            
+            // Clone and retry the original request with the new token
+            const originalRequest = { ...error.config };
+            originalRequest.headers = originalRequest.headers || {};
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            
+            return this.client.request(originalRequest);
+          } catch (mfaError) {
+            console.error('Failed to handle MFA challenge:', mfaError);
+            // Return original error if MFA handling fails
+          }
+        }
 
         // Track exception for serious errors
         if (!response || response.status >= 500) {
@@ -109,6 +132,13 @@ export class ApiClient {
       config.metadata = { startTime: Date.now() };
       return config;
     });
+  }
+
+  /**
+   * Set the MFA handler for automatic MFA challenge handling
+   */
+  setMfaHandler(mfaHandler: MfaHandler) {
+    this.mfaHandler = mfaHandler;
   }
 
   /**

@@ -1,8 +1,10 @@
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Abstractions;
+using Microsoft.Identity.Client;
 using System.Text.Json;
 using System.Security.Claims;
 using System.Text;
+using AzureDevOpsAI.Backend.Models;
 
 namespace AzureDevOpsAI.Backend.Services;
 
@@ -74,6 +76,14 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
                 return null;
             }
         }
+        catch (MsalUiRequiredException msalEx)
+        {
+            _logger.LogWarning("MFA is required for Azure DevOps API access. CorrelationId: {CorrelationId}, Claims: {Claims}",
+                msalEx.CorrelationId, msalEx.Claims);
+            
+            // Throw our custom exception that includes the necessary MFA challenge information
+            throw new MfaChallengeException(msalEx, new[] { AzureDevOpsScope });
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to make GET request to Azure DevOps API: {Organization}/{ApiPath}", organization, apiPath);
@@ -125,6 +135,14 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
                 _logger.LogError("POST request to Azure DevOps API failed. Status: {StatusCode}, Error: {Error}", response.StatusCode, errorContent);
                 return null;
             }
+        }
+        catch (MsalUiRequiredException msalEx)
+        {
+            _logger.LogWarning("MFA is required for Azure DevOps API access. CorrelationId: {CorrelationId}, Claims: {Claims}",
+                msalEx.CorrelationId, msalEx.Claims);
+            
+            // Throw our custom exception that includes the necessary MFA challenge information
+            throw new MfaChallengeException(msalEx, new[] { AzureDevOpsScope });
         }
         catch (Exception ex)
         {
