@@ -34,6 +34,9 @@ else
         configureApplicationInsightsLoggerOptions: (options) => { });
 }
 
+builder.Logging.AddFilter<Microsoft.Extensions.Logging.ApplicationInsights.ApplicationInsightsLoggerProvider>
+    ("", LogLevel.Trace);
+
 // Add configuration
 builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("App"));
 builder.Services.Configure<AzureAuthSettings>(builder.Configuration.GetSection("AzureAuth"));
