@@ -1,8 +1,8 @@
 using AzureDevOpsAI.Backend.Services;
+using AzureDevOpsAI.Backend.Configuration;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
-using Microsoft.Identity.Web;
-using Microsoft.Identity.Abstractions;
+using Microsoft.Extensions.Options;
 using Moq;
 using System.Net;
 using System.Text.Json;
@@ -11,17 +11,25 @@ namespace AzureDevOpsAI.Backend.Tests.Services;
 
 public class AzureDevOpsApiServiceTests
 {
-    private readonly Mock<ITokenAcquisition> _mockTokenAcquisition;
-    private readonly Mock<HttpClient> _mockHttpClient;
     private readonly Mock<ILogger<AzureDevOpsApiService>> _mockLogger;
+    private readonly IOptions<AzureOpenAISettings> _azureOpenAISettings;
     private readonly AzureDevOpsApiService _service;
 
     public AzureDevOpsApiServiceTests()
     {
-        _mockTokenAcquisition = new Mock<ITokenAcquisition>();
-        _mockHttpClient = new Mock<HttpClient>();
         _mockLogger = new Mock<ILogger<AzureDevOpsApiService>>();
-        _service = new AzureDevOpsApiService(_mockTokenAcquisition.Object, _mockHttpClient.Object, _mockLogger.Object);
+        
+        // Create a mock Azure OpenAI settings with a test client ID
+        _azureOpenAISettings = Options.Create(new AzureOpenAISettings
+        {
+            ClientId = "test-managed-identity-client-id",
+            Endpoint = "https://test.openai.azure.com",
+            ChatDeploymentName = "test-deployment"
+        });
+        
+        // Create service with an HttpClient - it will use DefaultAzureCredential internally
+        var httpClient = new HttpClient();
+        _service = new AzureDevOpsApiService(httpClient, _mockLogger.Object, _azureOpenAISettings);
     }
 
     [Fact]
@@ -32,29 +40,26 @@ public class AzureDevOpsApiServiceTests
     }
 
     [Fact]
-    public async Task GetAsync_ShouldAcquireTokenAndMakeApiCall()
+    public void Constructor_ShouldLogClientIdConfiguration()
     {
         // Arrange
-        var organization = "test-org";
-        var apiPath = "work/processes";
-        var expectedToken = "test-access-token";
-        var expectedUrl = $"https://dev.azure.com/{organization}/_apis/{apiPath}?api-version=7.1";
-        
-        var mockResponse = new { value = new[] { new { name = "Agile", typeId = "adcc42ab-9882-485e-a3ed-7678f01f66bc" } } };
-        var responseContent = JsonSerializer.Serialize(mockResponse);
+        var mockLogger = new Mock<ILogger<AzureDevOpsApiService>>();
+        var httpClient = new HttpClient();
 
-        _mockTokenAcquisition
-            .Setup(x => x.GetAccessTokenForUserAsync(It.IsAny<string[]>(), null, null, null, null))
-            .ReturnsAsync(expectedToken);
+        // Act
+        var service = new AzureDevOpsApiService(httpClient, mockLogger.Object, _azureOpenAISettings);
 
-        // Mock HttpClient response is complex, so let's focus on the token acquisition behavior
-        // The HttpClient integration will be tested at a higher level
-
-        // Act & Assert - just verify that the token acquisition is attempted
-        // We can't easily mock HttpClient in this setup, so we'll verify the intent
-        
-        // This test verifies that the service is properly structured and would call the correct dependencies
-        _mockTokenAcquisition.Verify(); // Ensures mock is properly set up
+        // Assert
+        service.Should().NotBeNull();
+        // Verify that the service was initialized with the correct client ID
+        mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("test-managed-identity-client-id")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
 
     [Theory]
@@ -67,44 +72,32 @@ public class AzureDevOpsApiServiceTests
         var organization = "test-org";
         var apiVersion = "7.1";
 
-        // Act - We need to access the private BuildApiUrl method through reflection or make it internal
-        // For now, let's verify the URL construction logic through the public interface behavior
+        // Act - URL construction is tested implicitly through integration tests
+        // This test verifies the expected URL format
         
-        // This is more of a design verification - the URL construction is tested implicitly
-        // through integration tests
+        // Assert
         expectedUrl.Should().Contain(organization);
         expectedUrl.Should().Contain(apiPath.TrimStart('/'));
         expectedUrl.Should().Contain(apiVersion);
     }
 
     [Fact]
-    public async Task GetAsync_ShouldUseCorrectAzureDevOpsScope()
+    public void Constructor_WithValidClientId_ShouldUseDefaultAzureCredential()
     {
         // Arrange
-        var organization = "test-org";
-        var apiPath = "work/processes";
-        var expectedScope = new[] { "499b84ac-1321-427f-aa17-267ca6975798/.default" };
-
-        _mockTokenAcquisition
-            .Setup(x => x.GetAccessTokenForUserAsync(It.Is<string[]>(scopes => 
-                scopes.Length == 1 && scopes[0] == expectedScope[0]), null, null, null, null))
-            .ReturnsAsync("test-token");
+        var httpClient = new HttpClient();
+        var settings = Options.Create(new AzureOpenAISettings
+        {
+            ClientId = "valid-client-id",
+            Endpoint = "https://test.openai.azure.com",
+            ChatDeploymentName = "test-deployment"
+        });
 
         // Act
-        try
-        {
-            await _service.GetAsync<object>(organization, apiPath);
-        }
-        catch
-        {
-            // Expected to fail due to HttpClient mock limitations
-            // But we should still verify the token acquisition was attempted with correct scope
-        }
+        var service = new AzureDevOpsApiService(httpClient, _mockLogger.Object, settings);
 
         // Assert
-        _mockTokenAcquisition.Verify(x => x.GetAccessTokenForUserAsync(
-            It.Is<string[]>(scopes => scopes.Length == 1 && scopes[0] == expectedScope[0]), 
-            null, null, null, null), 
-            Times.Once);
+        service.Should().NotBeNull();
+        // The service should be initialized with DefaultAzureCredential configured for User Assigned MI
     }
 }

@@ -53,21 +53,19 @@ public class AIService : IAIService
     private readonly ILogger<AIService> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILoggerFactory _loggerFactory;
-    private readonly IUserAuthenticationContext _userAuthenticationContext;
     private readonly IAzureDevOpsApiService _azureDevOpsApiService;
     private readonly string _systemPrompt;
     private readonly Dictionary<string, ChatHistory> _conversationHistory = new();
     private readonly Dictionary<string, ThoughtProcess> _thoughtProcesses = new();
 
     public AIService(IOptions<AzureOpenAISettings> azureOpenAISettings, ILogger<AIService> logger, 
-        IHttpClientFactory httpClientFactory, ILoggerFactory loggerFactory, IUserAuthenticationContext userAuthenticationContext,
+        IHttpClientFactory httpClientFactory, ILoggerFactory loggerFactory,
         IAzureDevOpsApiService azureDevOpsApiService)
     {
         _azureOpenAISettings = azureOpenAISettings.Value;
         _logger = logger;
         _httpClientFactory = httpClientFactory;
         _loggerFactory = loggerFactory;
-        _userAuthenticationContext = userAuthenticationContext;
         _azureDevOpsApiService = azureDevOpsApiService;
 
         // Load system prompt from embedded resource
@@ -109,7 +107,7 @@ public class AIService : IAIService
     }
 
     /// <summary>
-    /// Register plugins with current user authentication context.
+    /// Register plugins for Azure DevOps operations.
     /// </summary>
     private void RegisterPluginsWithUserContext()
     {
@@ -118,35 +116,20 @@ public class AIService : IAIService
             // Clear any existing plugins
             _kernel.Plugins.Clear();
             
-            // Use the injected user authentication context from the current request scope
-            var userAuthContext = _userAuthenticationContext;
-            
-            // Register plugins with the Azure DevOps API service
+            // Register plugins with the Azure DevOps API service (using managed identity)
             var projectPlugin = new ProjectPlugin(
                 _azureDevOpsApiService,
                 _loggerFactory.CreateLogger<ProjectPlugin>());
                 
             _kernel.ImportPluginFromObject(projectPlugin, nameof(ProjectPlugin));
             
-            _logger.LogDebug("Plugins registered with user authentication context: {HasUserToken}", 
-                userAuthContext?.GetUserTokenCredential() != null);
+            _logger.LogDebug("Plugins registered successfully");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to register plugins with user context");
+            _logger.LogError(ex, "Failed to register plugins");
             throw;
         }
-    }
-
-    /// <summary>
-    /// Mock implementation for testing scenarios where no user context is available.
-    /// </summary>
-    private class MockUserAuthenticationContext : IUserAuthenticationContext
-    {
-        public void SetUserToken(string accessToken) { }
-        public TokenCredential? GetUserTokenCredential() => null;
-        public string? GetCurrentUserId() => null;
-        public void ClearUserContext() { }
     }
 
     /// <summary>
@@ -252,7 +235,7 @@ public class AIService : IAIService
 
             _logger.LogInformation("Processing chat message for conversation {ConversationId}", conversationId);
 
-            // Register plugins with the injected user authentication context
+            // Register plugins for Azure DevOps operations
             RegisterPluginsWithUserContext();
 
             // Get AI response

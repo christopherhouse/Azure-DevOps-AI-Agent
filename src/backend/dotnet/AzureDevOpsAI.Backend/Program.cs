@@ -54,7 +54,6 @@ builder.Services.Configure<AzureOpenAISettings>(options =>
 
 // Add AI services
 builder.Services.AddHttpClient();
-builder.Services.AddScoped<IUserAuthenticationContext, UserAuthenticationContext>();
 builder.Services.AddScoped<IAIService, AIService>();
 builder.Services.AddScoped<IAzureDevOpsApiService, AzureDevOpsApiService>();
 
@@ -79,10 +78,8 @@ var securitySettings = builder.Configuration.GetSection("Security").Get<Security
 
 if (azureAuthSettings != null && !securitySettings?.DisableAuth == true)
 {
-    // Configure Microsoft Identity Web for web API with token acquisition for downstream APIs
-    builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration, "AzureAuth")
-        .EnableTokenAcquisitionToCallDownstreamApi()
-        .AddInMemoryTokenCaches(); // Use in-memory token cache for development
+    // Configure Microsoft Identity Web for web API authentication (without OBO token acquisition)
+    builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration, "AzureAuth");
 
     builder.Services.AddAuthorization();
 }
