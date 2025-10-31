@@ -1,50 +1,57 @@
-using Microsoft.Identity.Web;
-using Microsoft.Identity.Abstractions;
-using Microsoft.Identity.Client;
+using Azure.Identity;
+using Azure.Core;
 using System.Text.Json;
-using System.Security.Claims;
 using System.Text;
 using AzureDevOpsAI.Backend.Models;
+using AzureDevOpsAI.Backend.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace AzureDevOpsAI.Backend.Services;
 
 /// <summary>
-/// Interface for Azure DevOps API operations using proper MSAL downstream API patterns.
+/// Interface for Azure DevOps API operations using DefaultAzureCredential.
 /// </summary>
 public interface IAzureDevOpsApiService
 {
     /// <summary>
-    /// Makes an authenticated GET request to Azure DevOps API on behalf of the current user.
+    /// Makes an authenticated GET request to Azure DevOps API using managed identity.
     /// </summary>
     Task<T?> GetAsync<T>(string organization, string apiPath, string? apiVersion = "7.1", CancellationToken cancellationToken = default) where T : class;
     
     /// <summary>
-    /// Makes an authenticated POST request to Azure DevOps API on behalf of the current user.
+    /// Makes an authenticated POST request to Azure DevOps API using managed identity.
     /// </summary>
     Task<T?> PostAsync<T>(string organization, string apiPath, object? body = null, string? apiVersion = "7.1", CancellationToken cancellationToken = default) where T : class;
 }
 
 /// <summary>
-/// Service for making authenticated calls to Azure DevOps APIs using Microsoft Identity Web token acquisition.
-/// This service handles OBO token acquisition automatically through MSAL.
+/// Service for making authenticated calls to Azure DevOps APIs using DefaultAzureCredential with User Assigned Managed Identity.
 /// </summary>
 public class AzureDevOpsApiService : IAzureDevOpsApiService
 {
-    private readonly ITokenAcquisition _tokenAcquisition;
+    private readonly TokenCredential _credential;
     private readonly HttpClient _httpClient;
     private readonly ILogger<AzureDevOpsApiService> _logger;
     
     private const string AzureDevOpsScope = "499b84ac-1321-427f-aa17-267ca6975798/.default";
 
-    public AzureDevOpsApiService(ITokenAcquisition tokenAcquisition, HttpClient httpClient, ILogger<AzureDevOpsApiService> logger)
+    public AzureDevOpsApiService(HttpClient httpClient, ILogger<AzureDevOpsApiService> logger, IOptions<AzureOpenAISettings> azureOpenAISettings)
     {
-        _tokenAcquisition = tokenAcquisition;
         _httpClient = httpClient;
         _logger = logger;
+        
+        // Configure DefaultAzureCredential with User Assigned Managed Identity client ID
+        var credentialOptions = new DefaultAzureCredentialOptions
+        {
+            ManagedIdentityClientId = azureOpenAISettings.Value.ClientId
+        };
+        
+        _credential = new DefaultAzureCredential(credentialOptions);
+        _logger.LogInformation("AzureDevOpsApiService initialized with DefaultAzureCredential using User Assigned Managed Identity client ID: {ClientId}", azureOpenAISettings.Value.ClientId);
     }
 
     /// <summary>
-    /// Makes an authenticated GET request to Azure DevOps API on behalf of the current user.
+    /// Makes an authenticated GET request to Azure DevOps API using managed identity.
     /// </summary>
     public async Task<T?> GetAsync<T>(string organization, string apiPath, string? apiVersion = "7.1", CancellationToken cancellationToken = default) where T : class
     {
@@ -53,12 +60,13 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
             var url = BuildApiUrl(organization, apiPath, apiVersion);
             _logger.LogDebug("Making GET request to Azure DevOps API: {Url}", url);
 
-            // Acquire token for the current user using OBO flow
-            var accessToken = await _tokenAcquisition.GetAccessTokenForUserAsync(new[] { AzureDevOpsScope });
+            // Acquire token using DefaultAzureCredential (User Assigned Managed Identity)
+            var tokenRequestContext = new TokenRequestContext(new[] { AzureDevOpsScope });
+            var accessToken = await _credential.GetTokenAsync(tokenRequestContext, cancellationToken);
 
             // Configure HttpClient with the access token
             _httpClient.DefaultRequestHeaders.Authorization = 
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken.Token);
 
             var response = await _httpClient.GetAsync(url, cancellationToken);
 
@@ -76,14 +84,6 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
                 return null;
             }
         }
-        catch (MsalUiRequiredException msalEx)
-        {
-            _logger.LogWarning("MFA is required for Azure DevOps API access. CorrelationId: {CorrelationId}, Claims: {Claims}",
-                msalEx.CorrelationId, msalEx.Claims);
-            
-            // Throw our custom exception that includes the necessary MFA challenge information
-            throw new MfaChallengeException(msalEx, new[] { AzureDevOpsScope });
-        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to make GET request to Azure DevOps API: {Organization}/{ApiPath}", organization, apiPath);
@@ -97,7 +97,7 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
     }
 
     /// <summary>
-    /// Makes an authenticated POST request to Azure DevOps API on behalf of the current user.
+    /// Makes an authenticated POST request to Azure DevOps API using managed identity.
     /// </summary>
     public async Task<T?> PostAsync<T>(string organization, string apiPath, object? body = null, string? apiVersion = "7.1", CancellationToken cancellationToken = default) where T : class
     {
@@ -106,12 +106,13 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
             var url = BuildApiUrl(organization, apiPath, apiVersion);
             _logger.LogDebug("Making POST request to Azure DevOps API: {Url}", url);
 
-            // Acquire token for the current user using OBO flow
-            var accessToken = await _tokenAcquisition.GetAccessTokenForUserAsync(new[] { AzureDevOpsScope });
+            // Acquire token using DefaultAzureCredential (User Assigned Managed Identity)
+            var tokenRequestContext = new TokenRequestContext(new[] { AzureDevOpsScope });
+            var accessToken = await _credential.GetTokenAsync(tokenRequestContext, cancellationToken);
 
             // Configure HttpClient with the access token
             _httpClient.DefaultRequestHeaders.Authorization = 
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken.Token);
 
             HttpContent? content = null;
             if (body != null)
@@ -135,14 +136,6 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
                 _logger.LogError("POST request to Azure DevOps API failed. Status: {StatusCode}, Error: {Error}", response.StatusCode, errorContent);
                 return null;
             }
-        }
-        catch (MsalUiRequiredException msalEx)
-        {
-            _logger.LogWarning("MFA is required for Azure DevOps API access. CorrelationId: {CorrelationId}, Claims: {Claims}",
-                msalEx.CorrelationId, msalEx.Claims);
-            
-            // Throw our custom exception that includes the necessary MFA challenge information
-            throw new MfaChallengeException(msalEx, new[] { AzureDevOpsScope });
         }
         catch (Exception ex)
         {

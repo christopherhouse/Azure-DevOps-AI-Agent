@@ -59,8 +59,7 @@ public static class ChatEndpoints
         [FromBody] ChatRequest request,
         HttpContext context,
         IOptions<SecuritySettings> securitySettings,
-        IAIService aiService,
-        IUserAuthenticationContext userAuthContext)
+        IAIService aiService)
     {
         try
         {
@@ -80,24 +79,12 @@ public static class ChatEndpoints
                 });
             }
 
-            // Extract and set user token for OBO flow
-            var userToken = ExtractUserTokenFromRequest(context, securitySettings.Value);
-            if (!string.IsNullOrEmpty(userToken))
-            {
-                userAuthContext.SetUserToken(userToken);
-                logger.LogDebug("Set user authentication context for OBO flow");
-            }
-            else
-            {
-                logger.LogWarning("No user token found, plugins will use managed identity fallback");
-            }
-
             // Get user ID (mock for now)
             var userId = GetCurrentUserId(context, securitySettings.Value);
 
             logger.LogInformation("Processing chat message for user {UserId}", userId);
 
-            // Process message using AI service
+            // Process message using AI service (which uses managed identity for Azure DevOps API access)
             var response = await aiService.ProcessChatMessageAsync(
                 request.Message, 
                 request.ConversationId);
@@ -113,12 +100,6 @@ public static class ChatEndpoints
             logger.LogError(ex, "Error processing chat message");
             
             return Results.Problem("An error occurred while processing the chat message. Please try again later.");
-        }
-        finally
-        {
-            // Clear user context after request
-            var userAuthContextService = context.RequestServices.GetService<IUserAuthenticationContext>();
-            userAuthContextService?.ClearUserContext();
         }
     }
 
