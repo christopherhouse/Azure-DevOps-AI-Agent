@@ -82,11 +82,14 @@ jobs:
         
     - name: Set Azure DevOps organization
       run: |
-        if [ "${{ inputs.environment }}" == "prod" ]; then
-          echo "AZURE_DEVOPS_ORG=https://dev.azure.com/your-prod-org" >> $GITHUB_ENV
-        else
-          echo "AZURE_DEVOPS_ORG=https://dev.azure.com/your-dev-org" >> $GITHUB_ENV
+        AZURE_DEVOPS_ORG_VALUE="${{ vars.AZURE_DEVOPS_ORG }}"
+        if [[ -z "$AZURE_DEVOPS_ORG_VALUE" ]]; then
+          echo "❌ Error: AZURE_DEVOPS_ORG environment variable is not configured"
+          echo "💡 Configure the AZURE_DEVOPS_ORG environment variable in GitHub → Settings → Environments → ${{ inputs.environment }} → Environment variables"
+          echo "📚 This should contain your Azure DevOps organization URL (e.g., https://dev.azure.com/your-org-name)"
+          exit 1
         fi
+        echo "AZURE_DEVOPS_ORG=${AZURE_DEVOPS_ORG_VALUE}" >> $GITHUB_ENV
         
     - name: Azure Login
       uses: azure/login@v2
