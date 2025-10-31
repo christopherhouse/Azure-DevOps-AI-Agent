@@ -54,7 +54,6 @@ builder.Services.Configure<AzureOpenAISettings>(options =>
 
 // Add AI services
 builder.Services.AddHttpClient();
-builder.Services.AddScoped<IUserAuthenticationContext, UserAuthenticationContext>();
 builder.Services.AddScoped<IAIService, AIService>();
 builder.Services.AddScoped<IAzureDevOpsApiService, AzureDevOpsApiService>();
 
