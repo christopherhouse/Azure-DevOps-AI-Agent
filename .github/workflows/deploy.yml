@@ -82,11 +82,7 @@ jobs:
         
     - name: Set Azure DevOps organization
       run: |
-        if [ "${{ inputs.environment }}" == "prod" ]; then
-          echo "AZURE_DEVOPS_ORG=https://dev.azure.com/your-prod-org" >> $GITHUB_ENV
-        else
-          echo "AZURE_DEVOPS_ORG=https://dev.azure.com/your-dev-org" >> $GITHUB_ENV
-        fi
+        echo "AZURE_DEVOPS_ORG=${{ vars.AZURE_DEVOPS_ORG }}" >> $GITHUB_ENV
         
     - name: Azure Login
       uses: azure/login@v2
