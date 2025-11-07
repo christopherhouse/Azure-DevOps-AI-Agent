@@ -15,28 +15,6 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
-// Add Application Insights logging - always add the provider for consistent logging behavior
-var applicationInsightsConnectionString = builder.Configuration.GetSection("ApplicationInsights")["ConnectionString"];
-if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
-{
-    // With connection string - configure with specific connection string
-    builder.Logging.AddApplicationInsights(
-        configureTelemetryConfiguration: (config) => config.ConnectionString = applicationInsightsConnectionString,
-        configureApplicationInsightsLoggerOptions: (options) => { });
-}
-else
-{
-    // Without connection string - still add the provider for consistent logging behavior
-    // This ensures all ILogger instances can potentially output to Application Insights
-    // when telemetry services are configured (even if connection string is set later via environment/config)
-    builder.Logging.AddApplicationInsights(
-        configureTelemetryConfiguration: (config) => { /* No connection string to set */ },
-        configureApplicationInsightsLoggerOptions: (options) => { });
-}
-
-builder.Logging.AddFilter<Microsoft.Extensions.Logging.ApplicationInsights.ApplicationInsightsLoggerProvider>
-    ("", LogLevel.Trace);
-
 // Add configuration
 builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("App"));
 builder.Services.Configure<AzureAuthSettings>(builder.Configuration.GetSection("AzureAuth"));
