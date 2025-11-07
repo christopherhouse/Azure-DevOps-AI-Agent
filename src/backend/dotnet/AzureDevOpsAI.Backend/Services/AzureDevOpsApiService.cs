@@ -35,6 +35,7 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
     private readonly ILogger<AzureDevOpsApiService> _logger;
     
     private const string AzureDevOpsScope = "499b84ac-1321-427f-aa17-267ca6975798/.default";
+    private const string ExpectedAudience = "499b84ac-1321-427f-aa17-267ca6975798";
     
     // Centralized JSON serializer options for consistent behavior
     private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
@@ -213,9 +214,9 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
                 _logger.LogDebug("Token metadata - Audience: {Audience}, Issuer: {Issuer}", audience, issuer);
                 
                 // Verify expected audience for Azure DevOps
-                if (audience != "499b84ac-1321-427f-aa17-267ca6975798")
+                if (audience != ExpectedAudience)
                 {
-                    _logger.LogWarning("Token audience mismatch. Expected: 499b84ac-1321-427f-aa17-267ca6975798, Actual: {Audience}", audience);
+                    _logger.LogWarning("Token audience mismatch. Expected: {ExpectedAudience}, Actual: {Audience}", ExpectedAudience, audience);
                 }
             }
         }
