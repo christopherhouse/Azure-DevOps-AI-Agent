@@ -5,6 +5,7 @@ using System.Text;
 using AzureDevOpsAI.Backend.Models;
 using AzureDevOpsAI.Backend.Configuration;
 using Microsoft.Extensions.Options;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace AzureDevOpsAI.Backend.Services;
 
@@ -34,6 +35,13 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
     private readonly ILogger<AzureDevOpsApiService> _logger;
     
     private const string AzureDevOpsScope = "499b84ac-1321-427f-aa17-267ca6975798/.default";
+    
+    // Centralized JSON serializer options for consistent behavior
+    private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
+    {
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
 
     public AzureDevOpsApiService(HttpClient httpClient, ILogger<AzureDevOpsApiService> logger, IOptions<AzureOpenAISettings> azureOpenAISettings)
     {
@@ -63,17 +71,21 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
             // Acquire token using DefaultAzureCredential (User Assigned Managed Identity)
             var tokenRequestContext = new TokenRequestContext(new[] { AzureDevOpsScope });
             var accessToken = await _credential.GetTokenAsync(tokenRequestContext, cancellationToken);
+            
+            // Log token metadata for troubleshooting (not the token itself)
+            LogTokenMetadata(accessToken);
 
-            // Configure HttpClient with the access token
-            _httpClient.DefaultRequestHeaders.Authorization = 
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken.Token);
+            // Create HttpRequestMessage with authorization header (thread-safe approach)
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken.Token);
+            request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
 
-            var response = await _httpClient.GetAsync(url, cancellationToken);
+            var response = await _httpClient.SendAsync(request, cancellationToken);
 
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);
-                var result = JsonSerializer.Deserialize<T>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                var result = JsonSerializer.Deserialize<T>(content, JsonOptions);
                 _logger.LogDebug("Successfully completed GET request to Azure DevOps API: {Url}", url);
                 return result;
             }
@@ -88,11 +100,6 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
         {
             _logger.LogError(ex, "Failed to make GET request to Azure DevOps API: {Organization}/{ApiPath}", organization, apiPath);
             throw;
-        }
-        finally
-        {
-            // Clear the authorization header for future requests
-            _httpClient.DefaultRequestHeaders.Authorization = null;
         }
     }
 
@@ -109,24 +116,27 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
             // Acquire token using DefaultAzureCredential (User Assigned Managed Identity)
             var tokenRequestContext = new TokenRequestContext(new[] { AzureDevOpsScope });
             var accessToken = await _credential.GetTokenAsync(tokenRequestContext, cancellationToken);
+            
+            // Log token metadata for troubleshooting (not the token itself)
+            LogTokenMetadata(accessToken);
 
-            // Configure HttpClient with the access token
-            _httpClient.DefaultRequestHeaders.Authorization = 
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken.Token);
+            // Create HttpRequestMessage with authorization header (thread-safe approach)
+            using var request = new HttpRequestMessage(HttpMethod.Post, url);
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken.Token);
+            request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
 
-            HttpContent? content = null;
             if (body != null)
             {
-                var jsonBody = JsonSerializer.Serialize(body);
-                content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+                var jsonBody = JsonSerializer.Serialize(body, JsonOptions);
+                request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
             }
 
-            var response = await _httpClient.PostAsync(url, content, cancellationToken);
+            var response = await _httpClient.SendAsync(request, cancellationToken);
 
             if (response.IsSuccessStatusCode)
             {
                 var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-                var result = JsonSerializer.Deserialize<T>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                var result = JsonSerializer.Deserialize<T>(responseContent, JsonOptions);
                 _logger.LogDebug("Successfully completed POST request to Azure DevOps API: {Url}", url);
                 return result;
             }
@@ -142,20 +152,36 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
             _logger.LogError(ex, "Failed to make POST request to Azure DevOps API: {Organization}/{ApiPath}", organization, apiPath);
             throw;
         }
-        finally
-        {
-            // Clear the authorization header for future requests
-            _httpClient.DefaultRequestHeaders.Authorization = null;
-        }
     }
 
     /// <summary>
-    /// Builds the full Azure DevOps API URL.
+    /// Builds the full Azure DevOps API URL with resilient path handling.
     /// </summary>
     private static string BuildApiUrl(string organization, string apiPath, string? apiVersion)
     {
+        // Handle full URLs (don't modify them)
+        if (apiPath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || 
+            apiPath.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            // If it's already a full URL, just add API version if needed
+            if (!string.IsNullOrEmpty(apiVersion) && !apiPath.Contains("api-version=", StringComparison.OrdinalIgnoreCase))
+            {
+                var separator = apiPath.Contains('?') ? "&" : "?";
+                return $"{apiPath}{separator}api-version={apiVersion}";
+            }
+            return apiPath;
+        }
+        
         var baseUrl = $"https://dev.azure.com/{organization}";
-        var path = apiPath.StartsWith('/') ? apiPath : $"/_apis/{apiPath}";
+        
+        // Remove duplicate /_apis/ prefixes
+        var normalizedPath = apiPath.TrimStart('/');
+        
+        // If path already starts with _apis/, use it as-is with leading slash
+        // Otherwise, prefix with /_apis/
+        var path = normalizedPath.StartsWith("_apis/", StringComparison.OrdinalIgnoreCase) 
+            ? $"/{normalizedPath}" 
+            : $"/_apis/{normalizedPath}";
         
         if (!string.IsNullOrEmpty(apiVersion))
         {
@@ -164,5 +190,38 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
         }
         
         return $"{baseUrl}{path}";
+    }
+    
+    /// <summary>
+    /// Logs token metadata for troubleshooting without exposing the token itself.
+    /// </summary>
+    private void LogTokenMetadata(AccessToken accessToken)
+    {
+        try
+        {
+            _logger.LogDebug("Token metadata - ExpiresOn: {ExpiresOn}", accessToken.ExpiresOn);
+            
+            // Decode JWT to verify audience and issuer
+            var handler = new JwtSecurityTokenHandler();
+            if (handler.CanReadToken(accessToken.Token))
+            {
+                var jwtToken = handler.ReadJwtToken(accessToken.Token);
+                
+                var audience = jwtToken.Audiences.FirstOrDefault();
+                var issuer = jwtToken.Issuer;
+                
+                _logger.LogDebug("Token metadata - Audience: {Audience}, Issuer: {Issuer}", audience, issuer);
+                
+                // Verify expected audience for Azure DevOps
+                if (audience != "499b84ac-1321-427f-aa17-267ca6975798")
+                {
+                    _logger.LogWarning("Token audience mismatch. Expected: 499b84ac-1321-427f-aa17-267ca6975798, Actual: {Audience}", audience);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to decode token metadata");
+        }
     }
 }
