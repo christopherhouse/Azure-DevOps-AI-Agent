@@ -49,14 +49,20 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
         _httpClient = httpClient;
         _logger = logger;
         
-        // Configure DefaultAzureCredential with User Assigned Managed Identity client ID
-        var credentialOptions = new DefaultAzureCredentialOptions
-        {
-            ManagedIdentityClientId = azureOpenAISettings.Value.ClientId
-        };
+        // Configure DefaultAzureCredential with optional User Assigned Managed Identity client ID
+        var credentialOptions = new DefaultAzureCredentialOptions();
         
-        _credential = new DefaultAzureCredential(credentialOptions);
-        _logger.LogInformation("AzureDevOpsApiService initialized with DefaultAzureCredential using User Assigned Managed Identity client ID: {ClientId}", azureOpenAISettings.Value.ClientId);
+        if (azureOpenAISettings.Value.UseUserAssignedIdentity)
+        {
+            credentialOptions.ManagedIdentityClientId = azureOpenAISettings.Value.ClientId;
+            _credential = new DefaultAzureCredential(credentialOptions);
+            _logger.LogInformation("AzureDevOpsApiService initialized with DefaultAzureCredential using User Assigned Managed Identity client ID: {ClientId}", azureOpenAISettings.Value.ClientId);
+        }
+        else
+        {
+            _credential = new DefaultAzureCredential(credentialOptions);
+            _logger.LogInformation("AzureDevOpsApiService initialized with DefaultAzureCredential without User Assigned Managed Identity");
+        }
     }
 
     /// <summary>

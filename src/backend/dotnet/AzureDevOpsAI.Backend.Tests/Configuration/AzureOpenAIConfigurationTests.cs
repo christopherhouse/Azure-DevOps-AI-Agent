@@ -139,4 +139,91 @@ public class AzureOpenAIConfigurationTests
         // The [Required] attribute will be validated by ASP.NET Core's options validation
         // when the application starts, not during configuration binding
     }
+
+    [Fact]
+    public void Configure_ShouldDefaultUseUserAssignedIdentityToTrue()
+    {
+        // Arrange
+        var configurationData = new Dictionary<string, string?>
+        {
+            ["AzureOpenAI:Endpoint"] = "https://test.openai.azure.com/",
+            ["AzureOpenAI:ChatDeploymentName"] = "gpt-4",
+            ["AzureOpenAI:ClientId"] = "test-client-id"
+            // No UseUserAssignedIdentity specified
+        };
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(configurationData)
+            .Build();
+
+        var services = new ServiceCollection();
+        services.Configure<AzureOpenAISettings>(configuration.GetSection("AzureOpenAI"));
+        var serviceProvider = services.BuildServiceProvider();
+
+        // Act
+        var azureOpenAIOptions = serviceProvider.GetRequiredService<IOptions<AzureOpenAISettings>>();
+        var settings = azureOpenAIOptions.Value;
+
+        // Assert
+        settings.UseUserAssignedIdentity.Should().BeTrue(
+            "UseUserAssignedIdentity should default to true for backward compatibility");
+    }
+
+    [Fact]
+    public void Configure_ShouldSetUseUserAssignedIdentityToFalseWhenConfigured()
+    {
+        // Arrange
+        var configurationData = new Dictionary<string, string?>
+        {
+            ["AzureOpenAI:Endpoint"] = "https://test.openai.azure.com/",
+            ["AzureOpenAI:ChatDeploymentName"] = "gpt-4",
+            ["AzureOpenAI:ClientId"] = "test-client-id",
+            ["AzureOpenAI:UseUserAssignedIdentity"] = "false"
+        };
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(configurationData)
+            .Build();
+
+        var services = new ServiceCollection();
+        services.Configure<AzureOpenAISettings>(configuration.GetSection("AzureOpenAI"));
+        var serviceProvider = services.BuildServiceProvider();
+
+        // Act
+        var azureOpenAIOptions = serviceProvider.GetRequiredService<IOptions<AzureOpenAISettings>>();
+        var settings = azureOpenAIOptions.Value;
+
+        // Assert
+        settings.UseUserAssignedIdentity.Should().BeFalse(
+            "UseUserAssignedIdentity should be false when explicitly configured");
+    }
+
+    [Fact]
+    public void Configure_ShouldSetUseUserAssignedIdentityToTrueWhenConfigured()
+    {
+        // Arrange
+        var configurationData = new Dictionary<string, string?>
+        {
+            ["AzureOpenAI:Endpoint"] = "https://test.openai.azure.com/",
+            ["AzureOpenAI:ChatDeploymentName"] = "gpt-4",
+            ["AzureOpenAI:ClientId"] = "test-client-id",
+            ["AzureOpenAI:UseUserAssignedIdentity"] = "true"
+        };
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(configurationData)
+            .Build();
+
+        var services = new ServiceCollection();
+        services.Configure<AzureOpenAISettings>(configuration.GetSection("AzureOpenAI"));
+        var serviceProvider = services.BuildServiceProvider();
+
+        // Act
+        var azureOpenAIOptions = serviceProvider.GetRequiredService<IOptions<AzureOpenAISettings>>();
+        var settings = azureOpenAIOptions.Value;
+
+        // Assert
+        settings.UseUserAssignedIdentity.Should().BeTrue(
+            "UseUserAssignedIdentity should be true when explicitly configured");
+    }
 }
