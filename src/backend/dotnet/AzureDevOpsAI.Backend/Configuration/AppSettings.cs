@@ -150,6 +150,11 @@ public class AzureOpenAISettings
     /// </summary>
     [Required]
     public string ClientId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Use User Assigned Managed Identity. When false, DefaultAzureCredential will not use the ClientId.
+    /// </summary>
+    public bool UseUserAssignedIdentity { get; set; } = true;
 }
 
 /// <summary>

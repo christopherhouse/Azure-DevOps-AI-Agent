@@ -116,4 +116,62 @@ public class AzureDevOpsApiServiceTests
         // Assert - All variations should produce the same URL pattern
         apiPath.Should().NotBeNull();
     }
+
+    [Fact]
+    public void Constructor_WithUseUserAssignedIdentityTrue_ShouldLogClientId()
+    {
+        // Arrange
+        var mockLogger = new Mock<ILogger<AzureDevOpsApiService>>();
+        var httpClient = new HttpClient();
+        var settings = Options.Create(new AzureOpenAISettings
+        {
+            ClientId = "test-client-id",
+            Endpoint = "https://test.openai.azure.com",
+            ChatDeploymentName = "test-deployment",
+            UseUserAssignedIdentity = true
+        });
+
+        // Act
+        var service = new AzureDevOpsApiService(httpClient, mockLogger.Object, settings);
+
+        // Assert
+        service.Should().NotBeNull();
+        mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("User Assigned Managed Identity client ID: test-client-id")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public void Constructor_WithUseUserAssignedIdentityFalse_ShouldLogWithoutClientId()
+    {
+        // Arrange
+        var mockLogger = new Mock<ILogger<AzureDevOpsApiService>>();
+        var httpClient = new HttpClient();
+        var settings = Options.Create(new AzureOpenAISettings
+        {
+            ClientId = "test-client-id",
+            Endpoint = "https://test.openai.azure.com",
+            ChatDeploymentName = "test-deployment",
+            UseUserAssignedIdentity = false
+        });
+
+        // Act
+        var service = new AzureDevOpsApiService(httpClient, mockLogger.Object, settings);
+
+        // Assert
+        service.Should().NotBeNull();
+        mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("without User Assigned Managed Identity")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
 }
