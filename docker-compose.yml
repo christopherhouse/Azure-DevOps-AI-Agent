@@ -1,0 +1,122 @@
+services:
+  backend:
+    build:
+      context: ./src/backend/dotnet
+      dockerfile: Dockerfile
+    container_name: azure-devops-ai-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env.backend
+    environment:
+      # App Settings
+      - App__Environment=${ENVIRONMENT:-development}
+      - App__Debug=${DEBUG:-true}
+      - App__Host=0.0.0.0
+      - App__Port=8000
+      
+      # Azure Auth Settings
+      - AzureAuth__Instance=https://login.microsoftonline.com/
+      - AzureAuth__TenantId=${AZURE_TENANT_ID}
+      - AzureAuth__ClientId=${BACKEND_CLIENT_ID}
+      - AzureAuth__ClientSecret=${AZURE_CLIENT_SECRET}
+      
+      # Azure DevOps Settings
+      - AzureDevOps__Organization=${AZURE_DEVOPS_ORGANIZATION}
+      - AzureDevOps__Pat=${AZURE_DEVOPS_PAT}
+      
+      # Azure OpenAI Settings
+      - AzureOpenAI__Endpoint=${AZURE_OPENAI_ENDPOINT}
+      - AzureOpenAI__ApiKey=${AZURE_OPENAI_API_KEY}
+      - AzureOpenAI__ChatDeploymentName=${AZURE_OPENAI_DEPLOYMENT_NAME:-gpt-4}
+      - AzureOpenAI__ApiVersion=${AZURE_OPENAI_API_VERSION:-2024-02-01}
+      - AzureOpenAI__MaxTokens=${AZURE_OPENAI_MAX_TOKENS:-4000}
+      - AzureOpenAI__Temperature=${AZURE_OPENAI_TEMPERATURE:-0.7}
+      - AzureOpenAI__UseManagedIdentity=${AZURE_OPENAI_USE_MANAGED_IDENTITY:-false}
+      - AzureOpenAI__ClientId=${AZURE_OPENAI_CLIENT_ID}
+      - AzureOpenAI__UseUserAssignedIdentity=${AZURE_OPENAI_USE_USER_ASSIGNED_IDENTITY:-false}
+      
+      # Application Insights
+      - ApplicationInsights__ConnectionString=${APPLICATIONINSIGHTS_CONNECTION_STRING}
+      
+      # Security Settings
+      - Security__JwtSecretKey=${JWT_SECRET_KEY}
+      - Security__JwtAlgorithm=${JWT_ALGORITHM:-HS256}
+      - Security__JwtExpireMinutes=${JWT_EXPIRE_MINUTES:-60}
+      - Security__DisableAuth=${DISABLE_AUTH:-true}
+      
+      # .NET Runtime
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ASPNETCORE_URLS=http://+:8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - azure-devops-ai-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./src/frontend
+      dockerfile: Dockerfile
+      args:
+        # Build-time environment variables (NEXT_PUBLIC_* vars needed during build)
+        - NEXT_PUBLIC_AZURE_TENANT_ID=${AZURE_TENANT_ID}
+        - NEXT_PUBLIC_AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+        - NEXT_PUBLIC_BACKEND_CLIENT_ID=${BACKEND_CLIENT_ID}
+        - NEXT_PUBLIC_AZURE_AUTHORITY=https://login.microsoftonline.com/${AZURE_TENANT_ID}
+        - NEXT_PUBLIC_AZURE_REDIRECT_URI=http://localhost:3000/auth/callback
+        - NEXT_PUBLIC_AZURE_SCOPES=${AZURE_SCOPES:-openid,profile,User.Read}
+        - NEXT_PUBLIC_BACKEND_URL=http://backend:8000
+        - NEXT_PUBLIC_FRONTEND_URL=http://localhost:3000
+        - NEXT_PUBLIC_ENVIRONMENT=${ENVIRONMENT:-development}
+        - NEXT_PUBLIC_DEBUG=${DEBUG:-true}
+        - NEXT_PUBLIC_APPLICATIONINSIGHTS_CONNECTION_STRING=${APPLICATIONINSIGHTS_CONNECTION_STRING}
+        - NEXT_PUBLIC_ENABLE_TELEMETRY=${ENABLE_TELEMETRY:-false}
+        - NEXT_PUBLIC_SESSION_TIMEOUT=${SESSION_TIMEOUT:-3600}
+        - NEXT_PUBLIC_REQUIRE_HTTPS=${REQUIRE_HTTPS:-false}
+    container_name: azure-devops-ai-frontend
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.frontend
+    environment:
+      # Runtime environment variables
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      
+      # Next.js public environment variables
+      - NEXT_PUBLIC_AZURE_TENANT_ID=${AZURE_TENANT_ID}
+      - NEXT_PUBLIC_AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+      - NEXT_PUBLIC_BACKEND_CLIENT_ID=${BACKEND_CLIENT_ID}
+      - NEXT_PUBLIC_AZURE_AUTHORITY=https://login.microsoftonline.com/${AZURE_TENANT_ID}
+      - NEXT_PUBLIC_AZURE_REDIRECT_URI=http://localhost:3000/auth/callback
+      - NEXT_PUBLIC_AZURE_SCOPES=${AZURE_SCOPES:-openid,profile,User.Read}
+      - NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
+      - NEXT_PUBLIC_FRONTEND_URL=http://localhost:3000
+      - NEXT_PUBLIC_ENVIRONMENT=${ENVIRONMENT:-development}
+      - NEXT_PUBLIC_DEBUG=${DEBUG:-true}
+      - NEXT_PUBLIC_APPLICATIONINSIGHTS_CONNECTION_STRING=${APPLICATIONINSIGHTS_CONNECTION_STRING}
+      - NEXT_PUBLIC_ENABLE_TELEMETRY=${ENABLE_TELEMETRY:-false}
+      - NEXT_PUBLIC_SESSION_TIMEOUT=${SESSION_TIMEOUT:-3600}
+      - NEXT_PUBLIC_REQUIRE_HTTPS=${REQUIRE_HTTPS:-false}
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://0.0.0.0:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - azure-devops-ai-network
+    restart: unless-stopped
+
+networks:
+  azure-devops-ai-network:
+    driver: bridge

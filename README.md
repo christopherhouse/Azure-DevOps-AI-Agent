@@ -1,6 +1,6 @@
 # Azure DevOps AI Agent
 
-An intelligent AI agent that provides administrative capabilities for Azure DevOps organizations and projects through a modern web interface. This solution combines a Next.js TypeScript frontend with a FastAPI backend powered by Semantic Kernel and Azure OpenAI.
+An intelligent AI agent that provides administrative capabilities for Azure DevOps organizations and projects through a modern web interface. This solution combines a Next.js TypeScript frontend with a .NET Web API backend powered by Semantic Kernel and Azure OpenAI.
 
 ## 🎯 Overview
 
@@ -18,7 +18,7 @@ This repository contains a complete solution for automating Azure DevOps adminis
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌───────────────────┐
-│   Next.js UI    │    │   FastAPI API    │    │  Azure DevOps     │
+│   Next.js UI    │    │  .NET Web API    │    │  Azure DevOps     │
 │                 │    │                  │    │                   │
 │ - Chat Interface│◄──►│ - Semantic Kernel│◄──►│ - Projects        │
 │ - Entra ID Auth │    │ - Azure OpenAI   │    │ - Work Items      │
@@ -44,8 +44,7 @@ This repository contains a complete solution for automating Azure DevOps adminis
 │   └── main.bicep        # Main infrastructure template
 ├── src/                  # Application source code
 │   ├── frontend/         # Next.js TypeScript application
-│   ├── backend/          # FastAPI application
-│   └── shared/           # Shared utilities and models
+│   └── backend/          # .NET Web API application
 └── README.md            # This file
 ```
 
@@ -53,12 +52,54 @@ This repository contains a complete solution for automating Azure DevOps adminis
 
 ### Prerequisites
 
-- Python 3.11+
-- Azure subscription
-- Azure DevOps organization
-- Microsoft Entra ID tenant
+- **Option 1 (Docker Compose - Recommended for Quick Start):**
+  - Docker Desktop or Docker Engine (20.10.0+)
+  - Docker Compose (2.0.0+)
 
-### Local Development Setup
+- **Option 2 (Local Development):**
+  - Node.js 18+ (for frontend)
+  - .NET 8.0 SDK (for backend)
+  - Azure subscription
+  - Azure DevOps organization
+  - Microsoft Entra ID tenant
+
+### Option 1: Docker Compose (Recommended)
+
+The fastest way to get started is using Docker Compose, which runs both frontend and backend containers locally:
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/christopherhouse/Azure-DevOps-AI-Agent.git
+   cd Azure-DevOps-AI-Agent
+   ```
+
+2. **Create environment files**
+   ```bash
+   # Copy example files
+   cp .env.backend.example .env.backend
+   cp .env.frontend.example .env.frontend
+   
+   # Edit files with your Azure credentials
+   # At minimum, configure:
+   # - Azure OpenAI endpoint and API key
+   # - Azure DevOps organization and PAT
+   # - Azure tenant ID and client IDs
+   # - JWT secret key (generate with: openssl rand -hex 32)
+   ```
+
+3. **Start the application**
+   ```bash
+   docker compose up --build
+   ```
+
+4. **Access the application**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:8000
+   - API Documentation: http://localhost:8000/docs (when auth disabled)
+
+For detailed Docker Compose instructions, see [DOCKER_COMPOSE.md](DOCKER_COMPOSE.md).
+
+### Option 2: Local Development Setup
 
 1. **Clone the repository**
    ```bash
@@ -68,15 +109,12 @@ This repository contains a complete solution for automating Azure DevOps adminis
 
 2. **Set up development environment**
    ```bash
-   # Install uv for backend (if not already installed)
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-   
-   # Install backend dependencies
-   cd src/backend
-   uv sync --group dev
+   # Install backend dependencies (.NET)
+   cd src/backend/dotnet/AzureDevOpsAI.Backend
+   dotnet restore
    
    # Install frontend dependencies
-   cd ../frontend
+   cd ../../../frontend
    npm install
    ```
 
@@ -89,8 +127,8 @@ This repository contains a complete solution for automating Azure DevOps adminis
 4. **Run the development servers**
    ```bash
    # Terminal 1 - Backend API
-   cd src/backend
-   uv run uvicorn app.main:app --reload --port 8000
+   cd src/backend/dotnet/AzureDevOpsAI.Backend
+   dotnet run
 
    # Terminal 2 - Frontend UI
    cd src/frontend
@@ -114,10 +152,10 @@ For detailed setup instructions, see [docs/development/setup.md](docs/developmen
 - **Application Insights**: Client-side telemetry and monitoring
 
 ### Backend
-- **FastAPI**: High-performance async web framework
+- **ASP.NET Core**: High-performance web API framework
+- **C#/.NET 8.0**: Modern language and runtime
 - **Semantic Kernel**: AI orchestration and plugin system
 - **Azure OpenAI**: GPT models for natural language processing
-- **Pydantic**: Data validation and serialization
 - **Azure SDK**: Azure service integrations
 
 ### Infrastructure
@@ -133,10 +171,10 @@ For detailed setup instructions, see [docs/development/setup.md](docs/developmen
 - **ESLint**: JavaScript/TypeScript linting
 - **Prettier**: Code formatting
 - **Jest**: Testing framework for frontend
-- **Ruff**: Python linting and formatting (backend)
-- **Pytest**: Testing framework (backend)
-- **MyPy**: Static type checking (backend)
-- **Bandit**: Security vulnerability scanning (backend)
+- **.NET Analyzers**: Code quality and security analysis (backend)
+- **xUnit/NUnit**: Testing framework (backend)
+- **Docker**: Containerization for both frontend and backend
+- **Docker Compose**: Local multi-container orchestration
 
 ## 🔐 Security & Authentication
 
@@ -215,12 +253,12 @@ The project maintains high code quality with comprehensive testing:
 Run tests locally:
 ```bash
 # Backend tests
-cd src/backend
-uv run pytest --cov=app tests/
+cd src/backend/dotnet
+dotnet test
 
 # Frontend tests
 cd src/frontend
-uv run pytest tests/
+npm test
 ```
 
 ## 📚 Documentation
