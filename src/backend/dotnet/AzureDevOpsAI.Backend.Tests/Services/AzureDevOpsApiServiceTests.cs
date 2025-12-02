@@ -26,7 +26,7 @@ public class AzureDevOpsApiServiceTests
             TenantId = "test-tenant-id"
         });
         
-        // Create service with an HttpClient - it will use DefaultAzureCredential internally
+        // Create service with an HttpClient - it will use ManagedIdentityCredential internally
         var httpClient = new HttpClient();
         _service = new AzureDevOpsApiService(httpClient, _mockLogger.Object, _azureAuthSettings);
     }
@@ -84,7 +84,7 @@ public class AzureDevOpsApiServiceTests
     }
 
     [Fact]
-    public void Constructor_WithValidClientId_ShouldUseDefaultAzureCredential()
+    public void Constructor_WithValidClientId_ShouldUseManagedIdentityCredential()
     {
         // Arrange
         var httpClient = new HttpClient();
@@ -99,7 +99,7 @@ public class AzureDevOpsApiServiceTests
 
         // Assert
         service.Should().NotBeNull();
-        // The service should be initialized with DefaultAzureCredential configured for User Assigned MI
+        // The service should be initialized with ManagedIdentityCredential configured for User Assigned MI
     }
     
     [Theory]

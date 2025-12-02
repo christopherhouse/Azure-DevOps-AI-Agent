@@ -89,7 +89,7 @@ The plugin handles various error scenarios:
 ## Implementation Details
 
 - **Framework**: Built using Microsoft Semantic Kernel
-- **Authentication**: Azure DefaultAzureCredential with User Assigned Managed Identity
+- **Authentication**: Azure ManagedIdentityCredential with User Assigned Managed Identity
 - **HTTP Client**: Uses dependency-injected HttpClient for API calls
 - **Logging**: Comprehensive logging for debugging and monitoring
 - **JSON Serialization**: Uses System.Text.Json for API response parsing

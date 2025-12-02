@@ -10,7 +10,7 @@ using System.IdentityModel.Tokens.Jwt;
 namespace AzureDevOpsAI.Backend.Services;
 
 /// <summary>
-/// Interface for Azure DevOps API operations using DefaultAzureCredential.
+/// Interface for Azure DevOps API operations using ManagedIdentityCredential.
 /// </summary>
 public interface IAzureDevOpsApiService
 {
@@ -26,7 +26,7 @@ public interface IAzureDevOpsApiService
 }
 
 /// <summary>
-/// Service for making authenticated calls to Azure DevOps APIs using DefaultAzureCredential with User Assigned Managed Identity.
+/// Service for making authenticated calls to Azure DevOps APIs using ManagedIdentityCredential with User Assigned Managed Identity.
 /// </summary>
 public class AzureDevOpsApiService : IAzureDevOpsApiService
 {
@@ -49,13 +49,11 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
         _httpClient = httpClient;
         _logger = logger;
         
-        // Configure DefaultAzureCredential with optional User Assigned Managed Identity client ID
-        var credentialOptions = new DefaultAzureCredentialOptions();
-        
-        credentialOptions.ManagedIdentityClientId = azureAuthSettings.Value.ClientId;
-        credentialOptions.TenantId = azureAuthSettings.Value.TenantId;
-        _credential = new DefaultAzureCredential(credentialOptions);
-        _logger.LogInformation("AzureDevOpsApiService initialized with DefaultAzureCredential using User Assigned Managed Identity client ID: {ClientId}", azureAuthSettings.Value.ClientId);
+        // Configure ManagedIdentityCredential with User Assigned Managed Identity client ID
+        // Note: TenantId is not required for ManagedIdentityCredential as it is derived from the managed identity assignment
+        _credential = new ManagedIdentityCredential(azureAuthSettings.Value.ClientId);
+        _logger.LogInformation("AzureDevOpsApiService initialized with ManagedIdentityCredential using User Assigned Managed Identity client ID: {ClientId}", 
+            azureAuthSettings.Value.ClientId);
     }
 
     /// <summary>
@@ -68,7 +66,7 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
             var url = BuildApiUrl(organization, apiPath, apiVersion);
             _logger.LogDebug("Making GET request to Azure DevOps API: {Url}", url);
 
-            // Acquire token using DefaultAzureCredential (User Assigned Managed Identity)
+            // Acquire token using ManagedIdentityCredential (User Assigned Managed Identity)
             var tokenRequestContext = new TokenRequestContext(new[] { AzureDevOpsScope });
             var accessToken = await _credential.GetTokenAsync(tokenRequestContext, cancellationToken);
             
@@ -113,7 +111,7 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
             var url = BuildApiUrl(organization, apiPath, apiVersion);
             _logger.LogDebug("Making POST request to Azure DevOps API: {Url}", url);
 
-            // Acquire token using DefaultAzureCredential (User Assigned Managed Identity)
+            // Acquire token using ManagedIdentityCredential (User Assigned Managed Identity)
             var tokenRequestContext = new TokenRequestContext(new[] { AzureDevOpsScope });
             var accessToken = await _credential.GetTokenAsync(tokenRequestContext, cancellationToken);
             
