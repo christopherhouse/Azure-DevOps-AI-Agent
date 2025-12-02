@@ -34,7 +34,7 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
     private readonly HttpClient _httpClient;
     private readonly ILogger<AzureDevOpsApiService> _logger;
     
-    private const string AzureDevOpsScope = "499b84ac-1321-427f-aa17-267ca6975798/.default";
+    private const string AzureDevOpsScope = "https://app.vssps.visualstudio.com/.default";
     private const string ExpectedAudience = "499b84ac-1321-427f-aa17-267ca6975798";
     
     // Centralized JSON serializer options for consistent behavior
