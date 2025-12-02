@@ -201,6 +201,7 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
     
     /// <summary>
     /// Logs token metadata for troubleshooting without exposing the token itself.
+    /// Logs key claims including aud, tid, oid, upn, appid for diagnostic purposes.
     /// </summary>
     private void LogTokenMetadata(AccessToken accessToken)
     {
@@ -214,10 +215,32 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
             {
                 var jwtToken = handler.ReadJwtToken(accessToken.Token);
                 
+                // Extract key claims for troubleshooting
                 var audience = jwtToken.Audiences.FirstOrDefault();
                 var issuer = jwtToken.Issuer;
+                var tenantId = GetClaimValue(jwtToken, "tid");
+                var objectId = GetClaimValue(jwtToken, "oid");
+                var upn = GetClaimValue(jwtToken, "upn");
+                var appId = GetClaimValue(jwtToken, "appid");
+                var scopes = GetClaimValue(jwtToken, "scp");
                 
-                _logger.LogDebug("Token metadata - Audience: {Audience}, Issuer: {Issuer}", audience, issuer);
+                // Log all diagnostic claims at Information level for visibility
+                _logger.LogInformation(
+                    "Token diagnostics - aud: {Audience}, tid: {TenantId}, oid: {ObjectId}, upn: {Upn}, appid: {AppId}, scp: {Scopes}, iss: {Issuer}",
+                    audience ?? "(not present)",
+                    tenantId ?? "(not present)",
+                    objectId ?? "(not present)",
+                    upn ?? "(not present)",
+                    appId ?? "(not present)",
+                    scopes ?? "(not present)",
+                    issuer ?? "(not present)");
+                
+                // Log token validity period for additional diagnostics
+                _logger.LogDebug(
+                    "Token validity - ValidFrom: {ValidFrom}, ValidTo: {ValidTo}, IssuedAt: {IssuedAt}",
+                    jwtToken.ValidFrom,
+                    jwtToken.ValidTo,
+                    jwtToken.IssuedAt);
                 
                 // Verify expected audience for Azure DevOps
                 if (audience != ExpectedAudience)
@@ -225,10 +248,22 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
                     _logger.LogWarning("Token audience mismatch. Expected: {ExpectedAudience}, Actual: {Audience}", ExpectedAudience, audience);
                 }
             }
+            else
+            {
+                _logger.LogWarning("Unable to read token as JWT - token format may be invalid");
+            }
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to decode token metadata");
         }
+    }
+    
+    /// <summary>
+    /// Safely extracts a claim value from a JWT token.
+    /// </summary>
+    private static string? GetClaimValue(JwtSecurityToken jwtToken, string claimType)
+    {
+        return jwtToken.Claims.FirstOrDefault(c => c.Type == claimType)?.Value;
     }
 }
