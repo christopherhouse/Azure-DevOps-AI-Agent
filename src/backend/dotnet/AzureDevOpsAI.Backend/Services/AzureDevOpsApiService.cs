@@ -55,6 +55,7 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
         if (azureOpenAISettings.Value.UseUserAssignedIdentity)
         {
             credentialOptions.ManagedIdentityClientId = azureOpenAISettings.Value.ClientId;
+            credentialOptions.TenantId = azureOpenAISettings.Value.TenantId;
             _credential = new DefaultAzureCredential(credentialOptions);
             _logger.LogInformation("AzureDevOpsApiService initialized with DefaultAzureCredential using User Assigned Managed Identity client ID: {ClientId}", azureOpenAISettings.Value.ClientId);
         }
