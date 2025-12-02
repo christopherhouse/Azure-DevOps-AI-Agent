@@ -76,24 +76,27 @@ public class AIService : IAIService
 
         if (_azureOpenAISettings.UseManagedIdentity)
         {
-            // Use managed identity authentication
-            var credentialOptions = new DefaultAzureCredentialOptions();
+            // Use managed identity authentication with ManagedIdentityCredential
+            TokenCredential credential;
             
-            // Configure User Assigned Managed Identity client ID (if enabled)
+            // Configure User Assigned Managed Identity with ClientId and TenantId
             if (_azureOpenAISettings.UseUserAssignedIdentity)
             {
-                credentialOptions.ManagedIdentityClientId = _azureOpenAISettings.ClientId;
-                _logger.LogInformation("Configured DefaultAzureCredential with User Assigned Managed Identity client ID: {ClientId}", _azureOpenAISettings.ClientId);
+                var credentialOptions = new ManagedIdentityCredentialOptions();
+                credential = new ManagedIdentityCredential(_azureOpenAISettings.ClientId, credentialOptions);
+                _logger.LogInformation("Configured ManagedIdentityCredential with User Assigned Managed Identity client ID: {ClientId}", _azureOpenAISettings.ClientId);
             }
             else
             {
-                _logger.LogInformation("Configured DefaultAzureCredential without User Assigned Managed Identity");
+                // Use system-assigned managed identity
+                credential = new ManagedIdentityCredential();
+                _logger.LogInformation("Configured ManagedIdentityCredential with System Assigned Managed Identity");
             }
             
             builder.AddAzureOpenAIChatCompletion(
                 deploymentName: _azureOpenAISettings.ChatDeploymentName,
                 endpoint: _azureOpenAISettings.Endpoint,
-                new DefaultAzureCredential(credentialOptions));
+                credential);
         }
         else
         {
