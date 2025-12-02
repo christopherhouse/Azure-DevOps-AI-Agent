@@ -10,10 +10,17 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure logging
-builder.Logging.ClearProviders();
+// Configure logging - DON'T clear providers to keep Application Insights logger
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
+
+// Ensure all trace levels are captured
+builder.Logging.SetMinimumLevel(LogLevel.Trace);
+
+// Configure specific log levels if needed
+builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
+builder.Logging.AddFilter("System", LogLevel.Warning);
+builder.Logging.AddFilter("AzureDevOpsAI", LogLevel.Trace);
 
 // Add configuration
 builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("App"));
@@ -46,6 +53,17 @@ if (!string.IsNullOrEmpty(applicationInsightsSettings?.ConnectionString))
     {
         options.ConnectionString = applicationInsightsSettings.ConnectionString;
     });
+    
+    // Explicitly add Application Insights logging provider
+    builder.Logging.AddApplicationInsights(
+        configureTelemetryConfiguration: (config) => 
+            config.ConnectionString = applicationInsightsSettings.ConnectionString,
+        configureApplicationInsightsLoggerOptions: (options) => 
+        {
+            // Capture all log levels
+            options.IncludeScopes = true;
+            options.TrackExceptionsAsExceptionTelemetry = true;
+        });
 }
 else
 {
