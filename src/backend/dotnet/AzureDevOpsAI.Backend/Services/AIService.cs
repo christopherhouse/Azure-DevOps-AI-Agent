@@ -79,11 +79,10 @@ public class AIService : IAIService
             // Use managed identity authentication with ManagedIdentityCredential
             TokenCredential credential;
             
-            // Configure User Assigned Managed Identity with ClientId and TenantId
+            // Configure User Assigned Managed Identity with ClientId
             if (_azureOpenAISettings.UseUserAssignedIdentity)
             {
-                var credentialOptions = new ManagedIdentityCredentialOptions();
-                credential = new ManagedIdentityCredential(_azureOpenAISettings.ClientId, credentialOptions);
+                credential = new ManagedIdentityCredential(_azureOpenAISettings.ClientId);
                 _logger.LogInformation("Configured ManagedIdentityCredential with User Assigned Managed Identity client ID: {ClientId}", _azureOpenAISettings.ClientId);
             }
             else
