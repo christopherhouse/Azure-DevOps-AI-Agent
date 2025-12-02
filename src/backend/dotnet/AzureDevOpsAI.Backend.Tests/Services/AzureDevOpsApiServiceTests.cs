@@ -12,24 +12,23 @@ namespace AzureDevOpsAI.Backend.Tests.Services;
 public class AzureDevOpsApiServiceTests
 {
     private readonly Mock<ILogger<AzureDevOpsApiService>> _mockLogger;
-    private readonly IOptions<AzureOpenAISettings> _azureOpenAISettings;
+    private readonly IOptions<AzureAuthSettings> _azureAuthSettings;
     private readonly AzureDevOpsApiService _service;
 
     public AzureDevOpsApiServiceTests()
     {
         _mockLogger = new Mock<ILogger<AzureDevOpsApiService>>();
         
-        // Create a mock Azure OpenAI settings with a test client ID
-        _azureOpenAISettings = Options.Create(new AzureOpenAISettings
+        // Create Azure Auth settings with a test client ID and tenant ID
+        _azureAuthSettings = Options.Create(new AzureAuthSettings
         {
             ClientId = "test-managed-identity-client-id",
-            Endpoint = "https://test.openai.azure.com",
-            ChatDeploymentName = "test-deployment"
+            TenantId = "test-tenant-id"
         });
         
         // Create service with an HttpClient - it will use DefaultAzureCredential internally
         var httpClient = new HttpClient();
-        _service = new AzureDevOpsApiService(httpClient, _mockLogger.Object, _azureOpenAISettings);
+        _service = new AzureDevOpsApiService(httpClient, _mockLogger.Object, _azureAuthSettings);
     }
 
     [Fact]
@@ -47,7 +46,7 @@ public class AzureDevOpsApiServiceTests
         var httpClient = new HttpClient();
 
         // Act
-        var service = new AzureDevOpsApiService(httpClient, mockLogger.Object, _azureOpenAISettings);
+        var service = new AzureDevOpsApiService(httpClient, mockLogger.Object, _azureAuthSettings);
 
         // Assert
         service.Should().NotBeNull();
@@ -89,11 +88,10 @@ public class AzureDevOpsApiServiceTests
     {
         // Arrange
         var httpClient = new HttpClient();
-        var settings = Options.Create(new AzureOpenAISettings
+        var settings = Options.Create(new AzureAuthSettings
         {
             ClientId = "valid-client-id",
-            Endpoint = "https://test.openai.azure.com",
-            ChatDeploymentName = "test-deployment"
+            TenantId = "valid-tenant-id"
         });
 
         // Act
@@ -123,12 +121,10 @@ public class AzureDevOpsApiServiceTests
         // Arrange
         var mockLogger = new Mock<ILogger<AzureDevOpsApiService>>();
         var httpClient = new HttpClient();
-        var settings = Options.Create(new AzureOpenAISettings
+        var settings = Options.Create(new AzureAuthSettings
         {
             ClientId = "test-client-id",
-            Endpoint = "https://test.openai.azure.com",
-            ChatDeploymentName = "test-deployment",
-            UseUserAssignedIdentity = true
+            TenantId = "test-tenant-id"
         });
 
         // Act
@@ -147,17 +143,15 @@ public class AzureDevOpsApiServiceTests
     }
 
     [Fact]
-    public void Constructor_WithUseUserAssignedIdentityFalse_ShouldLogWithoutClientId()
+    public void Constructor_ShouldLogClientIdAndTenantConfiguration()
     {
         // Arrange
         var mockLogger = new Mock<ILogger<AzureDevOpsApiService>>();
         var httpClient = new HttpClient();
-        var settings = Options.Create(new AzureOpenAISettings
+        var settings = Options.Create(new AzureAuthSettings
         {
-            ClientId = "test-client-id",
-            Endpoint = "https://test.openai.azure.com",
-            ChatDeploymentName = "test-deployment",
-            UseUserAssignedIdentity = false
+            ClientId = "another-test-client-id",
+            TenantId = "another-test-tenant-id"
         });
 
         // Act
@@ -169,7 +163,7 @@ public class AzureDevOpsApiServiceTests
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("without User Assigned Managed Identity")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("another-test-client-id")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
