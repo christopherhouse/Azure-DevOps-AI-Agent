@@ -62,7 +62,9 @@ export function useAuth() {
    * Acquire OIDC profile token silently (separate from backend API token)
    * This is part of the split token approach requested in issue #232
    */
-  const acquireOidcTokenSilently = useCallback(async (): Promise<string | null> => {
+  const acquireOidcTokenSilently = useCallback(async (): Promise<
+    string | null
+  > => {
     if (!account) return null;
 
     try {
@@ -85,16 +87,20 @@ export function useAuth() {
    * Acquire backend API token silently (separate from OIDC profile token)
    * This is part of the split token approach requested in issue #232
    */
-  const acquireBackendApiTokenSilently = useCallback(async (): Promise<string | null> => {
+  const acquireBackendApiTokenSilently = useCallback(async (): Promise<
+    string | null
+  > => {
     if (!account) return null;
 
     try {
       const { getBackendApiTokenRequest } = await import('@/lib/auth-config');
       const tokenReq = getBackendApiTokenRequest();
-      
+
       // Check if we have backend API scopes to request
       if (!tokenReq.scopes || tokenReq.scopes.length === 0) {
-        console.warn('No backend API scopes available, skipping backend token acquisition');
+        console.warn(
+          'No backend API scopes available, skipping backend token acquisition'
+        );
         return null;
       }
 
@@ -182,10 +188,10 @@ export function useAuth() {
         // User is authenticated
         const user = extractUserInfo(account);
         const accessToken = await acquireTokenSilently();
-        
+
         // Use backend API token specifically for API client (split token approach)
         const backendApiToken = await acquireBackendApiTokenSilently();
-        
+
         if (backendApiToken) {
           apiClient.setBackendApiToken(backendApiToken);
         } else if (accessToken) {
@@ -196,7 +202,7 @@ export function useAuth() {
         // Initialize MFA handler for automatic challenge handling
         const mfaHandler = new MfaHandler({
           msalInstance: instance,
-          account: account
+          account: account,
         });
         apiClient.setMfaHandler(mfaHandler);
 
@@ -221,7 +227,13 @@ export function useAuth() {
     };
 
     updateAuthState();
-  }, [account, inProgress, acquireTokenSilently, acquireBackendApiTokenSilently, instance]);
+  }, [
+    account,
+    inProgress,
+    acquireTokenSilently,
+    acquireBackendApiTokenSilently,
+    instance,
+  ]);
 
   // Effect to refresh token periodically
   useEffect(() => {
@@ -231,17 +243,17 @@ export function useAuth() {
 
     const refreshToken = async () => {
       const newToken = await acquireTokenSilently();
-      
+
       // Use backend API token specifically for API client (split token approach)
       const newBackendApiToken = await acquireBackendApiTokenSilently();
-      
+
       if (newBackendApiToken && newBackendApiToken !== authState.accessToken) {
         apiClient.setBackendApiToken(newBackendApiToken);
       } else if (newToken && newToken !== authState.accessToken) {
         // Fallback to generic token if backend token unavailable
         apiClient.setBackendApiToken(newToken);
       }
-      
+
       if (newToken && newToken !== authState.accessToken) {
         setAuthState((prev) => ({ ...prev, accessToken: newToken }));
       }

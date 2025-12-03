@@ -6,7 +6,10 @@
 
 import React, { useState } from 'react';
 import { ThoughtProcess } from '@/components/ThoughtProcess';
-import type { ChatMessage, ThoughtProcess as ThoughtProcessType } from '@/types';
+import type {
+  ChatMessage,
+  ThoughtProcess as ThoughtProcessType,
+} from '@/types';
 
 // Mock data for demonstration
 const mockMessages: ChatMessage[] = [
@@ -15,11 +18,12 @@ const mockMessages: ChatMessage[] = [
     content: 'Show me my active work items',
     role: 'user',
     timestamp: new Date('2024-12-19T10:30:00Z'),
-    conversationId: 'demo-conversation'
+    conversationId: 'demo-conversation',
   },
   {
-    id: '2', 
-    content: 'I found 5 active work items in your current sprint. Here they are:\n\n1. **User Story #1234**: Implement user authentication\n2. **Bug #1235**: Fix login redirect issue\n3. **Task #1236**: Update API documentation\n4. **Feature #1237**: Add search functionality\n5. **Epic #1238**: Mobile app development\n\nWould you like me to show details for any specific work item?',
+    id: '2',
+    content:
+      'I found 5 active work items in your current sprint. Here they are:\n\n1. **User Story #1234**: Implement user authentication\n2. **Bug #1235**: Fix login redirect issue\n3. **Task #1236**: Update API documentation\n4. **Feature #1237**: Add search functionality\n5. **Epic #1238**: Mobile app development\n\nWould you like me to show details for any specific work item?',
     role: 'assistant',
     timestamp: new Date('2024-12-19T10:30:15Z'),
     conversationId: 'demo-conversation',
@@ -27,9 +31,9 @@ const mockMessages: ChatMessage[] = [
     suggestions: [
       'Show details for User Story #1234',
       'What are the blockers for these items?',
-      'Show work items assigned to me'
-    ]
-  }
+      'Show work items assigned to me',
+    ],
+  },
 ];
 
 const mockThoughtProcess: ThoughtProcessType = {
@@ -49,8 +53,8 @@ const mockThoughtProcess: ThoughtProcessType = {
         message_length: 25,
         conversation_id: 'demo-conversation',
         intent: 'query_work_items',
-        confidence: 0.95
-      }
+        confidence: 0.95,
+      },
     },
     {
       id: 'step-2',
@@ -62,10 +66,10 @@ const mockThoughtProcess: ThoughtProcessType = {
         query_parameters: {
           state: 'active',
           assignedTo: '@me',
-          sprint: 'current'
+          sprint: 'current',
         },
-        estimated_complexity: 'medium'
-      }
+        estimated_complexity: 'medium',
+      },
     },
     {
       id: 'step-3',
@@ -74,8 +78,8 @@ const mockThoughtProcess: ThoughtProcessType = {
       timestamp: '2024-12-19T10:30:05Z',
       details: {
         tool_name: 'azure_devops_client',
-        operation: 'query_work_items'
-      }
+        operation: 'query_work_items',
+      },
     },
     {
       id: 'step-4',
@@ -85,8 +89,8 @@ const mockThoughtProcess: ThoughtProcessType = {
       details: {
         items_found: 5,
         formatting_style: 'numbered_list',
-        include_suggestions: true
-      }
+        include_suggestions: true,
+      },
     },
     {
       id: 'step-5',
@@ -96,9 +100,9 @@ const mockThoughtProcess: ThoughtProcessType = {
       details: {
         response_length: 280,
         suggestions_count: 3,
-        confidence_score: 0.92
-      }
-    }
+        confidence_score: 0.92,
+      },
+    },
   ],
   toolInvocations: [
     {
@@ -106,21 +110,47 @@ const mockThoughtProcess: ThoughtProcessType = {
       status: 'success',
       timestamp: '2024-12-19T10:30:05Z',
       parameters: {
-        query: 'SELECT [System.Id], [System.Title], [System.State], [System.WorkItemType] FROM WorkItems WHERE [System.State] = \'Active\' AND [System.AssignedTo] = @me',
+        query:
+          "SELECT [System.Id], [System.Title], [System.State], [System.WorkItemType] FROM WorkItems WHERE [System.State] = 'Active' AND [System.AssignedTo] = @me",
         organization: 'contoso',
-        project: 'MyProject'
+        project: 'MyProject',
       },
       result: {
         workItems: [
-          { id: 1234, title: 'Implement user authentication', type: 'User Story', state: 'Active' },
-          { id: 1235, title: 'Fix login redirect issue', type: 'Bug', state: 'Active' },
-          { id: 1236, title: 'Update API documentation', type: 'Task', state: 'Active' },
-          { id: 1237, title: 'Add search functionality', type: 'Feature', state: 'Active' },
-          { id: 1238, title: 'Mobile app development', type: 'Epic', state: 'Active' }
-        ]
-      }
-    }
-  ]
+          {
+            id: 1234,
+            title: 'Implement user authentication',
+            type: 'User Story',
+            state: 'Active',
+          },
+          {
+            id: 1235,
+            title: 'Fix login redirect issue',
+            type: 'Bug',
+            state: 'Active',
+          },
+          {
+            id: 1236,
+            title: 'Update API documentation',
+            type: 'Task',
+            state: 'Active',
+          },
+          {
+            id: 1237,
+            title: 'Add search functionality',
+            type: 'Feature',
+            state: 'Active',
+          },
+          {
+            id: 1238,
+            title: 'Mobile app development',
+            type: 'Epic',
+            state: 'Active',
+          },
+        ],
+      },
+    },
+  ],
 };
 
 export default function DemoPage() {
@@ -130,10 +160,13 @@ export default function DemoPage() {
   React.useEffect(() => {
     const originalFetch = window.fetch;
     window.fetch = async (url: RequestInfo | URL, options?: RequestInit) => {
-      if (typeof url === 'string' && url.includes('thought-process/demo-thought-process-1')) {
+      if (
+        typeof url === 'string' &&
+        url.includes('thought-process/demo-thought-process-1')
+      ) {
         return new Response(JSON.stringify(mockThoughtProcess), {
           status: 200,
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 'Content-Type': 'application/json' },
         });
       }
       return originalFetch(url, options);
@@ -152,8 +185,9 @@ export default function DemoPage() {
           <div className="flex items-center space-x-2">
             <div className="text-yellow-600">⚠️</div>
             <div className="text-sm text-yellow-800">
-              <strong>Demo Mode:</strong> This is a demonstration of the thought process feature. 
-              Real Azure DevOps integration requires authentication.
+              <strong>Demo Mode:</strong> This is a demonstration of the thought
+              process feature. Real Azure DevOps integration requires
+              authentication.
             </div>
           </div>
         </div>
@@ -205,17 +239,21 @@ function DemoChatInterface() {
   return (
     <div className="h-full bg-white">
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4">
-        <h1 className="text-xl font-semibold">🤖 Azure DevOps AI Agent - Demo</h1>
+        <h1 className="text-xl font-semibold">
+          🤖 Azure DevOps AI Agent - Demo
+        </h1>
         <p className="text-blue-100 text-sm">
           Demonstrating the new thought process feature
         </p>
       </div>
-      
+
       <div className="flex-1 overflow-y-auto p-4">
         <div className="space-y-4">
           {mockMessages.map((message) => (
             <div key={message.id} className="space-y-2">
-              <div className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
                 <div
                   className={`max-w-md p-3 rounded-lg ${
                     message.role === 'user'
@@ -228,7 +266,10 @@ function DemoChatInterface() {
                     <div className="mt-3 space-y-1">
                       <div className="text-xs opacity-75">Suggestions:</div>
                       {message.suggestions.map((suggestion, idx) => (
-                        <div key={idx} className="text-xs bg-black bg-opacity-10 rounded px-2 py-1">
+                        <div
+                          key={idx}
+                          className="text-xs bg-black bg-opacity-10 rounded px-2 py-1"
+                        >
                           {suggestion}
                         </div>
                       ))}
@@ -236,11 +277,12 @@ function DemoChatInterface() {
                   )}
                 </div>
               </div>
-              
+
               {message.role === 'assistant' && message.thoughtProcessId && (
                 <div className="flex justify-start">
                   <div className="text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded border border-blue-200">
-                    🧠 Thought process available - switch to &quot;Thought Process&quot; tab to view
+                    🧠 Thought process available - switch to &quot;Thought
+                    Process&quot; tab to view
                   </div>
                 </div>
               )}
@@ -254,30 +296,42 @@ function DemoChatInterface() {
 
 function DemoThoughtProcess() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  
+
   const toggleExpanded = (id: string) => {
-    setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
+    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   const getStepIcon = (type: string) => {
     switch (type) {
-      case 'analysis': return '🔍';
-      case 'planning': return '📋';
-      case 'reasoning': return '🤔';
-      case 'tool_invocation': return '🔧';
-      case 'completion': return '✅';
-      default: return '💭';
+      case 'analysis':
+        return '🔍';
+      case 'planning':
+        return '📋';
+      case 'reasoning':
+        return '🤔';
+      case 'tool_invocation':
+        return '🔧';
+      case 'completion':
+        return '✅';
+      default:
+        return '💭';
     }
   };
 
   const getStepColor = (type: string) => {
     switch (type) {
-      case 'analysis': return 'bg-blue-50 border-blue-200';
-      case 'planning': return 'bg-purple-50 border-purple-200';
-      case 'reasoning': return 'bg-yellow-50 border-yellow-200';
-      case 'tool_invocation': return 'bg-green-50 border-green-200';
-      case 'completion': return 'bg-emerald-50 border-emerald-200';
-      default: return 'bg-gray-50 border-gray-200';
+      case 'analysis':
+        return 'bg-blue-50 border-blue-200';
+      case 'planning':
+        return 'bg-purple-50 border-purple-200';
+      case 'reasoning':
+        return 'bg-yellow-50 border-yellow-200';
+      case 'tool_invocation':
+        return 'bg-green-50 border-green-200';
+      case 'completion':
+        return 'bg-emerald-50 border-emerald-200';
+      default:
+        return 'bg-gray-50 border-gray-200';
     }
   };
 
@@ -285,7 +339,9 @@ function DemoThoughtProcess() {
     <div className="p-4 space-y-4">
       {/* Header */}
       <div className="border-b border-gray-200 pb-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">🧠 Agent Thought Process</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          🧠 Agent Thought Process
+        </h3>
         <div className="text-sm text-gray-600 space-y-1">
           <div>Duration: {mockThoughtProcess.durationMs}ms</div>
           <div>Steps: {mockThoughtProcess.steps.length}</div>
@@ -297,7 +353,10 @@ function DemoThoughtProcess() {
       <div className="space-y-3">
         <h4 className="font-medium text-gray-800">Reasoning Steps</h4>
         {mockThoughtProcess.steps.map((step, index) => (
-          <div key={step.id} className={`border rounded-lg p-3 ${getStepColor(step.type)}`}>
+          <div
+            key={step.id}
+            className={`border rounded-lg p-3 ${getStepColor(step.type)}`}
+          >
             <div className="flex items-start space-x-3">
               <div className="flex-shrink-0 w-6 h-6 bg-white rounded-full border border-gray-300 flex items-center justify-center text-sm font-medium">
                 {index + 1}
@@ -313,7 +372,7 @@ function DemoThoughtProcess() {
                   </span>
                 </div>
                 <p className="text-sm text-gray-700 mt-1">{step.description}</p>
-                
+
                 {step.details && Object.keys(step.details).length > 0 && (
                   <div className="mt-2">
                     <button
@@ -341,7 +400,10 @@ function DemoThoughtProcess() {
       <div className="space-y-3">
         <h4 className="font-medium text-gray-800">Tool Invocations</h4>
         {mockThoughtProcess.toolInvocations.map((tool, index) => (
-          <div key={index} className="border border-gray-200 rounded-lg p-3 bg-white">
+          <div
+            key={index}
+            className="border border-gray-200 rounded-lg p-3 bg-white"
+          >
             <div className="flex items-start justify-between">
               <div className="flex items-center space-x-3">
                 <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full border border-blue-300 flex items-center justify-center text-sm font-medium text-blue-700">
@@ -349,7 +411,9 @@ function DemoThoughtProcess() {
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium text-gray-900">🔧 {tool.toolName}</span>
+                    <span className="text-sm font-medium text-gray-900">
+                      🔧 {tool.toolName}
+                    </span>
                     <span className="px-2 py-1 text-xs rounded-full text-green-600 bg-green-50">
                       {tool.status}
                     </span>
@@ -359,7 +423,7 @@ function DemoThoughtProcess() {
                   </div>
                 </div>
               </div>
-              
+
               <button
                 onClick={() => toggleExpanded(`tool-${index}`)}
                 className="text-xs text-blue-600 hover:text-blue-800 font-medium"
@@ -372,7 +436,9 @@ function DemoThoughtProcess() {
               <div className="mt-3 space-y-2">
                 {tool.parameters && (
                   <div>
-                    <div className="text-xs font-medium text-gray-600 mb-1">Parameters:</div>
+                    <div className="text-xs font-medium text-gray-600 mb-1">
+                      Parameters:
+                    </div>
                     <div className="p-2 bg-gray-50 rounded border text-xs font-mono">
                       <pre className="whitespace-pre-wrap">
                         {JSON.stringify(tool.parameters, null, 2)}
@@ -380,10 +446,12 @@ function DemoThoughtProcess() {
                     </div>
                   </div>
                 )}
-                
+
                 {tool.result && (
                   <div>
-                    <div className="text-xs font-medium text-gray-600 mb-1">Result:</div>
+                    <div className="text-xs font-medium text-gray-600 mb-1">
+                      Result:
+                    </div>
                     <div className="p-2 bg-gray-50 rounded border text-xs font-mono">
                       <pre className="whitespace-pre-wrap">
                         {JSON.stringify(tool.result, null, 2)}

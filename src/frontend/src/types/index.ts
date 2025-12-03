@@ -34,7 +34,7 @@ export interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
   error: string | null;
-  conversationId: string | null;
+  conversationId: string;
 }
 
 // Citation types
@@ -54,7 +54,7 @@ export interface ApiResponse<T = any> {
 
 export interface ChatRequest {
   message: string;
-  conversation_id?: string;
+  conversationId: string;
   context?: Record<string, any>;
 }
 

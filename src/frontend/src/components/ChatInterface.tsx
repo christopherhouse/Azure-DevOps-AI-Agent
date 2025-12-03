@@ -25,7 +25,9 @@ export function ChatInterface() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<TabType>('chat');
-  const [selectedThoughtProcessId, setSelectedThoughtProcessId] = useState<string | null>(null);
+  const [selectedThoughtProcessId, setSelectedThoughtProcessId] = useState<
+    string | null
+  >(null);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -34,8 +36,12 @@ export function ChatInterface() {
 
   // Get the latest assistant message with a thought process
   const getLatestThoughtProcessId = () => {
-    const assistantMessages = messages.filter(msg => msg.role === 'assistant' && msg.thoughtProcessId);
-    return assistantMessages.length > 0 ? assistantMessages[assistantMessages.length - 1].thoughtProcessId! : null;
+    const assistantMessages = messages.filter(
+      (msg) => msg.role === 'assistant' && msg.thoughtProcessId
+    );
+    return assistantMessages.length > 0
+      ? assistantMessages[assistantMessages.length - 1].thoughtProcessId!
+      : null;
   };
 
   // Handle tab change
@@ -59,7 +65,9 @@ export function ChatInterface() {
         <div className="p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-semibold">🤖 Azure DevOps AI Agent</h1>
+              <h1 className="text-xl font-semibold">
+                🤖 Azure DevOps AI Agent
+              </h1>
               <p className="text-blue-100 text-sm">
                 Ask me anything about your Azure DevOps projects
               </p>
@@ -76,7 +84,7 @@ export function ChatInterface() {
             </div>
           </div>
         </div>
-        
+
         {/* Tabs */}
         <div className="border-b border-blue-500">
           <div className="flex space-x-0">
@@ -134,8 +142,8 @@ export function ChatInterface() {
                       Welcome to Azure DevOps AI Agent
                     </h2>
                     <p className="text-gray-800 max-w-md mx-auto">
-                      Start a conversation by asking about your projects, work items,
-                      repositories, or pipelines.
+                      Start a conversation by asking about your projects, work
+                      items, repositories, or pipelines.
                     </p>
                   </div>
 
@@ -166,21 +174,26 @@ export function ChatInterface() {
                 <div>
                   {messages.map((message) => (
                     <div key={message.id} className="relative">
-                      <ChatMessageComponent 
-                        message={message} 
+                      <ChatMessageComponent
+                        message={message}
                         onSuggestionClick={sendMessage}
                       />
                       {/* Thought Process Button for Assistant Messages */}
-                      {message.role === 'assistant' && message.thoughtProcessId && (
-                        <div className="mt-2 flex justify-end">
-                          <button
-                            onClick={() => handleMessageThoughtProcessClick(message.thoughtProcessId!)}
-                            className="text-xs text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200 transition-colors"
-                          >
-                            🧠 View thought process
-                          </button>
-                        </div>
-                      )}
+                      {message.role === 'assistant' &&
+                        message.thoughtProcessId && (
+                          <div className="mt-2 flex justify-end">
+                            <button
+                              onClick={() =>
+                                handleMessageThoughtProcessClick(
+                                  message.thoughtProcessId!
+                                )
+                              }
+                              className="text-xs text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200 transition-colors"
+                            >
+                              🧠 View thought process
+                            </button>
+                          </div>
+                        )}
                     </div>
                   ))}
 
@@ -256,9 +269,12 @@ export function ChatInterface() {
             ) : (
               <div className="p-8 text-center text-gray-500">
                 <div className="mb-4">🧠</div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Thought Process Selected</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No Thought Process Selected
+                </h3>
                 <p className="text-sm">
-                  Send a message to the AI agent first, then return to this tab to see the thought process.
+                  Send a message to the AI agent first, then return to this tab
+                  to see the thought process.
                 </p>
               </div>
             )}

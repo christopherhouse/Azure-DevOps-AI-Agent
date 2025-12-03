@@ -150,25 +150,30 @@ export const msalConfig = new Proxy({} as Configuration, {
  */
 function getScopes(): string[] {
   const clientConfig = getCachedClientConfig();
-  
+
   // Use scopes directly from client config as requested - no array manipulation
   if (clientConfig?.azure.scopes) {
-    console.debug('Using scopes from client config:', clientConfig.azure.scopes);
+    console.debug(
+      'Using scopes from client config:',
+      clientConfig.azure.scopes
+    );
     return clientConfig.azure.scopes;
   }
-  
+
   // If no client config available, this is the problematic scenario described in issue #224
   console.error(
     '🚨 SCOPE ISSUE #224: Client configuration not loaded when requesting authentication scopes! ' +
-    'This will result in JWT tokens missing the backend API scope. ' +
-    'Expected scopes from /api/clientConfig but falling back to basic scopes only.'
+      'This will result in JWT tokens missing the backend API scope. ' +
+      'Expected scopes from /api/clientConfig but falling back to basic scopes only.'
   );
-  
+
   // Minimal fallback to prevent complete failure, but this is the problematic case
   const basicScopes = ['openid', 'profile', 'User.Read', 'email'];
   console.warn('Falling back to basic scopes only:', basicScopes);
-  console.warn('JWT tokens will NOT include backend API scope - authentication may fail!');
-  
+  console.warn(
+    'JWT tokens will NOT include backend API scope - authentication may fail!'
+  );
+
   return basicScopes;
 }
 
@@ -188,28 +193,32 @@ function getOidcScopes(): string[] {
  */
 function getBackendApiScopes(): string[] {
   const clientConfig = getCachedClientConfig();
-  
+
   if (clientConfig?.azure.scopes) {
     // Filter for backend API scopes - look for scopes that match api://*/pattern
-    const backendScopes = clientConfig.azure.scopes.filter(scope => 
-      scope.startsWith('api://') && scope.includes('/Api.')
+    const backendScopes = clientConfig.azure.scopes.filter(
+      (scope) => scope.startsWith('api://') && scope.includes('/Api.')
     );
-    
+
     if (backendScopes.length > 0) {
       console.debug('Using backend API scopes:', backendScopes);
       return backendScopes;
     }
   }
-  
+
   // Fallback: construct backend API scope from environment if available
   const clientConfig2 = getCachedClientConfig();
   if (clientConfig2?.backend?.url) {
     // Try to extract client ID from backend URL or use a default pattern
     // This is a fallback case, normally the scope should be in clientConfig.azure.scopes
-    console.warn('Backend API scope not found in client config, unable to construct fallback');
+    console.warn(
+      'Backend API scope not found in client config, unable to construct fallback'
+    );
   }
-  
-  console.warn('No backend API scopes available - backend authentication may fail!');
+
+  console.warn(
+    'No backend API scopes available - backend authentication may fail!'
+  );
   return [];
 }
 
