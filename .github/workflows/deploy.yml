@@ -173,6 +173,8 @@ jobs:
         openai_endpoint=$(echo $deployment_output | jq -r '.openAIEndpoint.value')
         openai_deployment_name=$(echo $deployment_output | jq -r '.openAIDeploymentName.value')
         openai_resource_name=$(echo $deployment_output | jq -r '.openAIResourceName.value')
+        cosmos_db_endpoint=$(echo $deployment_output | jq -r '.cosmosDbEndpoint.value')
+        cosmos_db_database_name=$(echo $deployment_output | jq -r '.cosmosDbDatabaseName.value')
         
         # Get Azure OpenAI API key from the deployed resource
         echo "Getting Azure OpenAI API key from resource '${openai_resource_name}'..."
@@ -222,6 +224,8 @@ jobs:
         echo "openAIEndpoint=${openai_endpoint}" >> $GITHUB_OUTPUT
         echo "openAIDeploymentName=${openai_deployment_name}" >> $GITHUB_OUTPUT
         echo "environmentDefaultDomain=${environment_default_domain}" >> $GITHUB_OUTPUT
+        echo "cosmosDbEndpoint=${cosmos_db_endpoint}" >> $GITHUB_OUTPUT
+        echo "cosmosDbDatabaseName=${cosmos_db_database_name}" >> $GITHUB_OUTPUT
         
         echo "✅ Infrastructure deployed successfully"
         echo "🏗️ Container Apps Environment: ${container_apps_env}"
@@ -235,6 +239,8 @@ jobs:
         echo "📊 Application Insights: ${application_insights_name}"
         echo "🤖 OpenAI Endpoint: ${openai_endpoint}"
         echo "🤖 OpenAI Deployment: ${openai_deployment_name}"
+        echo "🗃️ CosmosDB Endpoint: ${cosmos_db_endpoint}"
+        echo "🗃️ CosmosDB Database: ${cosmos_db_database_name}"
         
     - name: Login to GitHub Container Registry
       uses: docker/login-action@v3
@@ -314,6 +320,12 @@ jobs:
           --env-var "AzureOpenAI__UseManagedIdentity=false" \
           --env-var "AzureOpenAI__Temperature=0.7" \
           --env-var "AzureOpenAI__MaxTokens=4000" \
+          --env-var "CosmosDb__Endpoint=${{ steps.deploy-infra.outputs.cosmosDbEndpoint }}" \
+          --env-var "CosmosDb__DatabaseName=${{ steps.deploy-infra.outputs.cosmosDbDatabaseName }}" \
+          --env-var "CosmosDb__ChatHistoryContainerName=chat-history" \
+          --env-var "CosmosDb__ThoughtProcessContainerName=thought-process" \
+          --env-var "CosmosDb__UseManagedIdentity=true" \
+          --env-var "CosmosDb__ClientId=${{ steps.deploy-infra.outputs.backendManagedIdentityClientId }}" \
           --env-var "ManagedIdentityClientId=${{ steps.deploy-infra.outputs.backendManagedIdentityClientId }}" \
           --env-var "ApplicationInsights__ConnectionString=${APP_INSIGHTS_CONNECTION_STRING}" \
           --env-var "AzureAuth__Instance=https://login.microsoftonline.com/" \
