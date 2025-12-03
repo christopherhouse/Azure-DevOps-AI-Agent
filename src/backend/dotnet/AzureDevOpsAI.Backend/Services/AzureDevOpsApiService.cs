@@ -3,8 +3,6 @@ using Azure.Core;
 using System.Text.Json;
 using System.Text;
 using AzureDevOpsAI.Backend.Models;
-using AzureDevOpsAI.Backend.Configuration;
-using Microsoft.Extensions.Options;
 using System.IdentityModel.Tokens.Jwt;
 
 namespace AzureDevOpsAI.Backend.Services;
@@ -44,16 +42,16 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
-    public AzureDevOpsApiService(HttpClient httpClient, ILogger<AzureDevOpsApiService> logger, IOptions<AzureAuthSettings> azureAuthSettings)
+    public AzureDevOpsApiService(HttpClient httpClient, ILogger<AzureDevOpsApiService> logger, string? managedIdentityClientId)
     {
         _httpClient = httpClient;
         _logger = logger;
         
         // Configure ManagedIdentityCredential with User Assigned Managed Identity client ID
-        // Note: TenantId is not required for ManagedIdentityCredential as it is derived from the managed identity assignment
-        _credential = new ManagedIdentityCredential(azureAuthSettings.Value.ClientId);
-        _logger.LogInformation("AzureDevOpsApiService initialized with ManagedIdentityCredential using User Assigned Managed Identity client ID: {ClientId}", 
-            azureAuthSettings.Value.ClientId);
+        // The managedIdentityClientId comes from the ManagedIdentityClientId environment variable
+        _credential = new ManagedIdentityCredential(managedIdentityClientId);
+        _logger.LogInformation("AzureDevOpsApiService initialized with ManagedIdentityCredential using User Assigned Managed Identity client ID: {ManagedIdentityClientId}", 
+            managedIdentityClientId);
     }
 
     /// <summary>
