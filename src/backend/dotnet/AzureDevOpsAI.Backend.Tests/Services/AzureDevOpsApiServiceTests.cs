@@ -1,34 +1,26 @@
 using AzureDevOpsAI.Backend.Services;
-using AzureDevOpsAI.Backend.Configuration;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
-using System.Net;
-using System.Text.Json;
 
 namespace AzureDevOpsAI.Backend.Tests.Services;
 
 public class AzureDevOpsApiServiceTests
 {
     private readonly Mock<ILogger<AzureDevOpsApiService>> _mockLogger;
-    private readonly IOptions<AzureAuthSettings> _azureAuthSettings;
+    private readonly string _managedIdentityClientId;
     private readonly AzureDevOpsApiService _service;
 
     public AzureDevOpsApiServiceTests()
     {
         _mockLogger = new Mock<ILogger<AzureDevOpsApiService>>();
         
-        // Create Azure Auth settings with a test client ID and tenant ID
-        _azureAuthSettings = Options.Create(new AzureAuthSettings
-        {
-            ClientId = "test-managed-identity-client-id",
-            TenantId = "test-tenant-id"
-        });
+        // Test managed identity client ID (sourced from ManagedIdentityClientId environment variable in production)
+        _managedIdentityClientId = "test-managed-identity-client-id";
         
         // Create service with an HttpClient - it will use ManagedIdentityCredential internally
         var httpClient = new HttpClient();
-        _service = new AzureDevOpsApiService(httpClient, _mockLogger.Object, _azureAuthSettings);
+        _service = new AzureDevOpsApiService(httpClient, _mockLogger.Object, _managedIdentityClientId);
     }
 
     [Fact]
@@ -39,18 +31,18 @@ public class AzureDevOpsApiServiceTests
     }
 
     [Fact]
-    public void Constructor_ShouldLogClientIdConfiguration()
+    public void Constructor_ShouldLogManagedIdentityClientIdConfiguration()
     {
         // Arrange
         var mockLogger = new Mock<ILogger<AzureDevOpsApiService>>();
         var httpClient = new HttpClient();
 
         // Act
-        var service = new AzureDevOpsApiService(httpClient, mockLogger.Object, _azureAuthSettings);
+        var service = new AzureDevOpsApiService(httpClient, mockLogger.Object, _managedIdentityClientId);
 
         // Assert
         service.Should().NotBeNull();
-        // Verify that the service was initialized with the correct client ID
+        // Verify that the service was initialized with the correct managed identity client ID
         mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
@@ -84,18 +76,14 @@ public class AzureDevOpsApiServiceTests
     }
 
     [Fact]
-    public void Constructor_WithValidClientId_ShouldUseManagedIdentityCredential()
+    public void Constructor_WithValidManagedIdentityClientId_ShouldUseManagedIdentityCredential()
     {
         // Arrange
         var httpClient = new HttpClient();
-        var settings = Options.Create(new AzureAuthSettings
-        {
-            ClientId = "valid-client-id",
-            TenantId = "valid-tenant-id"
-        });
+        var managedIdentityClientId = "valid-managed-identity-client-id";
 
         // Act
-        var service = new AzureDevOpsApiService(httpClient, _mockLogger.Object, settings);
+        var service = new AzureDevOpsApiService(httpClient, _mockLogger.Object, managedIdentityClientId);
 
         // Assert
         service.Should().NotBeNull();
@@ -116,19 +104,15 @@ public class AzureDevOpsApiServiceTests
     }
 
     [Fact]
-    public void Constructor_WithUseUserAssignedIdentityTrue_ShouldLogClientId()
+    public void Constructor_WithManagedIdentityClientId_ShouldLogClientId()
     {
         // Arrange
         var mockLogger = new Mock<ILogger<AzureDevOpsApiService>>();
         var httpClient = new HttpClient();
-        var settings = Options.Create(new AzureAuthSettings
-        {
-            ClientId = "test-client-id",
-            TenantId = "test-tenant-id"
-        });
+        var managedIdentityClientId = "test-mi-client-id";
 
         // Act
-        var service = new AzureDevOpsApiService(httpClient, mockLogger.Object, settings);
+        var service = new AzureDevOpsApiService(httpClient, mockLogger.Object, managedIdentityClientId);
 
         // Assert
         service.Should().NotBeNull();
@@ -136,36 +120,23 @@ public class AzureDevOpsApiServiceTests
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("User Assigned Managed Identity client ID: test-client-id")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("User Assigned Managed Identity client ID: test-mi-client-id")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
 
     [Fact]
-    public void Constructor_ShouldLogClientIdAndTenantConfiguration()
+    public void Constructor_WithNullManagedIdentityClientId_ShouldStillInitialize()
     {
         // Arrange
         var mockLogger = new Mock<ILogger<AzureDevOpsApiService>>();
         var httpClient = new HttpClient();
-        var settings = Options.Create(new AzureAuthSettings
-        {
-            ClientId = "another-test-client-id",
-            TenantId = "another-test-tenant-id"
-        });
 
-        // Act
-        var service = new AzureDevOpsApiService(httpClient, mockLogger.Object, settings);
+        // Act - null client ID is valid for system-assigned managed identity
+        var service = new AzureDevOpsApiService(httpClient, mockLogger.Object, null);
 
         // Assert
         service.Should().NotBeNull();
-        mockLogger.Verify(
-            x => x.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("another-test-client-id")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
     }
 }

@@ -40,10 +40,18 @@ builder.Services.Configure<AzureOpenAISettings>(options =>
     }
 });
 
+// Read ManagedIdentityClientId from configuration for AzureDevOpsApiService
+var managedIdentityClientIdForDevOps = builder.Configuration["ManagedIdentityClientId"];
+
 // Add AI services
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IAIService, AIService>();
-builder.Services.AddScoped<IAzureDevOpsApiService, AzureDevOpsApiService>();
+builder.Services.AddScoped<IAzureDevOpsApiService>(sp =>
+{
+    var httpClient = sp.GetRequiredService<IHttpClientFactory>().CreateClient();
+    var logger = sp.GetRequiredService<ILogger<AzureDevOpsApiService>>();
+    return new AzureDevOpsApiService(httpClient, logger, managedIdentityClientIdForDevOps);
+});
 
 // Add Application Insights
 var applicationInsightsSettings = builder.Configuration.GetSection("ApplicationInsights").Get<ApplicationInsightsSettings>();
