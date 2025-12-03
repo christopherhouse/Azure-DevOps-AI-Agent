@@ -3,7 +3,11 @@
  * based on the backend MFA challenge response.
  */
 
-import { IPublicClientApplication, SilentRequest, InteractionRequiredAuthError } from '@azure/msal-browser';
+import {
+  IPublicClientApplication,
+  SilentRequest,
+  InteractionRequiredAuthError,
+} from '@azure/msal-browser';
 import { MfaChallengeError, MfaChallengeDetails } from '@/types';
 import { trackAuthEvent } from '@/lib/telemetry';
 
@@ -36,7 +40,9 @@ export class MfaHandler {
    * Handles an MFA challenge by prompting the user for interactive authentication
    * with the claims challenge from the backend.
    */
-  public async handleMfaChallenge(challengeDetails: MfaChallengeDetails): Promise<string> {
+  public async handleMfaChallenge(
+    challengeDetails: MfaChallengeDetails
+  ): Promise<string> {
     if (!this.account) {
       throw new Error('No account available for MFA challenge handling');
     }
@@ -45,7 +51,7 @@ export class MfaHandler {
       trackAuthEvent('mfa_challenge_started', {
         correlationId: challengeDetails.correlationId,
         errorCode: challengeDetails.errorCode,
-        scopes: challengeDetails.scopes
+        scopes: challengeDetails.scopes,
       });
 
       // Create a token request with the claims challenge
@@ -53,15 +59,16 @@ export class MfaHandler {
         scopes: challengeDetails.scopes,
         account: this.account,
         claims: challengeDetails.claimsChallenge,
-        forceRefresh: true // Force refresh to trigger MFA
+        forceRefresh: true, // Force refresh to trigger MFA
       };
 
       try {
         // First try silent request with claims challenge
-        const response = await this.msalInstance.acquireTokenSilent(tokenRequest);
-        
+        const response =
+          await this.msalInstance.acquireTokenSilent(tokenRequest);
+
         trackAuthEvent('mfa_challenge_completed_silently', {
-          correlationId: challengeDetails.correlationId
+          correlationId: challengeDetails.correlationId,
         });
 
         return response.accessToken;
@@ -70,19 +77,20 @@ export class MfaHandler {
           // Silent acquisition failed, trigger popup/redirect
           trackAuthEvent('mfa_challenge_requires_interaction', {
             correlationId: challengeDetails.correlationId,
-            error: silentError.errorCode
+            error: silentError.errorCode,
           });
 
           const popupRequest = {
             scopes: challengeDetails.scopes,
             account: this.account,
-            claims: challengeDetails.claimsChallenge
+            claims: challengeDetails.claimsChallenge,
           };
 
-          const response = await this.msalInstance.acquireTokenPopup(popupRequest);
-          
+          const response =
+            await this.msalInstance.acquireTokenPopup(popupRequest);
+
           trackAuthEvent('mfa_challenge_completed_interactive', {
-            correlationId: challengeDetails.correlationId
+            correlationId: challengeDetails.correlationId,
           });
 
           return response.accessToken;
@@ -92,9 +100,9 @@ export class MfaHandler {
     } catch (error: any) {
       trackAuthEvent('mfa_challenge_failed', {
         correlationId: challengeDetails.correlationId,
-        error: error.message
+        error: error.message,
       });
-      
+
       console.error('MFA challenge handling failed:', error);
       throw new Error(`MFA authentication failed: ${error.message}`);
     }

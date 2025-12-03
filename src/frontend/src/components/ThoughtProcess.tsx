@@ -3,7 +3,11 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { ThoughtProcess as ThoughtProcessType, ThoughtStep, ToolInvocation } from '@/types';
+import {
+  ThoughtProcess as ThoughtProcessType,
+  ThoughtStep,
+  ToolInvocation,
+} from '@/types';
 import { apiClient } from '@/services/api-client';
 import { Loading } from './Loading';
 
@@ -12,7 +16,8 @@ interface ThoughtProcessProps {
 }
 
 export function ThoughtProcess({ thoughtProcessId }: ThoughtProcessProps) {
-  const [thoughtProcess, setThoughtProcess] = useState<ThoughtProcessType | null>(null);
+  const [thoughtProcess, setThoughtProcess] =
+    useState<ThoughtProcessType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,11 +31,15 @@ export function ThoughtProcess({ thoughtProcessId }: ThoughtProcessProps) {
       try {
         setLoading(true);
         setError(null);
-        const response = await apiClient.get(`/api/chat/thought-process/${thoughtProcessId}`);
+        const response = await apiClient.get(
+          `/api/chat/thought-process/${thoughtProcessId}`
+        );
         setThoughtProcess(response.data as ThoughtProcessType);
       } catch (err: any) {
         console.error('Error fetching thought process:', err);
-        setError(err.response?.data?.error?.message || 'Failed to load thought process');
+        setError(
+          err.response?.data?.error?.message || 'Failed to load thought process'
+        );
       } finally {
         setLoading(false);
       }
@@ -60,7 +69,9 @@ export function ThoughtProcess({ thoughtProcessId }: ThoughtProcessProps) {
     return (
       <div className="p-4 text-center text-gray-500">
         <div className="mb-2">🤔 No thought process available</div>
-        <div className="text-sm">This message doesn&apos;t have associated reasoning data.</div>
+        <div className="text-sm">
+          This message doesn&apos;t have associated reasoning data.
+        </div>
       </div>
     );
   }
@@ -69,9 +80,16 @@ export function ThoughtProcess({ thoughtProcessId }: ThoughtProcessProps) {
     <div className="p-4 space-y-4">
       {/* Header */}
       <div className="border-b border-gray-200 pb-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">🧠 Agent Thought Process</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          🧠 Agent Thought Process
+        </h3>
         <div className="text-sm text-gray-600 space-y-1">
-          <div>Duration: {thoughtProcess.durationMs ? `${thoughtProcess.durationMs}ms` : 'Unknown'}</div>
+          <div>
+            Duration:{' '}
+            {thoughtProcess.durationMs
+              ? `${thoughtProcess.durationMs}ms`
+              : 'Unknown'}
+          </div>
           <div>Steps: {thoughtProcess.steps.length}</div>
           {thoughtProcess.toolInvocations.length > 0 && (
             <div>Tools used: {thoughtProcess.toolInvocations.length}</div>
@@ -92,7 +110,11 @@ export function ThoughtProcess({ thoughtProcessId }: ThoughtProcessProps) {
         <div className="space-y-3">
           <h4 className="font-medium text-gray-800">Tool Invocations</h4>
           {thoughtProcess.toolInvocations.map((tool, index) => (
-            <ToolInvocationComponent key={index} tool={tool} index={index + 1} />
+            <ToolInvocationComponent
+              key={index}
+              tool={tool}
+              index={index + 1}
+            />
           ))}
         </div>
       )}
@@ -107,7 +129,7 @@ interface ThoughtStepComponentProps {
 
 function ThoughtStepComponent({ step, index }: ThoughtStepComponentProps) {
   const [expanded, setExpanded] = useState(false);
-  
+
   const getStepIcon = (type: string) => {
     switch (type) {
       case 'analysis':
@@ -167,7 +189,7 @@ function ThoughtStepComponent({ step, index }: ThoughtStepComponentProps) {
             </span>
           </div>
           <p className="text-sm text-gray-700 mt-1">{step.description}</p>
-          
+
           {step.details && Object.keys(step.details).length > 0 && (
             <div className="mt-2">
               <button
@@ -196,9 +218,12 @@ interface ToolInvocationComponentProps {
   index: number;
 }
 
-function ToolInvocationComponent({ tool, index }: ToolInvocationComponentProps) {
+function ToolInvocationComponent({
+  tool,
+  index,
+}: ToolInvocationComponentProps) {
   const [expanded, setExpanded] = useState(false);
-  
+
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'success':
@@ -224,8 +249,12 @@ function ToolInvocationComponent({ tool, index }: ToolInvocationComponentProps) 
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium text-gray-900">🔧 {tool.toolName}</span>
-              <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(tool.status)}`}>
+              <span className="text-sm font-medium text-gray-900">
+                🔧 {tool.toolName}
+              </span>
+              <span
+                className={`px-2 py-1 text-xs rounded-full ${getStatusColor(tool.status)}`}
+              >
                 {tool.status}
               </span>
             </div>
@@ -234,7 +263,7 @@ function ToolInvocationComponent({ tool, index }: ToolInvocationComponentProps) 
             </div>
           </div>
         </div>
-        
+
         <button
           onClick={() => setExpanded(!expanded)}
           className="text-xs text-blue-600 hover:text-blue-800 font-medium"
@@ -253,7 +282,9 @@ function ToolInvocationComponent({ tool, index }: ToolInvocationComponentProps) 
         <div className="mt-3 space-y-2">
           {tool.parameters && Object.keys(tool.parameters).length > 0 && (
             <div>
-              <div className="text-xs font-medium text-gray-600 mb-1">Parameters:</div>
+              <div className="text-xs font-medium text-gray-600 mb-1">
+                Parameters:
+              </div>
               <div className="p-2 bg-gray-50 rounded border text-xs font-mono">
                 <pre className="whitespace-pre-wrap">
                   {JSON.stringify(tool.parameters, null, 2)}
@@ -261,13 +292,17 @@ function ToolInvocationComponent({ tool, index }: ToolInvocationComponentProps) 
               </div>
             </div>
           )}
-          
+
           {tool.result && (
             <div>
-              <div className="text-xs font-medium text-gray-600 mb-1">Result:</div>
+              <div className="text-xs font-medium text-gray-600 mb-1">
+                Result:
+              </div>
               <div className="p-2 bg-gray-50 rounded border text-xs font-mono">
                 <pre className="whitespace-pre-wrap">
-                  {typeof tool.result === 'string' ? tool.result : JSON.stringify(tool.result, null, 2)}
+                  {typeof tool.result === 'string'
+                    ? tool.result
+                    : JSON.stringify(tool.result, null, 2)}
                 </pre>
               </div>
             </div>

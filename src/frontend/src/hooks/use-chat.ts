@@ -9,12 +9,12 @@ import { trackChatMessage, trackEvent } from '@/lib/telemetry';
 import type { ChatMessage, ChatState } from '@/types';
 
 export function useChat() {
-  const [chatState, setChatState] = useState<ChatState>({
+  const [chatState, setChatState] = useState<ChatState>(() => ({
     messages: [],
     isLoading: false,
     error: null,
-    conversationId: null,
-  });
+    conversationId: uuidv4(),
+  }));
 
   /**
    * Add a message to the chat
@@ -69,24 +69,16 @@ export function useChat() {
           content: content.trim(),
           role: 'user',
           timestamp: new Date(),
-          conversationId: chatState.conversationId || undefined,
+          conversationId: chatState.conversationId,
         });
 
-        // Send to backend
+        // Send to backend with the session's conversationId
         const response = await apiClient.sendMessage({
           message: content.trim(),
-          conversation_id: chatState.conversationId || undefined,
+          conversationId: chatState.conversationId,
         });
 
         if (response.success && response.data) {
-          // Update conversation ID if this is the first message
-          if (!chatState.conversationId && response.data.conversation_id) {
-            setChatState((prev) => ({
-              ...prev,
-              conversationId: response.data!.conversation_id,
-            }));
-          }
-
           // Add assistant response
           addMessage({
             content: response.data.message,
@@ -114,7 +106,7 @@ export function useChat() {
             content: `Sorry, I encountered an error: ${errorMessage}`,
             role: 'assistant',
             timestamp: new Date(),
-            conversationId: chatState.conversationId || undefined,
+            conversationId: chatState.conversationId,
           });
 
           return false;
@@ -132,7 +124,7 @@ export function useChat() {
           content: `Sorry, I encountered an error: ${errorMessage}`,
           role: 'assistant',
           timestamp: new Date(),
-          conversationId: chatState.conversationId || undefined,
+          conversationId: chatState.conversationId,
         });
 
         return false;
@@ -149,7 +141,7 @@ export function useChat() {
       messages: [],
       isLoading: false,
       error: null,
-      conversationId: null,
+      conversationId: uuidv4(),
     });
 
     trackEvent('ChatCleared');
@@ -177,7 +169,8 @@ export function useChat() {
           setChatState((prev) => ({
             ...prev,
             messages,
-            conversationId: conversationId || null,
+            // Use the provided conversationId if loading history, otherwise keep the current one
+            conversationId: conversationId || prev.conversationId,
             isLoading: false,
           }));
 

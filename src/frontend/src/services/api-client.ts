@@ -97,16 +97,17 @@ export class ApiClient {
         if (this.mfaHandler && this.mfaHandler.isMfaChallengeError(error)) {
           try {
             console.log('MFA challenge detected, attempting to handle...');
-            const newToken = await this.mfaHandler.handleMfaChallengeFromError(error);
-            
+            const newToken =
+              await this.mfaHandler.handleMfaChallengeFromError(error);
+
             // Update our token and retry the request
             this.setAccessToken(newToken);
-            
+
             // Clone and retry the original request with the new token
             const originalRequest = { ...error.config };
             originalRequest.headers = originalRequest.headers || {};
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            
+
             return this.client.request(originalRequest);
           } catch (mfaError) {
             console.error('Failed to handle MFA challenge:', mfaError);
