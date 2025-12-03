@@ -218,9 +218,9 @@ public class CosmosDbService : ICosmosDbService, IAsyncDisposable
     /// <summary>
     /// Dispose the Cosmos client.
     /// </summary>
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         _cosmosClient.Dispose();
-        await Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 }

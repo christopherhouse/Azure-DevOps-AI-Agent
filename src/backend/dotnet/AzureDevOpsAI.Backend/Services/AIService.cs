@@ -37,10 +37,10 @@ public interface IAIService
     /// Get thought process for a specific message.
     /// </summary>
     /// <param name="thoughtProcessId">Thought process ID</param>
-    /// <param name="conversationId">Conversation ID (optional, used as partition key in CosmosDB)</param>
+    /// <param name="conversationId">Conversation ID (required, used as partition key in CosmosDB)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Thought process details</returns>
-    Task<ThoughtProcess> GetThoughtProcessAsync(string thoughtProcessId, string? conversationId = null, CancellationToken cancellationToken = default);
+    Task<ThoughtProcess> GetThoughtProcessAsync(string thoughtProcessId, string conversationId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -68,7 +68,7 @@ public class AIService : IAIService
         _httpClientFactory = httpClientFactory;
         _loggerFactory = loggerFactory;
         _azureDevOpsApiService = azureDevOpsApiService;
-        _cosmosDbService = cosmosDbService ?? throw new ArgumentNullException(nameof(cosmosDbService), "CosmosDB service is required. Ensure CosmosDb:Endpoint is configured.");
+        _cosmosDbService = cosmosDbService ?? throw new ArgumentNullException(nameof(cosmosDbService), "CosmosDB service is required.");
 
         // Load system prompt from embedded resource
         _systemPrompt = LoadSystemPrompt();
@@ -397,11 +397,11 @@ public class AIService : IAIService
     /// <summary>
     /// Get thought process for a specific message.
     /// </summary>
-    public async Task<ThoughtProcess> GetThoughtProcessAsync(string thoughtProcessId, string? conversationId = null, CancellationToken cancellationToken = default)
+    public async Task<ThoughtProcess> GetThoughtProcessAsync(string thoughtProcessId, string conversationId, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(conversationId))
         {
-            throw new ArgumentException("Conversation ID is required to retrieve thought process from CosmosDB", nameof(conversationId));
+            throw new ArgumentException("Conversation ID cannot be null or empty", nameof(conversationId));
         }
         
         var document = await _cosmosDbService.GetThoughtProcessAsync(thoughtProcessId, conversationId, cancellationToken);

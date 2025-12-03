@@ -190,15 +190,14 @@ public class SecuritySettings
 public class CosmosDbSettings
 {
     /// <summary>
-    /// Cosmos DB account endpoint URL.
+    /// Cosmos DB account endpoint URL. Required for the application to function.
     /// </summary>
     [Required]
     public string Endpoint { get; set; } = string.Empty;
 
     /// <summary>
-    /// Database name.
+    /// Database name. Defaults to "AzureDevOpsAIAgent" if not specified.
     /// </summary>
-    [Required]
     public string DatabaseName { get; set; } = "AzureDevOpsAIAgent";
 
     /// <summary>

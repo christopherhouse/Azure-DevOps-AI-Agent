@@ -24,9 +24,15 @@ export function ThoughtProcess({ thoughtProcessId, conversationId }: ThoughtProc
 
   useEffect(() => {
     const fetchThoughtProcess = async () => {
-      if (!thoughtProcessId || !conversationId) {
+      // Validate required parameters
+      if (!thoughtProcessId) {
         setLoading(false);
-        setError(!conversationId ? 'Conversation ID is required to fetch thought process' : null);
+        return;
+      }
+      
+      if (!conversationId) {
+        setLoading(false);
+        setError('Conversation ID is required to fetch thought process');
         return;
       }
 
