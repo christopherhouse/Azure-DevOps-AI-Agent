@@ -169,6 +169,7 @@ public static class ChatEndpoints
     /// </summary>
     private static async Task<IResult> GetThoughtProcessAsync(
         string thoughtProcessId,
+        [FromQuery] string? conversationId,
         HttpContext context,
         IOptions<SecuritySettings> securitySettings,
         IAIService aiService)
@@ -178,9 +179,23 @@ public static class ChatEndpoints
             var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("ChatEndpoints");
             var userId = GetCurrentUserId(context, securitySettings.Value);
 
-            logger.LogInformation("Getting thought process {ThoughtProcessId} for user {UserId}", thoughtProcessId, userId);
+            if (string.IsNullOrEmpty(conversationId))
+            {
+                return Results.BadRequest(new ErrorResponse
+                {
+                    Error = new ErrorDetails
+                    {
+                        Code = 400,
+                        Message = "conversationId query parameter is required",
+                        Type = "validation_error"
+                    }
+                });
+            }
 
-            var thoughtProcess = await aiService.GetThoughtProcessAsync(thoughtProcessId);
+            logger.LogInformation("Getting thought process {ThoughtProcessId} for conversation {ConversationId}, user {UserId}", 
+                thoughtProcessId, conversationId, userId);
+
+            var thoughtProcess = await aiService.GetThoughtProcessAsync(thoughtProcessId, conversationId);
 
             return Results.Ok(thoughtProcess);
         }
@@ -193,6 +208,18 @@ public static class ChatEndpoints
                     Code = 404,
                     Message = $"Thought process with ID '{thoughtProcessId}' not found",
                     Type = "not_found"
+                }
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest(new ErrorResponse
+            {
+                Error = new ErrorDetails
+                {
+                    Code = 400,
+                    Message = ex.Message,
+                    Type = "validation_error"
                 }
             });
         }

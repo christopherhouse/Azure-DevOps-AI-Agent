@@ -183,3 +183,41 @@ public class SecuritySettings
     /// </summary>
     public bool DisableAuth { get; set; } = true;
 }
+
+/// <summary>
+/// Cosmos DB configuration settings.
+/// </summary>
+public class CosmosDbSettings
+{
+    /// <summary>
+    /// Cosmos DB account endpoint URL.
+    /// </summary>
+    [Required]
+    public string Endpoint { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Database name.
+    /// </summary>
+    [Required]
+    public string DatabaseName { get; set; } = "AzureDevOpsAIAgent";
+
+    /// <summary>
+    /// Container name for chat history.
+    /// </summary>
+    public string ChatHistoryContainerName { get; set; } = "chat-history";
+
+    /// <summary>
+    /// Container name for thought process.
+    /// </summary>
+    public string ThoughtProcessContainerName { get; set; } = "thought-process";
+
+    /// <summary>
+    /// Use managed identity for authentication.
+    /// </summary>
+    public bool UseManagedIdentity { get; set; } = true;
+
+    /// <summary>
+    /// Client ID for User Assigned Managed Identity (if using UAMI).
+    /// </summary>
+    public string? ClientId { get; set; }
+}

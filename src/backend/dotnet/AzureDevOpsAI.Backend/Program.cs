@@ -3,6 +3,7 @@ using AzureDevOpsAI.Backend.Endpoints;
 using AzureDevOpsAI.Backend.Middleware;
 using AzureDevOpsAI.Backend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Abstractions;
 using Microsoft.IdentityModel.Tokens;
@@ -39,9 +40,33 @@ builder.Services.Configure<AzureOpenAISettings>(options =>
         options.ClientId = managedIdentityClientId;
     }
 });
+builder.Services.Configure<CosmosDbSettings>(options =>
+{
+    builder.Configuration.GetSection("CosmosDb").Bind(options);
+    
+    // Override ClientId with ManagedIdentityClientId environment variable if provided
+    var managedIdentityClientId = builder.Configuration["ManagedIdentityClientId"];
+    if (!string.IsNullOrEmpty(managedIdentityClientId))
+    {
+        options.ClientId = managedIdentityClientId;
+    }
+});
 
 // Read ManagedIdentityClientId from configuration for AzureDevOpsApiService
 var managedIdentityClientIdForDevOps = builder.Configuration["ManagedIdentityClientId"];
+
+// Add CosmosDB service - required, no fallback to in-memory storage
+// The validation happens at service construction time to allow tests to override
+builder.Services.AddSingleton<ICosmosDbService>(sp =>
+{
+    var cosmosDbSettings = sp.GetRequiredService<IOptions<CosmosDbSettings>>().Value;
+    if (string.IsNullOrEmpty(cosmosDbSettings.Endpoint))
+    {
+        throw new InvalidOperationException("CosmosDB endpoint is required. Configure CosmosDb:Endpoint in appsettings.json or environment variables.");
+    }
+    var logger = sp.GetRequiredService<ILogger<CosmosDbService>>();
+    return new CosmosDbService(sp.GetRequiredService<IOptions<CosmosDbSettings>>(), logger);
+});
 
 // Add AI services
 builder.Services.AddHttpClient();
