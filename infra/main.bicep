@@ -41,6 +41,12 @@ param frontendManagedIdentityName string = '${appNamePrefix}-${environment}-fe-m
 @description('AI Services Managed Identity name')
 param aiManagedIdentityName string = '${appNamePrefix}-${environment}-ai-mi'
 
+@description('Cosmos DB account name')
+param cosmosDbAccountName string = '${appNamePrefix}-${environment}-cosmos'
+
+@description('Cosmos DB database name')
+param cosmosDbDatabaseName string = 'AzureDevOpsAIAgent'
+
 @description('Azure DevOps organization URL')
 param azureDevOpsOrganization string
 
@@ -96,6 +102,8 @@ var resourceNames = {
   backendManagedIdentity: backendManagedIdentityName
   frontendManagedIdentity: frontendManagedIdentityName
   aiManagedIdentity: aiManagedIdentityName
+  cosmosDbAccount: cosmosDbAccountName
+  cosmosDbDatabase: cosmosDbDatabaseName
 }
 
 var environmentConfig = {
@@ -396,6 +404,117 @@ module containerAppsEnvironment 'br/public:avm/res/app/managed-environment:0.11.
   }
 }
 
+// Cosmos DB Account (Serverless) for chat history and thought process storage
+resource cosmosDbAccount 'Microsoft.DocumentDB/databaseAccounts@2024-11-15' = {
+  name: resourceNames.cosmosDbAccount
+  location: location
+  tags: tags
+  kind: 'GlobalDocumentDB'
+  properties: {
+    databaseAccountOfferType: 'Standard'
+    locations: [
+      {
+        locationName: location
+        failoverPriority: 0
+        isZoneRedundant: false
+      }
+    ]
+    capabilities: [
+      {
+        name: 'EnableServerless'
+      }
+    ]
+    consistencyPolicy: {
+      defaultConsistencyLevel: 'Session'
+    }
+    disableLocalAuth: true // Enforce managed identity authentication only
+    publicNetworkAccess: 'Enabled'
+  }
+}
+
+// Cosmos DB SQL Database
+resource cosmosDbDatabase 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2024-11-15' = {
+  parent: cosmosDbAccount
+  name: resourceNames.cosmosDbDatabase
+  properties: {
+    resource: {
+      id: resourceNames.cosmosDbDatabase
+    }
+  }
+}
+
+// Cosmos DB Container for Chat History
+resource chatHistoryContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2024-11-15' = {
+  parent: cosmosDbDatabase
+  name: 'chat-history'
+  properties: {
+    resource: {
+      id: 'chat-history'
+      partitionKey: {
+        paths: [
+          '/conversationId'
+        ]
+        kind: 'Hash'
+      }
+      indexingPolicy: {
+        indexingMode: 'consistent'
+        includedPaths: [
+          {
+            path: '/*'
+          }
+        ]
+        excludedPaths: [
+          {
+            path: '/_etag/?'
+          }
+        ]
+      }
+    }
+  }
+}
+
+// Cosmos DB Container for Thought Process
+resource thoughtProcessContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2024-11-15' = {
+  parent: cosmosDbDatabase
+  name: 'thought-process'
+  properties: {
+    resource: {
+      id: 'thought-process'
+      partitionKey: {
+        paths: [
+          '/conversationId'
+        ]
+        kind: 'Hash'
+      }
+      indexingPolicy: {
+        indexingMode: 'consistent'
+        includedPaths: [
+          {
+            path: '/*'
+          }
+        ]
+        excludedPaths: [
+          {
+            path: '/_etag/?'
+          }
+        ]
+      }
+    }
+  }
+}
+
+// Role assignment for Backend Managed Identity to access Cosmos DB
+// Using Cosmos DB Built-in Data Contributor role (00000000-0000-0000-0000-000000000002)
+resource cosmosDbRoleAssignment 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2024-11-15' = {
+  parent: cosmosDbAccount
+  name: guid(resourceNames.cosmosDbAccount, resourceNames.backendManagedIdentity, 'cosmos-data-contributor')
+  properties: {
+    roleDefinitionId: '${cosmosDbAccount.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002'
+    principalId: backendManagedIdentity.outputs.principalId
+    scope: cosmosDbAccount.id
+  }
+}
+
 // Outputs
 output containerAppsEnvironmentName string = containerAppsEnvironment.outputs.name
 output containerAppsEnvironmentId string = containerAppsEnvironment.outputs.resourceId
@@ -411,3 +530,6 @@ output aiManagedIdentityClientId string = aiManagedIdentity.outputs.clientId
 output openAIEndpoint string = openAI.outputs.endpoint
 output openAIDeploymentName string = 'gpt-4o'
 output openAIResourceName string = openAI.outputs.name
+output cosmosDbEndpoint string = cosmosDbAccount.properties.documentEndpoint
+output cosmosDbAccountName string = cosmosDbAccount.name
+output cosmosDbDatabaseName string = cosmosDbDatabase.name

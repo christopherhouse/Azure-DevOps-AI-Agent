@@ -12,6 +12,11 @@ import { useChat } from '@/hooks/use-chat';
 
 type TabType = 'chat' | 'thought';
 
+interface SelectedThoughtProcess {
+  thoughtProcessId: string;
+  conversationId: string;
+}
+
 export function ChatInterface() {
   const {
     messages,
@@ -25,8 +30,8 @@ export function ChatInterface() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<TabType>('chat');
-  const [selectedThoughtProcessId, setSelectedThoughtProcessId] = useState<
-    string | null
+  const [selectedThoughtProcess, setSelectedThoughtProcess] = useState<
+    SelectedThoughtProcess | null
   >(null);
 
   // Auto-scroll to bottom when new messages arrive
@@ -35,26 +40,31 @@ export function ChatInterface() {
   }, [messages]);
 
   // Get the latest assistant message with a thought process
-  const getLatestThoughtProcessId = () => {
+  const getLatestThoughtProcess = (): SelectedThoughtProcess | null => {
     const assistantMessages = messages.filter(
-      (msg) => msg.role === 'assistant' && msg.thoughtProcessId
+      (msg) => msg.role === 'assistant' && msg.thoughtProcessId && msg.conversationId
     );
-    return assistantMessages.length > 0
-      ? assistantMessages[assistantMessages.length - 1].thoughtProcessId!
-      : null;
+    if (assistantMessages.length > 0) {
+      const lastMessage = assistantMessages[assistantMessages.length - 1];
+      return {
+        thoughtProcessId: lastMessage.thoughtProcessId!,
+        conversationId: lastMessage.conversationId!,
+      };
+    }
+    return null;
   };
 
   // Handle tab change
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
-    if (tab === 'thought' && !selectedThoughtProcessId) {
-      setSelectedThoughtProcessId(getLatestThoughtProcessId());
+    if (tab === 'thought' && !selectedThoughtProcess) {
+      setSelectedThoughtProcess(getLatestThoughtProcess());
     }
   };
 
   // Handle message selection for thought process viewing
-  const handleMessageThoughtProcessClick = (thoughtProcessId: string) => {
-    setSelectedThoughtProcessId(thoughtProcessId);
+  const handleMessageThoughtProcessClick = (thoughtProcessId: string, conversationId: string) => {
+    setSelectedThoughtProcess({ thoughtProcessId, conversationId });
     setActiveTab('thought');
   };
 
@@ -105,10 +115,10 @@ export function ChatInterface() {
                   ? 'bg-white text-blue-700 border-b-2 border-blue-700'
                   : 'text-blue-100 hover:text-white hover:bg-blue-600'
               }`}
-              disabled={!getLatestThoughtProcessId()}
+              disabled={!getLatestThoughtProcess()}
             >
               🧠 Thought Process
-              {!getLatestThoughtProcessId() && (
+              {!getLatestThoughtProcess() && (
                 <span className="ml-1 text-xs opacity-75">(unavailable)</span>
               )}
             </button>
@@ -180,12 +190,14 @@ export function ChatInterface() {
                       />
                       {/* Thought Process Button for Assistant Messages */}
                       {message.role === 'assistant' &&
-                        message.thoughtProcessId && (
+                        message.thoughtProcessId &&
+                        message.conversationId && (
                           <div className="mt-2 flex justify-end">
                             <button
                               onClick={() =>
                                 handleMessageThoughtProcessClick(
-                                  message.thoughtProcessId!
+                                  message.thoughtProcessId!,
+                                  message.conversationId!
                                 )
                               }
                               className="text-xs text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200 transition-colors"
@@ -264,8 +276,11 @@ export function ChatInterface() {
         ) : (
           /* Thought Process Tab */
           <div className="flex-1 overflow-y-auto">
-            {selectedThoughtProcessId ? (
-              <ThoughtProcess thoughtProcessId={selectedThoughtProcessId} />
+            {selectedThoughtProcess ? (
+              <ThoughtProcess 
+                thoughtProcessId={selectedThoughtProcess.thoughtProcessId} 
+                conversationId={selectedThoughtProcess.conversationId}
+              />
             ) : (
               <div className="p-8 text-center text-gray-500">
                 <div className="mb-4">🧠</div>

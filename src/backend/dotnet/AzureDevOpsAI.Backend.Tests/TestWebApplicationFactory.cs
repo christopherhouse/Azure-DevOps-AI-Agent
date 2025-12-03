@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Identity.Web;
+using AzureDevOpsAI.Backend.Services;
+using AzureDevOpsAI.Backend.Models;
 using Moq;
 
 namespace AzureDevOpsAI.Backend.Tests;
@@ -30,12 +32,40 @@ public class TestWebApplicationFactory<TStartup> : WebApplicationFactory<TStartu
                 ["AzureOpenAI:ApiKey"] = "test-api-key", 
                 ["AzureOpenAI:ChatDeploymentName"] = "test-deployment",
                 ["AzureOpenAI:ClientId"] = "test-client-id",
-                ["ApplicationInsights:ConnectionString"] = "InstrumentationKey=test-key;IngestionEndpoint=https://test.in.applicationinsights.azure.com/"
+                ["ApplicationInsights:ConnectionString"] = "InstrumentationKey=test-key;IngestionEndpoint=https://test.in.applicationinsights.azure.com/",
+                // CosmosDB configuration for tests - will use mocked service
+                ["CosmosDb:Endpoint"] = "https://test-cosmos.documents.azure.com:443/",
+                ["CosmosDb:DatabaseName"] = "TestDatabase",
+                ["CosmosDb:UseManagedIdentity"] = "false"
             });
         });
 
         builder.ConfigureServices((context, services) =>
         {
+            // Remove the real CosmosDbService and add a mock
+            var cosmosDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(ICosmosDbService));
+            if (cosmosDescriptor != null)
+            {
+                services.Remove(cosmosDescriptor);
+            }
+
+            // Add mock ICosmosDbService for tests
+            var mockCosmosDbService = new Mock<ICosmosDbService>();
+            mockCosmosDbService
+                .Setup(x => x.GetChatHistoryAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((ChatHistoryDocument?)null);
+            mockCosmosDbService
+                .Setup(x => x.GetThoughtProcessAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((ThoughtProcessDocument?)null);
+            mockCosmosDbService
+                .Setup(x => x.SaveChatHistoryAsync(It.IsAny<ChatHistoryDocument>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+            mockCosmosDbService
+                .Setup(x => x.SaveThoughtProcessAsync(It.IsAny<ThoughtProcessDocument>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            services.AddSingleton(mockCosmosDbService.Object);
+
             // Add mock ITokenAcquisition for tests that need it
             // This handles the case where authentication is disabled but services still depend on ITokenAcquisition
             var mockTokenAcquisition = new Mock<ITokenAcquisition>();

@@ -13,9 +13,10 @@ import { Loading } from './Loading';
 
 interface ThoughtProcessProps {
   thoughtProcessId: string;
+  conversationId: string;
 }
 
-export function ThoughtProcess({ thoughtProcessId }: ThoughtProcessProps) {
+export function ThoughtProcess({ thoughtProcessId, conversationId }: ThoughtProcessProps) {
   const [thoughtProcess, setThoughtProcess] =
     useState<ThoughtProcessType | null>(null);
   const [loading, setLoading] = useState(true);
@@ -23,8 +24,15 @@ export function ThoughtProcess({ thoughtProcessId }: ThoughtProcessProps) {
 
   useEffect(() => {
     const fetchThoughtProcess = async () => {
+      // Validate required parameters
       if (!thoughtProcessId) {
         setLoading(false);
+        return;
+      }
+      
+      if (!conversationId) {
+        setLoading(false);
+        setError('Conversation ID is required to fetch thought process');
         return;
       }
 
@@ -32,7 +40,7 @@ export function ThoughtProcess({ thoughtProcessId }: ThoughtProcessProps) {
         setLoading(true);
         setError(null);
         const response = await apiClient.get(
-          `/api/chat/thought-process/${thoughtProcessId}`
+          `/api/chat/thought-process/${thoughtProcessId}?conversationId=${encodeURIComponent(conversationId)}`
         );
         setThoughtProcess(response.data as ThoughtProcessType);
       } catch (err: any) {
@@ -46,7 +54,7 @@ export function ThoughtProcess({ thoughtProcessId }: ThoughtProcessProps) {
     };
 
     fetchThoughtProcess();
-  }, [thoughtProcessId]);
+  }, [thoughtProcessId, conversationId]);
 
   if (loading) {
     return (

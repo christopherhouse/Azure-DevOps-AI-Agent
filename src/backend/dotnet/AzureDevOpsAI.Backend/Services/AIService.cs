@@ -37,9 +37,10 @@ public interface IAIService
     /// Get thought process for a specific message.
     /// </summary>
     /// <param name="thoughtProcessId">Thought process ID</param>
+    /// <param name="conversationId">Conversation ID (required, used as partition key in CosmosDB)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Thought process details</returns>
-    Task<ThoughtProcess> GetThoughtProcessAsync(string thoughtProcessId, CancellationToken cancellationToken = default);
+    Task<ThoughtProcess> GetThoughtProcessAsync(string thoughtProcessId, string conversationId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -54,19 +55,20 @@ public class AIService : IAIService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILoggerFactory _loggerFactory;
     private readonly IAzureDevOpsApiService _azureDevOpsApiService;
+    private readonly ICosmosDbService _cosmosDbService;
     private readonly string _systemPrompt;
-    private readonly Dictionary<string, ChatHistory> _conversationHistory = new();
-    private readonly Dictionary<string, ThoughtProcess> _thoughtProcesses = new();
 
     public AIService(IOptions<AzureOpenAISettings> azureOpenAISettings, ILogger<AIService> logger, 
         IHttpClientFactory httpClientFactory, ILoggerFactory loggerFactory,
-        IAzureDevOpsApiService azureDevOpsApiService)
+        IAzureDevOpsApiService azureDevOpsApiService,
+        ICosmosDbService cosmosDbService)
     {
         _azureOpenAISettings = azureOpenAISettings.Value;
         _logger = logger;
         _httpClientFactory = httpClientFactory;
         _loggerFactory = loggerFactory;
         _azureDevOpsApiService = azureDevOpsApiService;
+        _cosmosDbService = cosmosDbService ?? throw new ArgumentNullException(nameof(cosmosDbService), "CosmosDB service is required.");
 
         // Load system prompt from embedded resource
         _systemPrompt = LoadSystemPrompt();
@@ -111,7 +113,7 @@ public class AIService : IAIService
 
         // Note: Plugins are now registered per request in ProcessChatMessageAsync to include user context
         
-        _logger.LogInformation("AI Service initialized with Azure OpenAI endpoint: {Endpoint}, Deployment: {Deployment}", 
+        _logger.LogInformation("AI Service initialized with Azure OpenAI endpoint: {Endpoint}, Deployment: {Deployment}, CosmosDB: Enabled", 
             _azureOpenAISettings.Endpoint, _azureOpenAISettings.ChatDeploymentName);
     }
 
@@ -208,12 +210,11 @@ public class AIService : IAIService
             });
 
             // Get or create chat history for conversation
-            var isExistingConversation = _conversationHistory.ContainsKey(conversationId);
-            var chatHistory = GetOrCreateChatHistory(conversationId);
+            var (chatHistory, isExistingConversation) = await GetOrCreateChatHistoryAsync(conversationId, cancellationToken);
             
             // Diagnostic logging: Track conversation history state
-            _logger.LogDebug("[ConversationContext] History lookup - ConversationId: {ConversationId}, ExistingConversation: {IsExisting}, MessageCount: {MessageCount}, TotalTrackedConversations: {TotalConversations}",
-                conversationId, isExistingConversation, chatHistory.Count, _conversationHistory.Count);
+            _logger.LogDebug("[ConversationContext] History lookup - ConversationId: {ConversationId}, ExistingConversation: {IsExisting}, MessageCount: {MessageCount}",
+                conversationId, isExistingConversation, chatHistory.Count);
 
             // Track planning step
             thoughtProcess.Steps.Add(new ThoughtStep
@@ -318,8 +319,9 @@ public class AIService : IAIService
             thoughtProcess.EndTime = endTime;
             thoughtProcess.DurationMs = (long)(endTime - startTime).TotalMilliseconds;
 
-            // Store thought process
-            _thoughtProcesses[thoughtProcessId] = thoughtProcess;
+            // Store chat history and thought process (CosmosDB or in-memory fallback)
+            await SaveChatHistoryAsync(conversationId, chatHistory, cancellationToken);
+            await SaveThoughtProcessAsync(thoughtProcessId, thoughtProcess, conversationId, cancellationToken);
 
             // Create response object with citations
             var chatResponse = new ChatResponse
@@ -334,8 +336,8 @@ public class AIService : IAIService
             _logger.LogInformation("Successfully processed chat message for conversation {ConversationId}", conversationId);
             
             // Diagnostic logging: Final conversation state
-            _logger.LogDebug("[ConversationContext] Request completed - ConversationId: {ConversationId}, FinalMessageCount: {MessageCount}, ProcessingTimeMs: {Duration}, TotalTrackedConversations: {TotalConversations}",
-                conversationId, chatHistory.Count, thoughtProcess.DurationMs, _conversationHistory.Count);
+            _logger.LogDebug("[ConversationContext] Request completed - ConversationId: {ConversationId}, FinalMessageCount: {MessageCount}, ProcessingTimeMs: {Duration}",
+                conversationId, chatHistory.Count, thoughtProcess.DurationMs);
 
             return chatResponse;
         }
@@ -343,22 +345,36 @@ public class AIService : IAIService
         {
             _logger.LogError(ex, "Error processing chat message for conversation {ConversationId}", conversationId);
             
-            // Store error in thought process if it was created
-            if (_thoughtProcesses.ContainsKey(thoughtProcessId))
+            // Store error in thought process
+            var errorThoughtProcess = new ThoughtProcess
             {
-                _thoughtProcesses[thoughtProcessId].Steps.Add(new ThoughtStep
+                Id = thoughtProcessId,
+                ConversationId = conversationId ?? string.Empty,
+                MessageId = messageId,
+                StartTime = startTime,
+                EndTime = DateTime.UtcNow,
+                DurationMs = (long)(DateTime.UtcNow - startTime).TotalMilliseconds
+            };
+            errorThoughtProcess.Steps.Add(new ThoughtStep
+            {
+                Id = Guid.NewGuid().ToString(),
+                Description = "Error occurred during processing",
+                Type = "error",
+                Details = new Dictionary<string, object>
                 {
-                    Id = Guid.NewGuid().ToString(),
-                    Description = "Error occurred during processing",
-                    Type = "error",
-                    Details = new Dictionary<string, object>
-                    {
-                        ["error_message"] = ex.Message,
-                        ["error_type"] = ex.GetType().Name
-                    }
-                });
-                _thoughtProcesses[thoughtProcessId].EndTime = DateTime.UtcNow;
-                _thoughtProcesses[thoughtProcessId].DurationMs = (long)(DateTime.UtcNow - startTime).TotalMilliseconds;
+                    ["error_message"] = ex.Message,
+                    ["error_type"] = ex.GetType().Name
+                }
+            });
+            
+            // Try to save the error thought process
+            try
+            {
+                await SaveThoughtProcessAsync(thoughtProcessId, errorThoughtProcess, conversationId ?? string.Empty, cancellationToken);
+            }
+            catch (Exception saveEx)
+            {
+                _logger.LogWarning(saveEx, "Failed to save error thought process for {ThoughtProcessId}", thoughtProcessId);
             }
             
             throw;
@@ -370,20 +386,28 @@ public class AIService : IAIService
     /// </summary>
     public async Task<ChatHistory> GetChatHistoryAsync(string conversationId, CancellationToken cancellationToken = default)
     {
-        await Task.CompletedTask; // Make method async for interface compatibility
-        return _conversationHistory.GetValueOrDefault(conversationId) ?? new ChatHistory();
+        var document = await _cosmosDbService.GetChatHistoryAsync(conversationId, cancellationToken);
+        if (document != null)
+        {
+            return ConvertToChatHistory(document);
+        }
+        return new ChatHistory();
     }
 
     /// <summary>
     /// Get thought process for a specific message.
     /// </summary>
-    public async Task<ThoughtProcess> GetThoughtProcessAsync(string thoughtProcessId, CancellationToken cancellationToken = default)
+    public async Task<ThoughtProcess> GetThoughtProcessAsync(string thoughtProcessId, string conversationId, CancellationToken cancellationToken = default)
     {
-        await Task.CompletedTask; // Make method async for interface compatibility
-        
-        if (_thoughtProcesses.TryGetValue(thoughtProcessId, out var thoughtProcess))
+        if (string.IsNullOrEmpty(conversationId))
         {
-            return thoughtProcess;
+            throw new ArgumentException("Conversation ID cannot be null or empty", nameof(conversationId));
+        }
+        
+        var document = await _cosmosDbService.GetThoughtProcessAsync(thoughtProcessId, conversationId, cancellationToken);
+        if (document != null)
+        {
+            return ConvertToThoughtProcess(document);
         }
         
         throw new KeyNotFoundException($"Thought process with ID '{thoughtProcessId}' not found");
@@ -392,25 +416,158 @@ public class AIService : IAIService
     /// <summary>
     /// Get or create chat history for a conversation.
     /// </summary>
-    private ChatHistory GetOrCreateChatHistory(string conversationId)
+    private async Task<(ChatHistory chatHistory, bool isExisting)> GetOrCreateChatHistoryAsync(string conversationId, CancellationToken cancellationToken = default)
     {
-        if (!_conversationHistory.TryGetValue(conversationId, out var chatHistory))
+        var document = await _cosmosDbService.GetChatHistoryAsync(conversationId, cancellationToken);
+        if (document != null)
         {
-            chatHistory = new ChatHistory();
-            // Add system message to new conversations
-            chatHistory.AddSystemMessage(_systemPrompt);
-            _conversationHistory[conversationId] = chatHistory;
-            
-            _logger.LogInformation("[ConversationContext] New ChatHistory created - ConversationId: {ConversationId}, SystemPromptLength: {PromptLength}",
-                conversationId, _systemPrompt.Length);
+            var chatHistory = ConvertToChatHistory(document);
+            _logger.LogDebug("[ConversationContext] Existing ChatHistory retrieved from CosmosDB - ConversationId: {ConversationId}, MessageCount: {MessageCount}",
+                conversationId, chatHistory.Count);
+            return (chatHistory, true);
         }
         else
         {
-            _logger.LogDebug("[ConversationContext] Existing ChatHistory retrieved - ConversationId: {ConversationId}, ExistingMessageCount: {MessageCount}",
-                conversationId, chatHistory.Count);
+            var chatHistory = new ChatHistory();
+            chatHistory.AddSystemMessage(_systemPrompt);
+            _logger.LogInformation("[ConversationContext] New ChatHistory created - ConversationId: {ConversationId}, SystemPromptLength: {PromptLength}",
+                conversationId, _systemPrompt.Length);
+            return (chatHistory, false);
         }
+    }
 
+    /// <summary>
+    /// Save chat history to CosmosDB.
+    /// </summary>
+    private async Task SaveChatHistoryAsync(string conversationId, ChatHistory chatHistory, CancellationToken cancellationToken = default)
+    {
+        var document = ConvertToDocument(conversationId, chatHistory);
+        await _cosmosDbService.SaveChatHistoryAsync(document, cancellationToken);
+    }
+
+    /// <summary>
+    /// Save thought process to CosmosDB.
+    /// </summary>
+    private async Task SaveThoughtProcessAsync(string thoughtProcessId, ThoughtProcess thoughtProcess, string conversationId, CancellationToken cancellationToken = default)
+    {
+        var document = ConvertToDocument(thoughtProcess);
+        await _cosmosDbService.SaveThoughtProcessAsync(document, cancellationToken);
+    }
+
+    /// <summary>
+    /// Convert ChatHistoryDocument to Semantic Kernel ChatHistory.
+    /// </summary>
+    private ChatHistory ConvertToChatHistory(ChatHistoryDocument document)
+    {
+        var chatHistory = new ChatHistory();
+        foreach (var message in document.Messages)
+        {
+            switch (message.Role.ToLowerInvariant())
+            {
+                case "system":
+                    chatHistory.AddSystemMessage(message.Content);
+                    break;
+                case "user":
+                    chatHistory.AddUserMessage(message.Content);
+                    break;
+                case "assistant":
+                    chatHistory.AddAssistantMessage(message.Content);
+                    break;
+            }
+        }
         return chatHistory;
+    }
+
+    /// <summary>
+    /// Convert Semantic Kernel ChatHistory to ChatHistoryDocument.
+    /// </summary>
+    private ChatHistoryDocument ConvertToDocument(string conversationId, ChatHistory chatHistory)
+    {
+        var document = new ChatHistoryDocument
+        {
+            Id = conversationId,
+            ConversationId = conversationId,
+            Messages = chatHistory.Select(m => new ChatMessageEntry
+            {
+                Role = m.Role.ToString(),
+                Content = m.Content ?? string.Empty,
+                Timestamp = DateTime.UtcNow
+            }).ToList()
+        };
+        
+        // Set system prompt if first message is system
+        if (document.Messages.Count > 0 && document.Messages[0].Role.Equals("System", StringComparison.OrdinalIgnoreCase))
+        {
+            document.SystemPrompt = document.Messages[0].Content;
+        }
+        
+        return document;
+    }
+
+    /// <summary>
+    /// Convert ThoughtProcess to ThoughtProcessDocument.
+    /// </summary>
+    private ThoughtProcessDocument ConvertToDocument(ThoughtProcess thoughtProcess)
+    {
+        return new ThoughtProcessDocument
+        {
+            Id = thoughtProcess.Id,
+            ConversationId = thoughtProcess.ConversationId,
+            MessageId = thoughtProcess.MessageId,
+            Steps = thoughtProcess.Steps.Select(s => new ThoughtStepEntry
+            {
+                Id = s.Id,
+                Description = s.Description,
+                Type = s.Type,
+                Timestamp = s.Timestamp,
+                Details = s.Details
+            }).ToList(),
+            ToolInvocations = thoughtProcess.ToolInvocations.Select(t => new ToolInvocationEntry
+            {
+                ToolName = t.ToolName,
+                Parameters = t.Parameters,
+                Result = t.Result,
+                Status = t.Status,
+                ErrorMessage = t.ErrorMessage,
+                Timestamp = t.Timestamp
+            }).ToList(),
+            StartTime = thoughtProcess.StartTime,
+            EndTime = thoughtProcess.EndTime,
+            DurationMs = thoughtProcess.DurationMs
+        };
+    }
+
+    /// <summary>
+    /// Convert ThoughtProcessDocument to ThoughtProcess.
+    /// </summary>
+    private ThoughtProcess ConvertToThoughtProcess(ThoughtProcessDocument document)
+    {
+        return new ThoughtProcess
+        {
+            Id = document.Id,
+            ConversationId = document.ConversationId,
+            MessageId = document.MessageId,
+            Steps = document.Steps.Select(s => new ThoughtStep
+            {
+                Id = s.Id,
+                Description = s.Description,
+                Type = s.Type,
+                Timestamp = s.Timestamp,
+                Details = s.Details
+            }).ToList(),
+            ToolInvocations = document.ToolInvocations.Select(t => new ToolInvocation
+            {
+                ToolName = t.ToolName,
+                Parameters = t.Parameters,
+                Result = t.Result,
+                Status = t.Status,
+                ErrorMessage = t.ErrorMessage,
+                Timestamp = t.Timestamp
+            }).ToList(),
+            StartTime = document.StartTime,
+            EndTime = document.EndTime,
+            DurationMs = document.DurationMs
+        };
     }
     
     /// <summary>
