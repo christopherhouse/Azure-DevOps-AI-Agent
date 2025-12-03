@@ -40,7 +40,7 @@ builder.Services.Configure<AzureOpenAISettings>(options =>
     }
 });
 
-// Register ManagedIdentityClientId as a named configuration for AzureDevOpsApiService
+// Read ManagedIdentityClientId from configuration for AzureDevOpsApiService
 var managedIdentityClientIdForDevOps = builder.Configuration["ManagedIdentityClientId"];
 
 // Add AI services
