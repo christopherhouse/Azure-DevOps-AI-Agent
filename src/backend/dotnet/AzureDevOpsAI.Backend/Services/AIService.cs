@@ -59,6 +59,17 @@ public class AIService : IAIService
     private readonly ICosmosDbService _cosmosDbService;
     private readonly string _systemPrompt;
 
+    /// <summary>
+    /// Rate limit metadata keys that may be available in Azure OpenAI response headers.
+    /// </summary>
+    private static readonly string[] RateLimitMetadataKeys = 
+    {
+        "x-ratelimit-remaining-tokens",
+        "x-ratelimit-remaining-requests",
+        "RateLimitRemainingTokens",
+        "RateLimitRemainingRequests"
+    };
+
     public AIService(IOptions<AzureOpenAISettings> azureOpenAISettings, ILogger<AIService> logger, 
         IHttpClientFactory httpClientFactory, ILoggerFactory loggerFactory,
         IAzureDevOpsApiService azureDevOpsApiService,
@@ -612,14 +623,16 @@ public class AIService : IAIService
             if (tokenUsage.InputTokenDetails != null)
             {
                 _logger.LogDebug(
-                    "[TokenMetrics] InputTokenDetails available - ConversationId: {ConversationId}",
-                    conversationId);
+                    "[TokenMetrics] InputTokenDetails - ConversationId: {ConversationId}, CachedTokens: {CachedTokens}, AudioTokens: {AudioTokens}",
+                    conversationId,
+                    tokenUsage.InputTokenDetails.CachedTokenCount,
+                    tokenUsage.InputTokenDetails.AudioTokenCount);
             }
 
             if (tokenUsage.OutputTokenDetails != null)
             {
                 _logger.LogDebug(
-                    "[TokenMetrics] OutputTokenDetails available - ConversationId: {ConversationId}, ReasoningTokens: {ReasoningTokens}",
+                    "[TokenMetrics] OutputTokenDetails - ConversationId: {ConversationId}, ReasoningTokens: {ReasoningTokens}",
                     conversationId,
                     tokenUsage.OutputTokenDetails.ReasoningTokenCount);
             }
@@ -645,11 +658,7 @@ public class AIService : IAIService
             return;
         }
 
-        // Check for common rate limit metadata keys that might be available
-        // Azure OpenAI may include rate limit info in response headers exposed through metadata
-        var rateLimitKeys = new[] { "x-ratelimit-remaining-tokens", "x-ratelimit-remaining-requests", "RateLimitRemainingTokens", "RateLimitRemainingRequests" };
-        
-        foreach (var key in rateLimitKeys)
+        foreach (var key in RateLimitMetadataKeys)
         {
             if (metadata.TryGetValue(key, out var value) && value != null)
             {

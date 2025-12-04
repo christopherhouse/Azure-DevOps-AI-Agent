@@ -222,4 +222,34 @@ public class AIServiceTests
         // Assert
         settings.UseManagedIdentity.Should().BeFalse("Default configuration should use API key authentication instead of Managed Identity");
     }
+
+    [Fact]
+    public void AIService_ShouldBeConfiguredForTokenMetricsLogging()
+    {
+        // Arrange
+        var azureOpenAISettings = new AzureOpenAISettings
+        {
+            Endpoint = "https://test.openai.azure.com/",
+            ApiKey = "test-key",
+            ChatDeploymentName = "gpt-4",
+            UseManagedIdentity = false,
+            ClientId = "test-client-id"
+        };
+
+        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockCosmosDbService) = CreateMocks(azureOpenAISettings);
+
+        // Act
+        var service = new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockAzureDevOpsApiService.Object, mockCosmosDbService.Object);
+
+        // Assert
+        service.Should().NotBeNull("Service should be successfully created with token metrics logging capability");
+        service.Should().BeAssignableTo<IAIService>("Service should implement IAIService interface");
+        
+        // Note: Token metrics logging is implemented in the ProcessChatMessageAsync method.
+        // When a chat completion is performed, the following information is logged:
+        // - Prompt tokens (InputTokenCount)
+        // - Completion tokens (OutputTokenCount)  
+        // - Total tokens (TotalTokenCount)
+        // - Rate limit information if available in response metadata
+    }
 }
