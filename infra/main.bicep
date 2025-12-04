@@ -77,6 +77,7 @@ param tags object = {
   Environment: environment
   Application: 'Azure DevOps AI Agent'
   CreatedBy: 'Bicep'
+  SecurityControl: 'Ignore'
 }
 
 @description('Key Vault purge protection enabled')
@@ -360,7 +361,7 @@ module openAI 'br/public:avm/res/cognitive-services/account:0.10.1' = {
         raiPolicyName: 'Microsoft.DefaultV2'
         sku: {
           name: 'Standard'
-          capacity: 10
+          capacity: 50
         }
       }
     ]
