@@ -7,6 +7,7 @@ using AzureDevOpsAI.Backend.Configuration;
 using AzureDevOpsAI.Backend.Models;
 using AzureDevOpsAI.Backend.Plugins;
 using Microsoft.Extensions.Options;
+using OpenAI.Chat;
 using System.Reflection;
 
 namespace AzureDevOpsAI.Backend.Services;
@@ -284,6 +285,9 @@ public class AIService : IAIService
             {
                 throw new InvalidOperationException("AI service returned empty response");
             }
+
+            // Log token metrics
+            LogTokenMetrics(response.Metadata, conversationId);
 
             // Track response generation completion
             thoughtProcess.Steps.Add(new ThoughtStep
@@ -579,6 +583,83 @@ public class AIService : IAIService
             .Select(g => $"{g.Key}:{g.Count()}")
             .ToList();
         return $"[{string.Join(", ", roles)}]";
+    }
+
+    /// <summary>
+    /// Log token metrics from the chat completion response.
+    /// </summary>
+    /// <param name="metadata">Response metadata containing token usage information</param>
+    /// <param name="conversationId">The conversation ID for correlation</param>
+    private void LogTokenMetrics(IReadOnlyDictionary<string, object?>? metadata, string conversationId)
+    {
+        if (metadata == null)
+        {
+            _logger.LogWarning("[TokenMetrics] No metadata available for conversation {ConversationId}", conversationId);
+            return;
+        }
+
+        // Extract token usage from metadata
+        if (metadata.TryGetValue("Usage", out var usageObject) && usageObject is ChatTokenUsage tokenUsage)
+        {
+            _logger.LogInformation(
+                "[TokenMetrics] ConversationId: {ConversationId}, PromptTokens: {PromptTokens}, CompletionTokens: {CompletionTokens}, TotalTokens: {TotalTokens}",
+                conversationId,
+                tokenUsage.InputTokenCount,
+                tokenUsage.OutputTokenCount,
+                tokenUsage.TotalTokenCount);
+
+            // Log token details breakdown if available
+            if (tokenUsage.InputTokenDetails != null)
+            {
+                _logger.LogDebug(
+                    "[TokenMetrics] InputTokenDetails available - ConversationId: {ConversationId}",
+                    conversationId);
+            }
+
+            if (tokenUsage.OutputTokenDetails != null)
+            {
+                _logger.LogDebug(
+                    "[TokenMetrics] OutputTokenDetails available - ConversationId: {ConversationId}, ReasoningTokens: {ReasoningTokens}",
+                    conversationId,
+                    tokenUsage.OutputTokenDetails.ReasoningTokenCount);
+            }
+        }
+        else
+        {
+            _logger.LogWarning("[TokenMetrics] Token usage not available in response metadata for conversation {ConversationId}", conversationId);
+        }
+
+        // Log rate limit headers if available in metadata
+        LogRateLimitInfo(metadata, conversationId);
+    }
+
+    /// <summary>
+    /// Log rate limit information from response metadata if available.
+    /// </summary>
+    /// <param name="metadata">Response metadata that may contain rate limit information</param>
+    /// <param name="conversationId">The conversation ID for correlation</param>
+    private void LogRateLimitInfo(IReadOnlyDictionary<string, object?>? metadata, string conversationId)
+    {
+        if (metadata == null)
+        {
+            return;
+        }
+
+        // Check for common rate limit metadata keys that might be available
+        // Azure OpenAI may include rate limit info in response headers exposed through metadata
+        var rateLimitKeys = new[] { "x-ratelimit-remaining-tokens", "x-ratelimit-remaining-requests", "RateLimitRemainingTokens", "RateLimitRemainingRequests" };
+        
+        foreach (var key in rateLimitKeys)
+        {
+            if (metadata.TryGetValue(key, out var value) && value != null)
+            {
+                _logger.LogInformation(
+                    "[RateLimitInfo] ConversationId: {ConversationId}, {Key}: {Value}",
+                    conversationId,
+                    key,
+                    value);
+            }
+        }
     }
 
     /// <summary>
