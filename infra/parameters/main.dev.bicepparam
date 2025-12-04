@@ -32,6 +32,7 @@ param tags = {
   CostCenter: 'Engineering'
   CreatedBy: 'Bicep'
   Project: 'Azure DevOps AI Agent'
+  SecurityControl: 'Ignore'
 }
 
 // Key Vault configuration
