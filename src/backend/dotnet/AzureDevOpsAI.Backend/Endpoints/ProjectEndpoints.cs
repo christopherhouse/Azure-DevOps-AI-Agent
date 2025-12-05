@@ -155,7 +155,7 @@ public static class ProjectEndpoints
                 Id = Guid.NewGuid().ToString(),
                 Name = request.Name,
                 Description = request.Description,
-                State = ProjectState.Created,
+                State = ProjectState.WellFormed,
                 Visibility = request.Visibility,
                 Revision = 1,
                 LastUpdateTime = DateTime.UtcNow
@@ -192,7 +192,7 @@ public static class ProjectEndpoints
                 Id = projectId,
                 Name = "Mock Project",
                 Description = "A mock project for testing",
-                State = ProjectState.Created,
+                State = ProjectState.WellFormed,
                 Visibility = ProjectVisibility.Private,
                 Revision = 1,
                 LastUpdateTime = DateTime.UtcNow
@@ -230,7 +230,7 @@ public static class ProjectEndpoints
                 Id = projectId,
                 Name = request.Name ?? "Updated Project",
                 Description = request.Description ?? "Updated description",
-                State = ProjectState.Created,
+                State = ProjectState.WellFormed,
                 Visibility = ProjectVisibility.Private,
                 Revision = 2,
                 LastUpdateTime = DateTime.UtcNow
