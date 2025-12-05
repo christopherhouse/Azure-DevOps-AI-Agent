@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace AzureDevOpsAI.Backend.Models;
@@ -6,7 +7,7 @@ namespace AzureDevOpsAI.Backend.Models;
 /// <summary>
 /// Project visibility enum.
 /// </summary>
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<ProjectVisibility>))]
 public enum ProjectVisibility
 {
     Private,
@@ -14,15 +15,85 @@ public enum ProjectVisibility
 }
 
 /// <summary>
-/// Project state enum.
+/// Project state enum matching Azure DevOps REST API values.
+/// Values: wellFormed, deleting, new, createPending, unchanged, deleted, all
 /// </summary>
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(ProjectStateJsonConverter))]
 public enum ProjectState
 {
-    Creating,
-    Created,
+    /// <summary>
+    /// Project is well-formed and fully functional.
+    /// </summary>
+    WellFormed,
+    /// <summary>
+    /// Project is in the process of being deleted.
+    /// </summary>
     Deleting,
-    Deleted
+    /// <summary>
+    /// Project is new/being created.
+    /// </summary>
+    New,
+    /// <summary>
+    /// Project creation is pending.
+    /// </summary>
+    CreatePending,
+    /// <summary>
+    /// Project is unchanged (filter state).
+    /// </summary>
+    Unchanged,
+    /// <summary>
+    /// Project has been deleted.
+    /// </summary>
+    Deleted,
+    /// <summary>
+    /// All states (filter state).
+    /// </summary>
+    All
+}
+
+/// <summary>
+/// Custom JSON converter for ProjectState that handles camelCase values from Azure DevOps REST API.
+/// </summary>
+public class ProjectStateJsonConverter : JsonConverter<ProjectState>
+{
+    public override ProjectState Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        var value = reader.GetString();
+        if (string.IsNullOrEmpty(value))
+        {
+            return ProjectState.WellFormed;
+        }
+        
+        // Handle camelCase values from Azure DevOps REST API
+        return value.ToLowerInvariant() switch
+        {
+            "wellformed" => ProjectState.WellFormed,
+            "deleting" => ProjectState.Deleting,
+            "new" => ProjectState.New,
+            "createpending" => ProjectState.CreatePending,
+            "unchanged" => ProjectState.Unchanged,
+            "deleted" => ProjectState.Deleted,
+            "all" => ProjectState.All,
+            _ => ProjectState.WellFormed // Default to WellFormed for unknown values
+        };
+    }
+
+    public override void Write(Utf8JsonWriter writer, ProjectState value, JsonSerializerOptions options)
+    {
+        // Serialize using camelCase to match Azure DevOps REST API format
+        var stringValue = value switch
+        {
+            ProjectState.WellFormed => "wellFormed",
+            ProjectState.Deleting => "deleting",
+            ProjectState.New => "new",
+            ProjectState.CreatePending => "createPending",
+            ProjectState.Unchanged => "unchanged",
+            ProjectState.Deleted => "deleted",
+            ProjectState.All => "all",
+            _ => "wellFormed"
+        };
+        writer.WriteStringValue(stringValue);
+    }
 }
 
 /// <summary>
@@ -165,7 +236,7 @@ public class ProjectListResponse
 /// <summary>
 /// Process template customization type enum.
 /// </summary>
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<ProcessCustomizationType>))]
 public enum ProcessCustomizationType
 {
     System,

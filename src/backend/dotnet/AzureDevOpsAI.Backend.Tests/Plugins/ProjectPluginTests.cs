@@ -44,7 +44,7 @@ public class ProjectPluginTests
                     Id = "proj-1",
                     Name = "Project 1",
                     Description = "First test project",
-                    State = ProjectState.Created,
+                    State = ProjectState.WellFormed,
                     Visibility = ProjectVisibility.Private,
                     LastUpdateTime = new DateTime(2024, 1, 15, 10, 30, 0)
                 },
@@ -53,7 +53,7 @@ public class ProjectPluginTests
                     Id = "proj-2",
                     Name = "Project 2",
                     Description = "Second test project",
-                    State = ProjectState.Created,
+                    State = ProjectState.WellFormed,
                     Visibility = ProjectVisibility.Public,
                     LastUpdateTime = new DateTime(2024, 2, 20, 14, 45, 0)
                 }
@@ -74,7 +74,7 @@ public class ProjectPluginTests
         result.Should().Contain("First test project");
         result.Should().Contain("**Project 2** (ID: proj-2)");
         result.Should().Contain("Second test project");
-        result.Should().Contain("State: Created");
+        result.Should().Contain("State: WellFormed");
         result.Should().Contain("Visibility: Private");
         result.Should().Contain("Visibility: Public");
         result.Should().Contain("Total: 2 project(s)");
@@ -152,7 +152,7 @@ public class ProjectPluginTests
                     Id = "proj-1",
                     Name = "Project Without Description",
                     Description = null,
-                    State = ProjectState.Created,
+                    State = ProjectState.WellFormed,
                     Visibility = ProjectVisibility.Private
                 }
             },
@@ -185,7 +185,7 @@ public class ProjectPluginTests
                 {
                     Id = "proj-1",
                     Name = "Project Without LastUpdate",
-                    State = ProjectState.Created,
+                    State = ProjectState.WellFormed,
                     Visibility = ProjectVisibility.Private,
                     LastUpdateTime = null
                 }
@@ -218,7 +218,7 @@ public class ProjectPluginTests
                 {
                     Id = "proj-1",
                     Name = "Test Project",
-                    State = ProjectState.Created,
+                    State = ProjectState.WellFormed,
                     Visibility = ProjectVisibility.Private
                 }
             },
