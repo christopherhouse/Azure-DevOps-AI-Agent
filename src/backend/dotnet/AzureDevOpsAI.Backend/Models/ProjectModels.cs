@@ -147,6 +147,22 @@ public class ProjectList
 }
 
 /// <summary>
+/// Project list API response model (matches Azure DevOps REST API response format).
+/// </summary>
+public class ProjectListResponse
+{
+    /// <summary>
+    /// List of projects from the API response.
+    /// </summary>
+    public List<Project> Value { get; set; } = new();
+
+    /// <summary>
+    /// Total count of projects.
+    /// </summary>
+    public int Count { get; set; }
+}
+
+/// <summary>
 /// Process template customization type enum.
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter))]

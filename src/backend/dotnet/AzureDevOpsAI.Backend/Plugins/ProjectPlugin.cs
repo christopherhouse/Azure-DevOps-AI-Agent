@@ -255,4 +255,57 @@ public class ProjectPlugin
             return $"Error: {ex.Message}";
         }
     }
+
+    /// <summary>
+    /// List all projects in an Azure DevOps organization.
+    /// </summary>
+    /// <param name="organization">The Azure DevOps organization name</param>
+    /// <returns>List of projects in the organization</returns>
+    [KernelFunction("list_projects")]
+    [Description("List all projects in an Azure DevOps organization. Returns project names, IDs, descriptions, and other details.")]
+    public async Task<string> ListProjectsAsync(
+        [Description("The Azure DevOps organization name")] string organization)
+    {
+        try
+        {
+            _logger.LogInformation("Listing projects for organization: {Organization}", organization);
+
+            // Use the Azure DevOps API service to get projects
+            var projects = await _azureDevOpsApiService.GetAsync<ProjectListResponse>(
+                organization, "projects", "7.1");
+
+            if (projects?.Value == null || !projects.Value.Any())
+            {
+                return "No projects found in this organization.";
+            }
+
+            // Format the response for the AI
+            var result = $"Projects in organization '{organization}':\n\n";
+            foreach (var project in projects.Value)
+            {
+                result += $"• **{project.Name}** (ID: {project.Id})\n";
+                if (!string.IsNullOrEmpty(project.Description))
+                {
+                    result += $"  Description: {project.Description}\n";
+                }
+                result += $"  State: {project.State}\n";
+                result += $"  Visibility: {project.Visibility}\n";
+                if (project.LastUpdateTime.HasValue)
+                {
+                    result += $"  Last Updated: {project.LastUpdateTime.Value:yyyy-MM-dd HH:mm:ss}\n";
+                }
+                result += "\n";
+            }
+
+            result += $"Total: {projects.Value.Count} project(s)";
+
+            _logger.LogInformation("Successfully retrieved {Count} projects for organization: {Organization}", projects.Value.Count, organization);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error listing projects for organization: {Organization}", organization);
+            return $"Error: {ex.Message}";
+        }
+    }
 }
