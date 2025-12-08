@@ -117,17 +117,17 @@ public class UsersPlugin
 
             if (string.IsNullOrWhiteSpace(accountLicenseType))
             {
-                return "Error: Account license type is required. Valid values: express, stakeholder, advanced, professional.";
+                return "Error: Account license type is required. Valid values: express, stakeholder, advanced, professional, earlyAdopter.";
             }
 
             // Normalize license type to lowercase
             var normalizedLicenseType = accountLicenseType.ToLower();
 
             // Validate license type
-            var validLicenseTypes = new[] { "express", "stakeholder", "advanced", "professional", "earlyAdopter" };
+            var validLicenseTypes = new[] { "express", "stakeholder", "advanced", "professional", "earlyadopter" };
             if (!validLicenseTypes.Contains(normalizedLicenseType, StringComparer.OrdinalIgnoreCase))
             {
-                return $"Error: Invalid license type '{accountLicenseType}'. Valid values: express, stakeholder, advanced, professional.";
+                return $"Error: Invalid license type '{accountLicenseType}'. Valid values: express, stakeholder, advanced, professional, earlyAdopter.";
             }
 
             // Create the user entitlement request
@@ -176,7 +176,6 @@ public class UsersPlugin
             else
             {
                 _logger.LogInformation("No project entitlements specified. User will have organization-level access only.");
-                return "No project entitlements were specified. Please provide a list of projects the user should have access to, along with their role in each project. Use the list_projects tool to get project IDs. Valid roles are: projectReader, projectContributor, projectAdministrator.";
             }
 
             // Use vsaex API endpoint for user entitlements
@@ -203,9 +202,15 @@ public class UsersPlugin
                 {
                     response += $"  - Project ID: {pe.ProjectRef.Id}, Role: {pe.Group.GroupType}\n";
                 }
+                response += "\nThe user can now access Azure DevOps with the assigned license and project permissions.";
             }
-
-            response += "\nThe user can now access Azure DevOps with the assigned license and project permissions.";
+            else
+            {
+                response += $"• **Project Access**: Organization-level access only (no specific projects assigned)\n";
+                response += "\nThe user can now access Azure DevOps with the assigned license. ";
+                response += "To grant access to specific projects, you can add project entitlements using the add_user_entitlement function again with project details. ";
+                response += "Use the list_projects tool to find project IDs.";
+            }
 
             _logger.LogInformation("Successfully added user entitlement for {PrincipalName}", principalName);
             return response;

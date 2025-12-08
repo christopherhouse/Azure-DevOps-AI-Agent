@@ -268,21 +268,32 @@ public class UsersPluginTests
     }
 
     [Fact]
-    public async Task AddUserEntitlementAsync_ShouldReturnPromptForProjectEntitlements_WhenNoneProvided()
+    public async Task AddUserEntitlementAsync_ShouldAddUserWithoutProjectEntitlements_WhenNoneProvided()
     {
         // Arrange
         var organization = "test-org";
         var principalName = "newuser@contoso.com";
         var licenseType = "express";
 
+        _mockApiService
+            .Setup(x => x.PostAsync<object>(
+                organization,
+                "https://vsaex.dev.azure.com/test-org/_apis/userentitlements",
+                It.IsAny<AddUserEntitlementRequest>(),
+                "7.1",
+                default))
+            .ReturnsAsync(new { success = true });
+
         // Act
         var result = await _plugin.AddUserEntitlementAsync(organization, principalName, licenseType, null);
 
         // Assert
-        result.Should().Contain("No project entitlements were specified");
-        result.Should().Contain("Please provide a list of projects");
-        result.Should().Contain("list_projects");
-        result.Should().Contain("projectReader, projectContributor, projectAdministrator");
+        result.Should().Contain("✅ User entitlement added successfully!");
+        result.Should().Contain("newuser@contoso.com");
+        result.Should().Contain("express");
+        result.Should().Contain("Organization-level access only");
+        result.Should().Contain("no specific projects assigned");
+        result.Should().Contain("To grant access to specific projects");
     }
 
     [Fact]
@@ -358,7 +369,7 @@ public class UsersPluginTests
 
         // Assert
         result.Should().Contain("Error: Invalid license type");
-        result.Should().Contain("Valid values: express, stakeholder, advanced, professional");
+        result.Should().Contain("Valid values: express, stakeholder, advanced, professional, earlyAdopter");
     }
 
     [Fact]
