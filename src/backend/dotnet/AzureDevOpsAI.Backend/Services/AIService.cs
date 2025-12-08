@@ -146,6 +146,12 @@ public class AIService : IAIService
                 
             _kernel.ImportPluginFromObject(projectPlugin, nameof(ProjectPlugin));
             
+            var usersPlugin = new UsersPlugin(
+                _azureDevOpsApiService,
+                _loggerFactory.CreateLogger<UsersPlugin>());
+                
+            _kernel.ImportPluginFromObject(usersPlugin, nameof(UsersPlugin));
+            
             _logger.LogDebug("Plugins registered successfully");
         }
         catch (Exception ex)
