@@ -16,7 +16,10 @@ interface ThoughtProcessProps {
   conversationId: string;
 }
 
-export function ThoughtProcess({ thoughtProcessId, conversationId }: ThoughtProcessProps) {
+export function ThoughtProcess({
+  thoughtProcessId,
+  conversationId,
+}: ThoughtProcessProps) {
   const [thoughtProcess, setThoughtProcess] =
     useState<ThoughtProcessType | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,7 +32,7 @@ export function ThoughtProcess({ thoughtProcessId, conversationId }: ThoughtProc
         setLoading(false);
         return;
       }
-      
+
       if (!conversationId) {
         setLoading(false);
         setError('Conversation ID is required to fetch thought process');

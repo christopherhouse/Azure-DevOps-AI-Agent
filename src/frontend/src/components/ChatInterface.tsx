@@ -30,9 +30,8 @@ export function ChatInterface() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<TabType>('chat');
-  const [selectedThoughtProcess, setSelectedThoughtProcess] = useState<
-    SelectedThoughtProcess | null
-  >(null);
+  const [selectedThoughtProcess, setSelectedThoughtProcess] =
+    useState<SelectedThoughtProcess | null>(null);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -42,7 +41,8 @@ export function ChatInterface() {
   // Get the latest assistant message with a thought process
   const getLatestThoughtProcess = (): SelectedThoughtProcess | null => {
     const assistantMessages = messages.filter(
-      (msg) => msg.role === 'assistant' && msg.thoughtProcessId && msg.conversationId
+      (msg) =>
+        msg.role === 'assistant' && msg.thoughtProcessId && msg.conversationId
     );
     if (assistantMessages.length > 0) {
       const lastMessage = assistantMessages[assistantMessages.length - 1];
@@ -63,7 +63,10 @@ export function ChatInterface() {
   };
 
   // Handle message selection for thought process viewing
-  const handleMessageThoughtProcessClick = (thoughtProcessId: string, conversationId: string) => {
+  const handleMessageThoughtProcessClick = (
+    thoughtProcessId: string,
+    conversationId: string
+  ) => {
     setSelectedThoughtProcess({ thoughtProcessId, conversationId });
     setActiveTab('thought');
   };
@@ -277,8 +280,8 @@ export function ChatInterface() {
           /* Thought Process Tab */
           <div className="flex-1 overflow-y-auto">
             {selectedThoughtProcess ? (
-              <ThoughtProcess 
-                thoughtProcessId={selectedThoughtProcess.thoughtProcessId} 
+              <ThoughtProcess
+                thoughtProcessId={selectedThoughtProcess.thoughtProcessId}
                 conversationId={selectedThoughtProcess.conversationId}
               />
             ) : (

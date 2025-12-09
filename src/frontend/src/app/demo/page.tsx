@@ -251,7 +251,8 @@ function DemoChatInterface() {
           🤖 Azure DevOps AI Agent - Demo
         </h1>
         <p className="text-blue-100 text-sm">
-          Demonstrating the timestamp display feature (no more &quot;Invalid date&quot;!)
+          Demonstrating the timestamp display feature (no more &quot;Invalid
+          date&quot;!)
         </p>
       </div>
 
