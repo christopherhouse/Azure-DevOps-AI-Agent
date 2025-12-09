@@ -37,6 +37,22 @@ const mockMessages: ChatMessage[] = [
   },
   {
     id: '3',
+    content: 'Show me the users in the organization',
+    role: 'user',
+    timestamp: new Date(Date.now() - 1 * 60 * 1000), // 1 minute ago
+    conversationId: 'demo-conversation',
+  },
+  {
+    id: '4',
+    content:
+      'Here is the list of users for the Azure DevOps organization **chris0477**:\n\n| Display Name | Email | License | Status | Last Accessed Date | Date Created |\n|--------------|-------|---------|--------|-------------------|-------------|\n| Christopher House (low-priv) | chris@MngEnvMCAP064264.onmicrosoft.com | Basic | Active | 2025-12-09 12:51:36 | 2024-11-01 |\n| Chris House | chhouse@microsoft.com | Visual Studio Enterprise subscription | Active | 2025-12-02 14:55:50 | 2024-11-01 |\n\nFeel free to ask if you need more information or assistance with Azure DevOps!',
+    role: 'assistant',
+    format: 'markdown',
+    timestamp: new Date(Date.now() - 30 * 1000), // 30 seconds ago
+    conversationId: 'demo-conversation',
+  },
+  {
+    id: '5',
     content: 'What was discussed last week?',
     role: 'user',
     timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago - shows date and time
