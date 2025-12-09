@@ -108,6 +108,11 @@ public class ChatResponse
     public string ConversationId { get; set; } = string.Empty;
 
     /// <summary>
+    /// Content format (e.g., "markdown", "text").
+    /// </summary>
+    public string Format { get; set; } = "markdown";
+
+    /// <summary>
     /// Suggested follow-up actions.
     /// </summary>
     public List<string>? Suggestions { get; set; }
