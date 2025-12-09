@@ -6,6 +6,7 @@
 
 import React, { useState } from 'react';
 import { ThoughtProcess } from '@/components/ThoughtProcess';
+import { ChatMessageComponent } from '@/components/ChatMessage';
 import type {
   ChatMessage,
   ThoughtProcess as ThoughtProcessType,
@@ -17,7 +18,7 @@ const mockMessages: ChatMessage[] = [
     id: '1',
     content: 'Show me my active work items',
     role: 'user',
-    timestamp: new Date('2024-12-19T10:30:00Z'),
+    timestamp: new Date(), // Current time - shows time only
     conversationId: 'demo-conversation',
   },
   {
@@ -25,7 +26,7 @@ const mockMessages: ChatMessage[] = [
     content:
       'I found 5 active work items in your current sprint. Here they are:\n\n1. **User Story #1234**: Implement user authentication\n2. **Bug #1235**: Fix login redirect issue\n3. **Task #1236**: Update API documentation\n4. **Feature #1237**: Add search functionality\n5. **Epic #1238**: Mobile app development\n\nWould you like me to show details for any specific work item?',
     role: 'assistant',
-    timestamp: new Date('2024-12-19T10:30:15Z'),
+    timestamp: new Date(), // Current time - shows time only
     conversationId: 'demo-conversation',
     thoughtProcessId: 'demo-thought-process-1',
     suggestions: [
@@ -33,6 +34,13 @@ const mockMessages: ChatMessage[] = [
       'What are the blockers for these items?',
       'Show work items assigned to me',
     ],
+  },
+  {
+    id: '3',
+    content: 'What was discussed last week?',
+    role: 'user',
+    timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago - shows date and time
+    conversationId: 'demo-conversation',
   },
 ];
 
@@ -243,7 +251,7 @@ function DemoChatInterface() {
           🤖 Azure DevOps AI Agent - Demo
         </h1>
         <p className="text-blue-100 text-sm">
-          Demonstrating the new thought process feature
+          Demonstrating the timestamp display feature (no more &quot;Invalid date&quot;!)
         </p>
       </div>
 
@@ -251,32 +259,7 @@ function DemoChatInterface() {
         <div className="space-y-4">
           {mockMessages.map((message) => (
             <div key={message.id} className="space-y-2">
-              <div
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-md p-3 rounded-lg ${
-                    message.role === 'user'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-900'
-                  }`}
-                >
-                  <div className="whitespace-pre-wrap">{message.content}</div>
-                  {message.suggestions && (
-                    <div className="mt-3 space-y-1">
-                      <div className="text-xs opacity-75">Suggestions:</div>
-                      {message.suggestions.map((suggestion, idx) => (
-                        <div
-                          key={idx}
-                          className="text-xs bg-black bg-opacity-10 rounded px-2 py-1"
-                        >
-                          {suggestion}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+              <ChatMessageComponent message={message} />
 
               {message.role === 'assistant' && message.thoughtProcessId && (
                 <div className="flex justify-start">

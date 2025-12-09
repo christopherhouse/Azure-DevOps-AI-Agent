@@ -18,23 +18,29 @@ export function ChatMessageComponent({
   onSuggestionClick,
 }: ChatMessageProps) {
   const isUser = message.role === 'user';
-  const timestamp = message.timestamp.toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-
-  const getCitationIcon = (type?: string) => {
-    switch (type) {
-      case 'documentation':
-        return <BookOpen className="w-3 h-3" />;
-      case 'reference':
-        return <FileText className="w-3 h-3" />;
-      case 'guide':
-        return <Info className="w-3 h-3" />;
-      default:
-        return <ExternalLink className="w-3 h-3" />;
+  
+  // Format timestamp based on user's locale
+  // Show date and time for older messages, just time for today's messages
+  const formatTimestamp = (date: Date): string => {
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    
+    if (isToday) {
+      return date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } else {
+      return date.toLocaleString([], {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
     }
   };
+  
+  const timestamp = formatTimestamp(message.timestamp);
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>

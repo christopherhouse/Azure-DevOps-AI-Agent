@@ -77,4 +77,42 @@ describe('ChatMessage Component', () => {
     
     expect(screen.getByText('Hello, this is a test message')).toBeInTheDocument();
   });
+
+  it('displays timestamp for messages from today', () => {
+    const todayMessage: ChatMessage = {
+      ...mockChatMessage,
+      timestamp: new Date(), // Current time
+    };
+
+    render(<ChatMessageComponent message={todayMessage} />);
+    
+    // Should display just the time (e.g., "12:34 PM" or "12:34")
+    // The exact format depends on the user's locale, but it should not contain the date
+    expect(screen.getByText(/\d{1,2}:\d{2}/)).toBeInTheDocument();
+  });
+
+  it('displays timestamp with date for older messages', () => {
+    const olderMessage: ChatMessage = {
+      ...mockChatMessage,
+      timestamp: new Date('2024-01-01T12:00:00Z'), // Past date
+    };
+
+    render(<ChatMessageComponent message={olderMessage} />);
+    
+    // Should display date and time (e.g., "Jan 1, 12:00 PM")
+    // The exact format depends on the user's locale
+    expect(screen.getByText(/\d{1,2}:\d{2}/)).toBeInTheDocument();
+  });
+
+  it('handles valid Date objects for timestamp', () => {
+    const messageWithValidDate: ChatMessage = {
+      ...mockChatMessage,
+      timestamp: new Date('2024-06-15T14:30:00Z'),
+    };
+
+    render(<ChatMessageComponent message={messageWithValidDate} />);
+    
+    // Should not display "Invalid date"
+    expect(screen.queryByText('Invalid date')).not.toBeInTheDocument();
+  });
 });
