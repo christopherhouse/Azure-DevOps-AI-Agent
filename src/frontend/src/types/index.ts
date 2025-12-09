@@ -28,6 +28,7 @@ export interface ChatMessage {
   citations?: Citation[];
   suggestions?: string[];
   thoughtProcessId?: string;
+  format?: 'markdown' | 'text'; // Format of the message content
 }
 
 export interface ChatState {

@@ -4,6 +4,7 @@ using AzureDevOpsAI.Backend.Services;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
+using System.Text.Json;
 
 namespace AzureDevOpsAI.Backend.Tests.Plugins;
 
@@ -92,16 +93,26 @@ public class UsersPluginTests
         // Act
         var result = await _plugin.ListUsersAsync(organization);
 
-        // Assert
-        result.Should().Contain("Users in organization 'test-org':");
-        result.Should().Contain("**John Doe** (john.doe@contoso.com)");
-        result.Should().Contain("User ID: user-guid-1");
-        result.Should().Contain("License: Visual Studio Enterprise");
-        result.Should().Contain("Status: Active");
-        result.Should().Contain("**Jane Smith** (jane.smith@contoso.com)");
-        result.Should().Contain("User ID: user-guid-2");
-        result.Should().Contain("License: Stakeholder");
-        result.Should().Contain("Total: 2 user(s)");
+        // Assert - verify JSON format
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("organization").GetString().Should().Be("test-org");
+        jsonDoc.RootElement.GetProperty("totalUsers").GetInt32().Should().Be(2);
+        
+        var usersArray = jsonDoc.RootElement.GetProperty("users");
+        usersArray.GetArrayLength().Should().Be(2);
+        
+        var firstUser = usersArray[0];
+        firstUser.GetProperty("displayName").GetString().Should().Be("John Doe");
+        firstUser.GetProperty("principalName").GetString().Should().Be("john.doe@contoso.com");
+        firstUser.GetProperty("userId").GetString().Should().Be("user-guid-1");
+        firstUser.GetProperty("license").GetString().Should().Be("Visual Studio Enterprise");
+        firstUser.GetProperty("status").GetString().Should().Be("Active");
+        
+        var secondUser = usersArray[1];
+        secondUser.GetProperty("displayName").GetString().Should().Be("Jane Smith");
+        secondUser.GetProperty("principalName").GetString().Should().Be("jane.smith@contoso.com");
+        secondUser.GetProperty("userId").GetString().Should().Be("user-guid-2");
+        secondUser.GetProperty("license").GetString().Should().Be("Stakeholder");
     }
 
     [Fact]
@@ -126,8 +137,10 @@ public class UsersPluginTests
         // Act
         var result = await _plugin.ListUsersAsync(organization);
 
-        // Assert
-        result.Should().Be("No users found in this organization.");
+        // Assert - verify JSON format
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("message").GetString().Should().Be("No users found in this organization.");
+        jsonDoc.RootElement.GetProperty("users").GetArrayLength().Should().Be(0);
     }
 
     [Fact]
@@ -147,8 +160,10 @@ public class UsersPluginTests
         // Act
         var result = await _plugin.ListUsersAsync(organization);
 
-        // Assert
-        result.Should().Be("No users found in this organization.");
+        // Assert - verify JSON format
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("message").GetString().Should().Be("No users found in this organization.");
+        jsonDoc.RootElement.GetProperty("users").GetArrayLength().Should().Be(0);
     }
 
     [Fact]
@@ -169,9 +184,9 @@ public class UsersPluginTests
         // Act
         var result = await _plugin.ListUsersAsync(organization);
 
-        // Assert
-        result.Should().StartWith("Error:");
-        result.Should().Contain(exceptionMessage);
+        // Assert - verify JSON format
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("error").GetString().Should().Be(exceptionMessage);
     }
 
     [Fact]
@@ -209,10 +224,14 @@ public class UsersPluginTests
         // Act
         var result = await _plugin.ListUsersAsync(organization);
 
-        // Assert
-        result.Should().Contain("**John Doe** (john.doe@contoso.com)");
-        result.Should().NotContain("License:");
-        result.Should().Contain("Total: 1 user(s)");
+        // Assert - verify JSON format
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("totalUsers").GetInt32().Should().Be(1);
+        
+        var usersArray = jsonDoc.RootElement.GetProperty("users");
+        var firstUser = usersArray[0];
+        firstUser.GetProperty("displayName").GetString().Should().Be("John Doe");
+        firstUser.GetProperty("license").GetString().Should().Be("N/A");
     }
 
     [Fact]
@@ -287,13 +306,12 @@ public class UsersPluginTests
         // Act
         var result = await _plugin.AddUserEntitlementAsync(organization, principalName, licenseType, null);
 
-        // Assert
-        result.Should().Contain("✅ User entitlement added successfully!");
-        result.Should().Contain("newuser@contoso.com");
-        result.Should().Contain("express");
-        result.Should().Contain("Organization-level access only");
-        result.Should().Contain("no specific projects assigned");
-        result.Should().Contain("To grant access to specific projects");
+        // Assert - verify JSON format
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("success").GetBoolean().Should().BeTrue();
+        jsonDoc.RootElement.GetProperty("user").GetString().Should().Be("newuser@contoso.com");
+        jsonDoc.RootElement.GetProperty("license").GetString().Should().Be("express");
+        jsonDoc.RootElement.GetProperty("hasProjectAccess").GetBoolean().Should().BeFalse();
     }
 
     [Fact]
@@ -317,13 +335,17 @@ public class UsersPluginTests
         // Act
         var result = await _plugin.AddUserEntitlementAsync(organization, principalName, licenseType, projectEntitlementsJson);
 
-        // Assert
-        result.Should().Contain("✅ User entitlement added successfully!");
-        result.Should().Contain("newuser@contoso.com");
-        result.Should().Contain("express");
-        result.Should().Contain("1 project(s)");
-        result.Should().Contain("Project ID: proj-guid-1");
-        result.Should().Contain("Role: projectContributor");
+        // Assert - verify JSON format
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("success").GetBoolean().Should().BeTrue();
+        jsonDoc.RootElement.GetProperty("user").GetString().Should().Be("newuser@contoso.com");
+        jsonDoc.RootElement.GetProperty("license").GetString().Should().Be("express");
+        jsonDoc.RootElement.GetProperty("hasProjectAccess").GetBoolean().Should().BeTrue();
+        
+        var projectEntitlements = jsonDoc.RootElement.GetProperty("projectEntitlements");
+        projectEntitlements.GetArrayLength().Should().Be(1);
+        projectEntitlements[0].GetProperty("projectId").GetString().Should().Be("proj-guid-1");
+        projectEntitlements[0].GetProperty("groupType").GetString().Should().Be("projectContributor");
     }
 
     [Fact]
@@ -337,8 +359,9 @@ public class UsersPluginTests
         // Act
         var result = await _plugin.AddUserEntitlementAsync(organization, principalName, licenseType, null);
 
-        // Assert
-        result.Should().Contain("Error: Principal name (email address) is required.");
+        // Assert - verify JSON format
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("error").GetString().Should().Be("Principal name (email address) is required.");
     }
 
     [Fact]
@@ -352,8 +375,9 @@ public class UsersPluginTests
         // Act
         var result = await _plugin.AddUserEntitlementAsync(organization, principalName, licenseType, null);
 
-        // Assert
-        result.Should().Contain("Error: Account license type is required.");
+        // Assert - verify JSON format
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("error").GetString().Should().Contain("Account license type is required");
     }
 
     [Fact]
@@ -367,9 +391,10 @@ public class UsersPluginTests
         // Act
         var result = await _plugin.AddUserEntitlementAsync(organization, principalName, licenseType, null);
 
-        // Assert
-        result.Should().Contain("Error: Invalid license type");
-        result.Should().Contain("Valid values: express, stakeholder, advanced, professional, earlyAdopter");
+        // Assert - verify JSON format
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("error").GetString().Should().Contain("Invalid license type");
+        jsonDoc.RootElement.GetProperty("error").GetString().Should().Contain("Valid values: express, stakeholder, advanced, professional, earlyAdopter");
     }
 
     [Fact]
@@ -384,8 +409,9 @@ public class UsersPluginTests
         // Act
         var result = await _plugin.AddUserEntitlementAsync(organization, principalName, licenseType, invalidJson);
 
-        // Assert
-        result.Should().Contain("Error: Invalid project entitlements JSON format");
+        // Assert - verify JSON format
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("error").GetString().Should().Contain("Invalid project entitlements JSON format");
     }
 
     [Fact]
@@ -414,8 +440,9 @@ public class UsersPluginTests
         // Act
         var result = await _plugin.AddUserEntitlementAsync(organization, principalName, licenseType, projectEntitlementsJson);
 
-        // Assert
-        result.Should().Contain("✅ User entitlement added successfully!");
+        // Assert - verify JSON format  
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("success").GetBoolean().Should().BeTrue();
         capturedRequest.Should().NotBeNull();
         capturedRequest!.AccessLevel.AccountLicenseType.Should().Be("express"); // normalized to lowercase
     }
@@ -441,8 +468,9 @@ public class UsersPluginTests
         // Act
         var result = await _plugin.AddUserEntitlementAsync(organization, principalName, licenseType, projectEntitlementsJson);
 
-        // Assert
-        result.Should().Contain("Error: Failed to add user entitlement");
+        // Assert - verify JSON format
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("error").GetString().Should().Contain("Failed to add user entitlement");
     }
 
     [Fact]
@@ -467,9 +495,9 @@ public class UsersPluginTests
         // Act
         var result = await _plugin.AddUserEntitlementAsync(organization, principalName, licenseType, projectEntitlementsJson);
 
-        // Assert
-        result.Should().Contain("Error:");
-        result.Should().Contain(exceptionMessage);
+        // Assert - verify JSON format
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("error").GetString().Should().Be(exceptionMessage);
     }
 
     [Fact]
@@ -493,13 +521,16 @@ public class UsersPluginTests
         // Act
         var result = await _plugin.AddUserEntitlementAsync(organization, principalName, licenseType, projectEntitlementsJson);
 
-        // Assert
-        result.Should().Contain("✅ User entitlement added successfully!");
-        result.Should().Contain("2 project(s)");
-        result.Should().Contain("Project ID: proj-guid-1");
-        result.Should().Contain("Role: projectContributor");
-        result.Should().Contain("Project ID: proj-guid-2");
-        result.Should().Contain("Role: projectReader");
+        // Assert - verify JSON format
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("success").GetBoolean().Should().BeTrue();
+        
+        var projectEntitlements = jsonDoc.RootElement.GetProperty("projectEntitlements");
+        projectEntitlements.GetArrayLength().Should().Be(2);
+        projectEntitlements[0].GetProperty("projectId").GetString().Should().Be("proj-guid-1");
+        projectEntitlements[0].GetProperty("groupType").GetString().Should().Be("projectContributor");
+        projectEntitlements[1].GetProperty("projectId").GetString().Should().Be("proj-guid-2");
+        projectEntitlements[1].GetProperty("groupType").GetString().Should().Be("projectReader");
     }
 
     [Fact]

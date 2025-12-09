@@ -40,30 +40,26 @@ public class ProjectPlugin
 
             if (processTemplates?.Value == null || !processTemplates.Value.Any())
             {
-                return "No process templates found for this organization.";
+                return JsonSerializer.Serialize(new { message = "No process templates found for this organization.", templates = new List<object>() });
             }
 
-            // Format the response for the AI
-            var result = "Available process templates:\n\n";
-            foreach (var template in processTemplates.Value.Where(t => t.IsEnabled))
+            // Return raw JSON data for the AI to format
+            var templatesData = processTemplates.Value.Where(t => t.IsEnabled).Select(t => new
             {
-                result += $"• **{template.Name}** (ID: {template.TypeId})\n";
-                result += $"  Description: {template.Description}\n";
-                result += $"  Type: {template.CustomizationType}";
-                if (template.IsDefault)
-                {
-                    result += " (Default)";
-                }
-                result += "\n\n";
-            }
+                name = t.Name,
+                id = t.TypeId,
+                description = t.Description,
+                customizationType = t.CustomizationType,
+                isDefault = t.IsDefault
+            }).ToList();
 
             _logger.LogInformation("Successfully retrieved {Count} process templates", processTemplates.Value.Count);
-            return result;
+            return JsonSerializer.Serialize(new { organization, templates = templatesData });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting process templates for organization: {Organization}", organization);
-            return $"Error: {ex.Message}";
+            return JsonSerializer.Serialize(new { error = ex.Message });
         }
     }
 
@@ -92,18 +88,18 @@ public class ProjectPlugin
             // Validate inputs
             if (string.IsNullOrWhiteSpace(projectName))
             {
-                return "Error: Project name is required.";
+                return JsonSerializer.Serialize(new { error = "Project name is required." });
             }
 
             if (string.IsNullOrWhiteSpace(processTemplateId))
             {
-                return "Error: Process template ID is required. Use get_process_templates to find available template IDs.";
+                return JsonSerializer.Serialize(new { error = "Process template ID is required. Use get_process_templates to find available template IDs." });
             }
 
             // Parse visibility
             if (!Enum.TryParse<ProjectVisibility>(visibility, true, out var projectVisibility))
             {
-                return "Error: Invalid visibility value. Use 'Private' or 'Public'.";
+                return JsonSerializer.Serialize(new { error = "Invalid visibility value. Use 'Private' or 'Public'." });
             }
 
             // Create the project request payload
@@ -131,7 +127,7 @@ public class ProjectPlugin
 
             if (createdProject == null)
             {
-                return "Error: Failed to create project. Please check the logs for more details.";
+                return JsonSerializer.Serialize(new { error = "Failed to create project. Please check the logs for more details." });
             }
 
             // Parse the response to get project details
@@ -156,37 +152,28 @@ public class ProjectPlugin
                 status = statusElement.GetString();
             }
 
-            var result = $"✅ Project '{projectName}' created successfully!\n\n";
-            result += $"• **Project ID**: {projectId}\n";
-            result += $"• **Organization**: {organization}\n";
-            result += $"• **Visibility**: {visibility}\n";
-            result += $"• **Source Control**: Git\n";
-            result += $"• **Process Template ID**: {processTemplateId}\n";
-            
-            if (!string.IsNullOrEmpty(description))
+            // Return raw JSON data for the AI to format
+            var result = new
             {
-                result += $"• **Description**: {description}\n";
-            }
-
-            if (!string.IsNullOrEmpty(projectUrl))
-            {
-                result += $"• **Project URL**: {projectUrl}\n";
-            }
-
-            if (!string.IsNullOrEmpty(status))
-            {
-                result += $"• **Status**: {status}\n";
-            }
-
-            result += "\nThe project is now ready for use in Azure DevOps!";
+                success = true,
+                projectName,
+                projectId,
+                organization,
+                visibility,
+                sourceControl = "Git",
+                processTemplateId,
+                description,
+                projectUrl,
+                status
+            };
 
             _logger.LogInformation("Successfully created project '{ProjectName}' with ID: {ProjectId}", projectName, projectId);
-            return result;
+            return JsonSerializer.Serialize(result);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating project '{ProjectName}' in organization: {Organization}", projectName, organization);
-            return $"Error: {ex.Message}";
+            return JsonSerializer.Serialize(new { error = ex.Message });
         }
     }
 
@@ -212,7 +199,7 @@ public class ProjectPlugin
 
             if (processTemplates?.Value == null || !processTemplates.Value.Any())
             {
-                return "Error: No process templates found for this organization.";
+                return JsonSerializer.Serialize(new { error = "No process templates found for this organization." });
             }
 
             // Find exact match first
@@ -221,7 +208,17 @@ public class ProjectPlugin
 
             if (exactMatch != null)
             {
-                return $"Found exact match: '{exactMatch.Name}' (ID: {exactMatch.TypeId})";
+                return JsonSerializer.Serialize(new
+                {
+                    matchType = "exact",
+                    template = new
+                    {
+                        name = exactMatch.Name,
+                        id = exactMatch.TypeId,
+                        description = exactMatch.Description,
+                        isDefault = exactMatch.IsDefault
+                    }
+                });
             }
 
             // Find partial matches
@@ -231,28 +228,48 @@ public class ProjectPlugin
             if (partialMatches.Count == 1)
             {
                 var match = partialMatches.First();
-                return $"Found match: '{match.Name}' (ID: {match.TypeId})";
+                return JsonSerializer.Serialize(new
+                {
+                    matchType = "partial",
+                    template = new
+                    {
+                        name = match.Name,
+                        id = match.TypeId,
+                        description = match.Description,
+                        isDefault = match.IsDefault
+                    }
+                });
             }
 
             if (partialMatches.Count > 1)
             {
-                var result = $"Found multiple matches for '{templateName}':\n\n";
-                foreach (var match in partialMatches)
+                return JsonSerializer.Serialize(new
                 {
-                    result += $"• **{match.Name}** (ID: {match.TypeId})\n";
-                }
-                result += "\nPlease be more specific or use the exact template name.";
-                return result;
+                    matchType = "multiple",
+                    searchTerm = templateName,
+                    matches = partialMatches.Select(m => new
+                    {
+                        name = m.Name,
+                        id = m.TypeId,
+                        description = m.Description,
+                        isDefault = m.IsDefault
+                    }).ToList()
+                });
             }
 
             // No matches found
-            var availableTemplates = string.Join(", ", processTemplates.Value.Where(t => t.IsEnabled).Select(t => t.Name));
-            return $"No process template found matching '{templateName}'. Available templates: {availableTemplates}";
+            var availableTemplates = processTemplates.Value.Where(t => t.IsEnabled).Select(t => t.Name).ToList();
+            return JsonSerializer.Serialize(new
+            {
+                matchType = "none",
+                searchTerm = templateName,
+                availableTemplates
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error finding process template '{TemplateName}' in organization: {Organization}", templateName, organization);
-            return $"Error: {ex.Message}";
+            return JsonSerializer.Serialize(new { error = ex.Message });
         }
     }
 
@@ -276,36 +293,32 @@ public class ProjectPlugin
 
             if (projects?.Value == null || !projects.Value.Any())
             {
-                return "No projects found in this organization.";
+                return JsonSerializer.Serialize(new { message = "No projects found in this organization.", projects = new List<object>() });
             }
 
-            // Format the response for the AI
-            var result = $"Projects in organization '{organization}':\n\n";
-            foreach (var project in projects.Value)
+            // Return raw JSON data for the AI to format
+            var projectsData = projects.Value.Select(p => new
             {
-                result += $"• **{project.Name}** (ID: {project.Id})\n";
-                if (!string.IsNullOrEmpty(project.Description))
-                {
-                    result += $"  Description: {project.Description}\n";
-                }
-                result += $"  State: {project.State}\n";
-                result += $"  Visibility: {project.Visibility}\n";
-                if (project.LastUpdateTime.HasValue)
-                {
-                    result += $"  Last Updated: {project.LastUpdateTime.Value:yyyy-MM-dd HH:mm:ss}\n";
-                }
-                result += "\n";
-            }
-
-            result += $"Total: {projects.Value.Count} project(s)";
+                name = p.Name,
+                id = p.Id,
+                description = p.Description,
+                state = p.State.ToString(),
+                visibility = p.Visibility.ToString(),
+                lastUpdateTime = p.LastUpdateTime?.ToString("yyyy-MM-dd HH:mm:ss")
+            }).ToList();
 
             _logger.LogInformation("Successfully retrieved {Count} projects for organization: {Organization}", projects.Value.Count, organization);
-            return result;
+            return JsonSerializer.Serialize(new
+            {
+                organization,
+                totalProjects = projects.Value.Count,
+                projects = projectsData
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error listing projects for organization: {Organization}", organization);
-            return $"Error: {ex.Message}";
+            return JsonSerializer.Serialize(new { error = ex.Message });
         }
     }
 }

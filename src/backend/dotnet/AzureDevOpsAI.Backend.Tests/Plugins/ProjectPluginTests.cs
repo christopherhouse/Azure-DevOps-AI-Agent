@@ -4,6 +4,7 @@ using AzureDevOpsAI.Backend.Services;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
+using System.Text.Json;
 
 namespace AzureDevOpsAI.Backend.Tests.Plugins;
 
@@ -68,16 +69,20 @@ public class ProjectPluginTests
         // Act
         var result = await _plugin.ListProjectsAsync(organization);
 
-        // Assert
-        result.Should().Contain("Projects in organization 'test-org':");
-        result.Should().Contain("**Project 1** (ID: proj-1)");
-        result.Should().Contain("First test project");
-        result.Should().Contain("**Project 2** (ID: proj-2)");
-        result.Should().Contain("Second test project");
-        result.Should().Contain("State: WellFormed");
-        result.Should().Contain("Visibility: Private");
-        result.Should().Contain("Visibility: Public");
-        result.Should().Contain("Total: 2 project(s)");
+        // Assert - verify JSON format
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("organization").GetString().Should().Be("test-org");
+        jsonDoc.RootElement.GetProperty("totalProjects").GetInt32().Should().Be(2);
+        
+        var projectsArray = jsonDoc.RootElement.GetProperty("projects");
+        projectsArray.GetArrayLength().Should().Be(2);
+        
+        var firstProject = projectsArray[0];
+        firstProject.GetProperty("name").GetString().Should().Be("Project 1");
+        firstProject.GetProperty("id").GetString().Should().Be("proj-1");
+        firstProject.GetProperty("description").GetString().Should().Be("First test project");
+        firstProject.GetProperty("state").GetString().Should().Be("WellFormed");
+        firstProject.GetProperty("visibility").GetString().Should().Be("Private");
     }
 
     [Fact]
@@ -98,8 +103,10 @@ public class ProjectPluginTests
         // Act
         var result = await _plugin.ListProjectsAsync(organization);
 
-        // Assert
-        result.Should().Be("No projects found in this organization.");
+        // Assert - verify JSON format
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("message").GetString().Should().Be("No projects found in this organization.");
+        jsonDoc.RootElement.GetProperty("projects").GetArrayLength().Should().Be(0);
     }
 
     [Fact]
@@ -115,8 +122,10 @@ public class ProjectPluginTests
         // Act
         var result = await _plugin.ListProjectsAsync(organization);
 
-        // Assert
-        result.Should().Be("No projects found in this organization.");
+        // Assert - verify JSON format
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("message").GetString().Should().Be("No projects found in this organization.");
+        jsonDoc.RootElement.GetProperty("projects").GetArrayLength().Should().Be(0);
     }
 
     [Fact]
@@ -133,9 +142,9 @@ public class ProjectPluginTests
         // Act
         var result = await _plugin.ListProjectsAsync(organization);
 
-        // Assert
-        result.Should().StartWith("Error:");
-        result.Should().Contain(exceptionMessage);
+        // Assert - verify JSON format
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("error").GetString().Should().Be(exceptionMessage);
     }
 
     [Fact]
@@ -166,10 +175,21 @@ public class ProjectPluginTests
         // Act
         var result = await _plugin.ListProjectsAsync(organization);
 
-        // Assert
-        result.Should().Contain("**Project Without Description** (ID: proj-1)");
-        result.Should().NotContain("Description:");
-        result.Should().Contain("Total: 1 project(s)");
+        // Assert - verify JSON format
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("totalProjects").GetInt32().Should().Be(1);
+        
+        var projectsArray = jsonDoc.RootElement.GetProperty("projects");
+        var firstProject = projectsArray[0];
+        firstProject.GetProperty("name").GetString().Should().Be("Project Without Description");
+        firstProject.GetProperty("id").GetString().Should().Be("proj-1");
+        
+        // Description may be null or empty string in JSON
+        var hasDescription = firstProject.TryGetProperty("description", out var descProp);
+        if (hasDescription && descProp.ValueKind != JsonValueKind.Null)
+        {
+            descProp.GetString().Should().BeNullOrEmpty();
+        }
     }
 
     [Fact]
@@ -200,9 +220,18 @@ public class ProjectPluginTests
         // Act
         var result = await _plugin.ListProjectsAsync(organization);
 
-        // Assert
-        result.Should().Contain("**Project Without LastUpdate** (ID: proj-1)");
-        result.Should().NotContain("Last Updated:");
+        // Assert - verify JSON format
+        var jsonDoc = JsonDocument.Parse(result);
+        var projectsArray = jsonDoc.RootElement.GetProperty("projects");
+        var firstProject = projectsArray[0];
+        firstProject.GetProperty("name").GetString().Should().Be("Project Without LastUpdate");
+        
+        // lastUpdateTime may be null in JSON
+        var hasLastUpdate = firstProject.TryGetProperty("lastUpdateTime", out var lastUpdateProp);
+        if (hasLastUpdate)
+        {
+            lastUpdateProp.ValueKind.Should().Be(JsonValueKind.Null);
+        }
     }
 
     [Fact]

@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Text.Json;
 using Microsoft.SemanticKernel;
 using AzureDevOpsAI.Backend.Models;
 using AzureDevOpsAI.Backend.Services;
@@ -40,51 +41,35 @@ public class UsersPlugin
 
             if (userEntitlements?.Items == null || !userEntitlements.Items.Any())
             {
-                return "No users found in this organization.";
+                return JsonSerializer.Serialize(new { message = "No users found in this organization.", users = new List<object>() });
             }
 
-            // Format the response for the AI
-            var result = $"Users in organization '{organization}':\n\n";
-            foreach (var entitlement in userEntitlements.Items)
+            // Return raw JSON data for the AI to format
+            var usersData = userEntitlements.Items.Where(e => e.User != null).Select(e => new
             {
-                if (entitlement.User != null)
-                {
-                    result += $"• **{entitlement.User.DisplayName ?? "Unknown"}** ({entitlement.User.PrincipalName ?? "N/A"})\n";
-                    result += $"  User ID: {entitlement.User.Id ?? "N/A"}\n";
-                    
-                    if (entitlement.AccessLevel != null)
-                    {
-                        result += $"  License: {entitlement.AccessLevel.LicenseDisplayName ?? entitlement.AccessLevel.AccountLicenseType ?? "N/A"}\n";
-                        if (!string.IsNullOrEmpty(entitlement.AccessLevel.Status))
-                        {
-                            result += $"  Status: {entitlement.AccessLevel.Status}\n";
-                        }
-                    }
-
-                    if (entitlement.LastAccessedDate.HasValue)
-                    {
-                        result += $"  Last Access: {entitlement.LastAccessedDate.Value:yyyy-MM-dd HH:mm:ss}\n";
-                    }
-
-                    if (entitlement.DateCreated.HasValue)
-                    {
-                        result += $"  Date Created: {entitlement.DateCreated.Value:yyyy-MM-dd}\n";
-                    }
-
-                    result += "\n";
-                }
-            }
-
-            result += $"Total: {userEntitlements.Items.Count} user(s)";
+                displayName = e.User!.DisplayName ?? "Unknown",
+                principalName = e.User.PrincipalName ?? "N/A",
+                userId = e.User.Id ?? "N/A",
+                license = e.AccessLevel?.LicenseDisplayName ?? e.AccessLevel?.AccountLicenseType ?? "N/A",
+                status = e.AccessLevel?.Status ?? "N/A",
+                lastAccessedDate = e.LastAccessedDate?.ToString("yyyy-MM-dd HH:mm:ss"),
+                dateCreated = e.DateCreated?.ToString("yyyy-MM-dd")
+            }).ToList();
 
             _logger.LogInformation("Successfully retrieved {Count} users for organization: {Organization}", 
                 userEntitlements.Items.Count, organization);
-            return result;
+            
+            return JsonSerializer.Serialize(new
+            {
+                organization,
+                totalUsers = userEntitlements.Items.Count,
+                users = usersData
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error listing users for organization: {Organization}", organization);
-            return $"Error: {ex.Message}";
+            return JsonSerializer.Serialize(new { error = ex.Message });
         }
     }
 
@@ -112,12 +97,12 @@ public class UsersPlugin
             // Validate inputs
             if (string.IsNullOrWhiteSpace(principalName))
             {
-                return "Error: Principal name (email address) is required.";
+                return JsonSerializer.Serialize(new { error = "Principal name (email address) is required." });
             }
 
             if (string.IsNullOrWhiteSpace(accountLicenseType))
             {
-                return "Error: Account license type is required. Valid values: express, stakeholder, advanced, professional, earlyAdopter.";
+                return JsonSerializer.Serialize(new { error = "Account license type is required. Valid values: express, stakeholder, advanced, professional, earlyAdopter." });
             }
 
             // Normalize license type to lowercase
@@ -127,7 +112,7 @@ public class UsersPlugin
             var validLicenseTypes = new[] { "express", "stakeholder", "advanced", "professional", "earlyadopter" };
             if (!validLicenseTypes.Contains(normalizedLicenseType, StringComparer.OrdinalIgnoreCase))
             {
-                return $"Error: Invalid license type '{accountLicenseType}'. Valid values: express, stakeholder, advanced, professional, earlyAdopter.";
+                return JsonSerializer.Serialize(new { error = $"Invalid license type '{accountLicenseType}'. Valid values: express, stakeholder, advanced, professional, earlyAdopter." });
             }
 
             // Create the user entitlement request
@@ -143,6 +128,8 @@ public class UsersPlugin
                     SubjectKind = "user"
                 }
             };
+
+            List<object>? parsedProjectEntitlements = null;
 
             // Parse and add project entitlements if provided
             if (!string.IsNullOrWhiteSpace(projectEntitlementsJson))
@@ -164,13 +151,19 @@ public class UsersPlugin
                             }
                         }).ToList();
 
+                        parsedProjectEntitlements = projectEntitlements.Select(pe => new
+                        {
+                            projectId = pe.ProjectId,
+                            groupType = pe.GroupType
+                        } as object).ToList();
+
                         _logger.LogInformation("Adding user with {Count} project entitlements", projectEntitlements.Count);
                     }
                 }
                 catch (System.Text.Json.JsonException ex)
                 {
                     _logger.LogError(ex, "Failed to parse project entitlements JSON");
-                    return $"Error: Invalid project entitlements JSON format. Expected format: [{{\"projectId\":\"guid\",\"groupType\":\"projectContributor\"}}]. Error: {ex.Message}";
+                    return JsonSerializer.Serialize(new { error = $"Invalid project entitlements JSON format. Expected format: [{{\"projectId\":\"guid\",\"groupType\":\"projectContributor\"}}]. Error: {ex.Message}" });
                 }
             }
             else
@@ -187,39 +180,28 @@ public class UsersPlugin
 
             if (result == null)
             {
-                return "Error: Failed to add user entitlement. Please check the logs for more details.";
+                return JsonSerializer.Serialize(new { error = "Failed to add user entitlement. Please check the logs for more details." });
             }
 
-            var response = $"✅ User entitlement added successfully!\n\n";
-            response += $"• **User**: {principalName}\n";
-            response += $"• **Organization**: {organization}\n";
-            response += $"• **License**: {accountLicenseType}\n";
-
-            if (request.ProjectEntitlements != null && request.ProjectEntitlements.Any())
+            // Return raw JSON data for the AI to format
+            var response = new
             {
-                response += $"• **Project Access**: {request.ProjectEntitlements.Count} project(s)\n";
-                foreach (var pe in request.ProjectEntitlements)
-                {
-                    response += $"  - Project ID: {pe.ProjectRef.Id}, Role: {pe.Group.GroupType}\n";
-                }
-                response += "\nThe user can now access Azure DevOps with the assigned license and project permissions.";
-            }
-            else
-            {
-                response += $"• **Project Access**: Organization-level access only (no specific projects assigned)\n";
-                response += "\nThe user can now access Azure DevOps with the assigned license. ";
-                response += "To grant access to specific projects, you can add project entitlements using the add_user_entitlement function again with project details. ";
-                response += "Use the list_projects tool to find project IDs.";
-            }
+                success = true,
+                user = principalName,
+                organization,
+                license = accountLicenseType,
+                projectEntitlements = parsedProjectEntitlements,
+                hasProjectAccess = parsedProjectEntitlements != null && parsedProjectEntitlements.Any()
+            };
 
             _logger.LogInformation("Successfully added user entitlement for {PrincipalName}", principalName);
-            return response;
+            return JsonSerializer.Serialize(response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error adding user entitlement for {PrincipalName} in organization: {Organization}", 
                 principalName, organization);
-            return $"Error: {ex.Message}";
+            return JsonSerializer.Serialize(new { error = ex.Message });
         }
     }
 }

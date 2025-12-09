@@ -26,6 +26,11 @@ public class ChatMessage
     public string Content { get; set; } = string.Empty;
 
     /// <summary>
+    /// Content format (e.g., "markdown", "text").
+    /// </summary>
+    public string? Format { get; set; } = "markdown";
+
+    /// <summary>
     /// Message timestamp.
     /// </summary>
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;

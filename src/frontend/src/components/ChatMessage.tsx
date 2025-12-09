@@ -3,6 +3,8 @@
  */
 
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { ExternalLink, BookOpen, FileText, Info } from 'lucide-react';
 import type { ChatMessage, Citation } from '@/types';
 
@@ -46,9 +48,18 @@ export function ChatMessageComponent({
               : 'bg-gray-100 text-gray-900 rounded-bl-none'
           }`}
         >
-          <div className="text-sm leading-relaxed whitespace-pre-wrap">
-            {message.content}
-          </div>
+          {/* Render content based on format */}
+          {message.format === 'markdown' && !isUser ? (
+            <div className="text-sm leading-relaxed prose prose-sm max-w-none dark:prose-invert prose-p:my-2 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-table:my-2">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {message.content}
+              </ReactMarkdown>
+            </div>
+          ) : (
+            <div className="text-sm leading-relaxed whitespace-pre-wrap">
+              {message.content}
+            </div>
+          )}
           <div
             className={`text-xs mt-1 ${
               isUser ? 'text-blue-100' : 'text-gray-500'
