@@ -55,6 +55,9 @@ builder.Services.Configure<CosmosDbSettings>(options =>
 // Read ManagedIdentityClientId from configuration for AzureDevOpsApiService
 var managedIdentityClientIdForDevOps = builder.Configuration["ManagedIdentityClientId"];
 
+// Read Azure DevOps authentication settings
+var azureDevOpsSettings = builder.Configuration.GetSection("AzureDevOps").Get<AzureDevOpsSettings>() ?? new AzureDevOpsSettings();
+
 // Add CosmosDB service - required, no fallback to in-memory storage
 // The validation happens at service construction time to allow tests to override
 builder.Services.AddSingleton<ICosmosDbService>(sp =>
@@ -75,7 +78,7 @@ builder.Services.AddScoped<IAzureDevOpsApiService>(sp =>
 {
     var httpClient = sp.GetRequiredService<IHttpClientFactory>().CreateClient();
     var logger = sp.GetRequiredService<ILogger<AzureDevOpsApiService>>();
-    return new AzureDevOpsApiService(httpClient, logger, managedIdentityClientIdForDevOps);
+    return new AzureDevOpsApiService(httpClient, logger, managedIdentityClientIdForDevOps, azureDevOpsSettings.Pat, azureDevOpsSettings.UsePat);
 });
 
 // Add Application Insights

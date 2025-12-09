@@ -12,7 +12,9 @@
     "Environment": "dev"
   },
   "AzureDevOps": {
-    "Organization": ""
+    "Organization": "",
+    "Pat": "",
+    "UsePat": false
   },
   "AzureAuth": {
     "ClientId": "",
