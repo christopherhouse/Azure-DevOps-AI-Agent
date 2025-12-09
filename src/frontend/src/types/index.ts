@@ -28,7 +28,7 @@ export interface ChatMessage {
   citations?: Citation[];
   suggestions?: string[];
   thoughtProcessId?: string;
-  format?: string; // e.g., 'markdown', 'text'
+  format?: 'markdown' | 'text'; // Format of the message content
 }
 
 export interface ChatState {
