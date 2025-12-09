@@ -58,6 +58,7 @@ public class AIService : IAIService
     private readonly IAzureDevOpsApiService _azureDevOpsApiService;
     private readonly ICosmosDbService _cosmosDbService;
     private readonly string _systemPrompt;
+    private readonly IChatHistoryReducer? _chatHistoryReducer;
 
     /// <summary>
     /// Rate limit metadata keys that may be available in Azure OpenAI response headers.
@@ -122,6 +123,27 @@ public class AIService : IAIService
 
         _kernel = builder.Build();
         _chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
+
+        // Initialize chat history reducer if enabled
+        if (_azureOpenAISettings.EnableChatHistoryReducer)
+        {
+            _chatHistoryReducer = new ChatHistorySummarizationReducer(
+                service: _chatCompletionService,
+                targetCount: _azureOpenAISettings.ChatHistoryReducerTargetCount,
+                thresholdCount: _azureOpenAISettings.ChatHistoryReducerThresholdCount)
+            {
+                UseSingleSummary = _azureOpenAISettings.ChatHistoryReducerUseSingleSummary
+            };
+            
+            _logger.LogInformation("Chat history reducer enabled - TargetCount: {TargetCount}, ThresholdCount: {ThresholdCount}, UseSingleSummary: {UseSingleSummary}",
+                _azureOpenAISettings.ChatHistoryReducerTargetCount,
+                _azureOpenAISettings.ChatHistoryReducerThresholdCount,
+                _azureOpenAISettings.ChatHistoryReducerUseSingleSummary);
+        }
+        else
+        {
+            _logger.LogInformation("Chat history reducer disabled");
+        }
 
         // Note: Plugins are now registered per request in ProcessChatMessageAsync to include user context
         
@@ -288,12 +310,53 @@ public class AIService : IAIService
             _logger.LogDebug("[ConversationContext] Preparing AI request - ConversationId: {ConversationId}, TotalMessages: {TotalMessages}, HistorySummary: {Summary}",
                 conversationId, chatHistory.Count, GetChatHistorySummary(chatHistory));
 
+            // Apply chat history reduction if enabled (for model input only, not storage)
+            ChatHistory reducedHistory = chatHistory;
+            if (_chatHistoryReducer != null)
+            {
+                var originalMessageCount = chatHistory.Count;
+                var reducedMessages = await _chatHistoryReducer.ReduceAsync(chatHistory, cancellationToken);
+                
+                if (reducedMessages != null)
+                {
+                    // Create new ChatHistory with reduced messages
+                    reducedHistory = new ChatHistory();
+                    foreach (var msg in reducedMessages)
+                    {
+                        reducedHistory.Add(msg);
+                    }
+                    
+                    _logger.LogInformation("[ChatHistoryReducer] History reduced for model input - ConversationId: {ConversationId}, OriginalCount: {OriginalCount}, ReducedCount: {ReducedCount}, ReductionPercent: {ReductionPercent:F1}%",
+                        conversationId, originalMessageCount, reducedHistory.Count, 
+                        (originalMessageCount - reducedHistory.Count) * 100.0 / originalMessageCount);
+                    
+                    // Track reduction in thought process
+                    thoughtProcess.Steps.Add(new ThoughtStep
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Description = "Chat history reduced for efficient token usage",
+                        Type = "history_reduction",
+                        Details = new Dictionary<string, object>
+                        {
+                            ["original_message_count"] = originalMessageCount,
+                            ["reduced_message_count"] = reducedHistory.Count,
+                            ["messages_removed"] = originalMessageCount - reducedHistory.Count
+                        }
+                    });
+                }
+                else
+                {
+                    _logger.LogDebug("[ChatHistoryReducer] No reduction needed - ConversationId: {ConversationId}, MessageCount: {MessageCount}",
+                        conversationId, chatHistory.Count);
+                }
+            }
+
             // Register plugins for Azure DevOps operations
             RegisterPluginsWithUserContext();
 
-            // Get AI response
+            // Get AI response using the reduced history (if applicable)
             var response = await _chatCompletionService.GetChatMessageContentAsync(
-                chatHistory,
+                reducedHistory,
                 executionSettings,
                 _kernel,
                 cancellationToken);
