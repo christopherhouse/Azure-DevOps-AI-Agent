@@ -240,8 +240,8 @@ app.MapGet("/", () =>
 
 // Map API endpoints
 app.MapChatEndpoints();
-app.MapProjectEndpoints();
-app.MapWorkItemEndpoints();
+//app.MapProjectEndpoints();
+//app.MapWorkItemEndpoints();
 
 // Map health checks
 app.MapHealthChecks("/health/ready");

@@ -102,7 +102,7 @@ public class AIService : IAIService
             else
             {
                 // Use system-assigned managed identity
-                credential = new ManagedIdentityCredential();
+                credential = new DefaultAzureCredential();
                 _logger.LogInformation("Configured ManagedIdentityCredential with System Assigned Managed Identity");
             }
             

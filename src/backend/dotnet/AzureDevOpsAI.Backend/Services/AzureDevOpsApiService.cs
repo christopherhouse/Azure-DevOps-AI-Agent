@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Azure.Identity;
 using Azure.Core;
 using System.Text.Json;
@@ -46,12 +47,18 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
     {
         _httpClient = httpClient;
         _logger = logger;
-        
-        // Configure ManagedIdentityCredential with User Assigned Managed Identity client ID
-        // The managedIdentityClientId comes from the ManagedIdentityClientId environment variable
-        _credential = new ManagedIdentityCredential(managedIdentityClientId);
-        _logger.LogInformation("AzureDevOpsApiService initialized with ManagedIdentityCredential using User Assigned Managed Identity client ID: {ManagedIdentityClientId}", 
-            managedIdentityClientId);
+
+        _credential = string.IsNullOrWhiteSpace(managedIdentityClientId) ? new DefaultAzureCredential() : new DefaultAzureCredential(new DefaultAzureCredentialOptions{ ManagedIdentityClientId = managedIdentityClientId });
+
+        if (string.IsNullOrWhiteSpace(managedIdentityClientId))
+        {
+            _logger.LogInformation("AzureDevOpsApiService initialized with DefaultAzureCredential");
+        }
+        else
+        {
+            _logger.LogInformation("AzureDevOpsApiService initialized with User Assigned Managed Identity, client-id: {ManagedIdentityCientId}",
+                managedIdentityClientId);
+        }
     }
 
     /// <summary>

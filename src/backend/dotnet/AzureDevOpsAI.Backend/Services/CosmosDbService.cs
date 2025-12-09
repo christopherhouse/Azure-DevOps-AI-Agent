@@ -68,11 +68,10 @@ public class CosmosDbService : ICosmosDbService, IAsyncDisposable
             }
         };
 
+        Azure.Core.TokenCredential credential;
+
         if (_settings.UseManagedIdentity)
         {
-            // Use managed identity authentication
-            Azure.Core.TokenCredential credential;
-            
             if (!string.IsNullOrEmpty(_settings.ClientId))
             {
                 // Use User Assigned Managed Identity
@@ -90,9 +89,8 @@ public class CosmosDbService : ICosmosDbService, IAsyncDisposable
         }
         else
         {
-            // For local development without managed identity, this would fail
-            // In production, managed identity should always be used
-            throw new InvalidOperationException("Cosmos DB requires managed identity authentication. Set UseManagedIdentity to true.");
+            credential = new DefaultAzureCredential();
+            _cosmosClient = new CosmosClient(_settings.Endpoint, credential, clientOptions);
         }
 
         // Get database and containers
