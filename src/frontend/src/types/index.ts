@@ -62,6 +62,7 @@ export interface ChatRequest {
 export interface ChatResponse {
   message: string;
   conversation_id: string;
+  format?: string; // Format of the message content (e.g., "markdown", "text")
   timestamp: string;
   suggestions?: string[];
   citations?: Citation[];

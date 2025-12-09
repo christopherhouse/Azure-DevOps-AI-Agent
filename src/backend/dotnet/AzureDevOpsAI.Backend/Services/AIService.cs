@@ -349,6 +349,7 @@ public class AIService : IAIService
             {
                 Message = response.Content,
                 ConversationId = conversationId,
+                Format = "markdown", // AI responses are formatted in markdown
                 ThoughtProcessId = thoughtProcessId,
                 Suggestions = GenerateSuggestions(message, response.Content),
                 Citations = GenerateCitations(message, response.Content)

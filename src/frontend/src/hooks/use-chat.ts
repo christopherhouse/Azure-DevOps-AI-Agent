@@ -88,7 +88,7 @@ export function useChat() {
             citations: response.data.citations,
             suggestions: response.data.suggestions,
             thoughtProcessId: response.data.thoughtProcessId,
-            format: 'markdown', // Default to markdown for assistant messages
+            format: (response.data.format as 'markdown' | 'text') || 'markdown', // Use format from backend, default to markdown
           });
 
           setChatState((prev) => ({ ...prev, isLoading: false }));
