@@ -115,4 +115,48 @@ describe('ChatMessage Component', () => {
     // Should not display "Invalid date"
     expect(screen.queryByText('Invalid date')).not.toBeInTheDocument();
   });
+
+  it('renders markdown tables with proper styling', () => {
+    const markdownTableMessage: ChatMessage = {
+      ...mockChatMessage,
+      role: 'assistant',
+      format: 'markdown',
+      content: '| Column 1 | Column 2 |\n|----------|----------|\n| Value 1  | Value 2  |',
+    };
+
+    const { container } = render(<ChatMessageComponent message={markdownTableMessage} />);
+    
+    // Check that the markdown container has proper styling classes
+    const markdownContainer = container.querySelector('.prose');
+    expect(markdownContainer).toBeInTheDocument();
+    expect(markdownContainer).toHaveClass('prose-sm');
+    expect(markdownContainer).toHaveClass('max-w-none');
+    
+    // Check that overflow-x-auto wrapper exists for scrolling
+    const scrollableContainer = container.querySelector('.overflow-x-auto');
+    expect(scrollableContainer).toBeInTheDocument();
+  });
+
+  it('applies different max-width for user vs assistant messages', () => {
+    const userMessage: ChatMessage = {
+      ...mockChatMessage,
+      role: 'user',
+    };
+
+    const assistantMessage: ChatMessage = {
+      ...mockChatMessage,
+      role: 'assistant',
+    };
+
+    const { container: userContainer } = render(<ChatMessageComponent message={userMessage} />);
+    const { container: assistantContainer } = render(<ChatMessageComponent message={assistantMessage} />);
+    
+    // User messages should have constrained width
+    const userWrapper = userContainer.querySelector('.max-w-xs');
+    expect(userWrapper).toBeInTheDocument();
+    
+    // Assistant messages should have full width
+    const assistantWrapper = assistantContainer.querySelector('.max-w-full');
+    expect(assistantWrapper).toBeInTheDocument();
+  });
 });

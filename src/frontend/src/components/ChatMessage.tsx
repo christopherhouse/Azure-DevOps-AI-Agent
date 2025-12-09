@@ -18,13 +18,13 @@ export function ChatMessageComponent({
   onSuggestionClick,
 }: ChatMessageProps) {
   const isUser = message.role === 'user';
-  
+
   // Format timestamp based on user's locale
   // Show date and time for older messages, just time for today's messages
   const formatTimestamp = (date: Date): string => {
     const now = new Date();
     const isToday = date.toDateString() === now.toDateString();
-    
+
     if (isToday) {
       return date.toLocaleTimeString([], {
         hour: '2-digit',
@@ -39,13 +39,13 @@ export function ChatMessageComponent({
       });
     }
   };
-  
+
   const timestamp = formatTimestamp(message.timestamp);
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
       <div
-        className={`max-w-xs lg:max-w-md ${isUser ? 'items-end' : 'items-start'} flex flex-col`}
+        className={`${isUser ? 'max-w-xs lg:max-w-md items-end' : 'max-w-full lg:max-w-4xl items-start'} flex flex-col`}
       >
         <div
           className={`px-4 py-2 rounded-lg ${
@@ -56,10 +56,12 @@ export function ChatMessageComponent({
         >
           {/* Render content based on format */}
           {message.format === 'markdown' && !isUser ? (
-            <div className="text-sm leading-relaxed prose prose-sm max-w-none dark:prose-invert prose-p:my-2 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-table:my-2">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {message.content}
-              </ReactMarkdown>
+            <div className="text-sm leading-relaxed prose prose-sm max-w-none dark:prose-invert prose-p:my-2 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-table:my-2 prose-thead:bg-gray-50 prose-th:px-3 prose-th:py-2 prose-th:font-semibold prose-td:px-3 prose-td:py-2 prose-tr:border-gray-200">
+              <div className="overflow-x-auto">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {message.content}
+                </ReactMarkdown>
+              </div>
             </div>
           ) : (
             <div className="text-sm leading-relaxed whitespace-pre-wrap">
