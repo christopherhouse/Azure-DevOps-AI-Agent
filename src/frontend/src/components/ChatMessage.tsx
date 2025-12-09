@@ -42,19 +42,6 @@ export function ChatMessageComponent({
   
   const timestamp = formatTimestamp(message.timestamp);
 
-  const getCitationIcon = (type?: string) => {
-    switch (type) {
-      case 'documentation':
-        return <BookOpen className="w-3 h-3" />;
-      case 'reference':
-        return <FileText className="w-3 h-3" />;
-      case 'guide':
-        return <Info className="w-3 h-3" />;
-      default:
-        return <ExternalLink className="w-3 h-3" />;
-    }
-  };
-
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
       <div
