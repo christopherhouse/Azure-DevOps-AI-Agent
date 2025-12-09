@@ -120,7 +120,7 @@ public class AzureDevOpsApiServiceTests
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("User Assigned Managed Identity client ID: test-mi-client-id")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("AzureDevOpsApiService initialized with User Assigned Managed Identity, client-id: test-mi-client-id")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);

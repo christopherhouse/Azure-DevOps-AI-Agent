@@ -11,14 +11,14 @@ namespace AzureDevOpsAI.Backend.Tests.Services;
 public class CosmosDbServiceTests
 {
     [Fact]
-    public void Constructor_ShouldThrowException_WhenManagedIdentityDisabledAndNoEndpoint()
+    public void Constructor_ShouldUseDefaultAzureCredential_WhenManagedIdentityDisabled()
     {
         // Arrange
         var settings = new CosmosDbSettings
         {
             Endpoint = "https://test.documents.azure.com:443/",
             DatabaseName = "TestDb",
-            UseManagedIdentity = false // This should throw
+            UseManagedIdentity = false // Should use DefaultAzureCredential
         };
 
         var mockOptions = new Mock<IOptions<CosmosDbSettings>>();
@@ -26,9 +26,11 @@ public class CosmosDbServiceTests
 
         var mockLogger = new Mock<ILogger<CosmosDbService>>();
 
-        // Act & Assert
-        Assert.Throws<InvalidOperationException>(() => 
-            new CosmosDbService(mockOptions.Object, mockLogger.Object));
+        // Act
+        var service = new CosmosDbService(mockOptions.Object, mockLogger.Object);
+
+        // Assert - Service should initialize successfully with DefaultAzureCredential
+        service.Should().NotBeNull();
     }
 
     [Fact]
