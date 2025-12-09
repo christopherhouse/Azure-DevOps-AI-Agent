@@ -62,6 +62,7 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
         }
         else
         {
+            // When not using PAT, initialize the credential (guaranteed to be non-null in this branch)
             _credential = string.IsNullOrWhiteSpace(managedIdentityClientId) ? new DefaultAzureCredential() : new DefaultAzureCredential(new DefaultAzureCredentialOptions{ ManagedIdentityClientId = managedIdentityClientId });
 
             if (string.IsNullOrWhiteSpace(managedIdentityClientId))
@@ -74,6 +75,15 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
                     managedIdentityClientId);
             }
         }
+    }
+
+    /// <summary>
+    /// Creates Basic Authentication header value from PAT.
+    /// </summary>
+    private static string CreateBasicAuthHeader(string pat)
+    {
+        var patBytes = System.Text.Encoding.ASCII.GetBytes($":{pat}");
+        return Convert.ToBase64String(patBytes);
     }
 
     /// <summary>
@@ -93,13 +103,12 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
             if (_usePat)
             {
                 // Use Basic Authentication with PAT
-                var patBytes = System.Text.Encoding.ASCII.GetBytes($":{_pat}");
-                var base64Pat = Convert.ToBase64String(patBytes);
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", base64Pat);
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", CreateBasicAuthHeader(_pat!));
             }
             else
             {
                 // Acquire token using ManagedIdentityCredential (User Assigned Managed Identity)
+                // _credential is guaranteed to be non-null when _usePat is false (initialized in constructor)
                 var tokenRequestContext = new TokenRequestContext(new[] { AzureDevOpsScope });
                 var accessToken = await _credential!.GetTokenAsync(tokenRequestContext, cancellationToken);
                 
@@ -151,13 +160,12 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
             if (_usePat)
             {
                 // Use Basic Authentication with PAT
-                var patBytes = System.Text.Encoding.ASCII.GetBytes($":{_pat}");
-                var base64Pat = Convert.ToBase64String(patBytes);
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", base64Pat);
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", CreateBasicAuthHeader(_pat!));
             }
             else
             {
                 // Acquire token using ManagedIdentityCredential (User Assigned Managed Identity)
+                // _credential is guaranteed to be non-null when _usePat is false (initialized in constructor)
                 var tokenRequestContext = new TokenRequestContext(new[] { AzureDevOpsScope });
                 var accessToken = await _credential!.GetTokenAsync(tokenRequestContext, cancellationToken);
                 
