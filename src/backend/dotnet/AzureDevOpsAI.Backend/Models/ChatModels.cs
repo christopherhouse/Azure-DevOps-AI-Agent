@@ -113,6 +113,11 @@ public class ChatResponse
     public string Format { get; set; } = "markdown";
 
     /// <summary>
+    /// Response timestamp.
+    /// </summary>
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
     /// Suggested follow-up actions.
     /// </summary>
     public List<string>? Suggestions { get; set; }
