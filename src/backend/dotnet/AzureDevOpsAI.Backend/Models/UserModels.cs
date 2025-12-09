@@ -85,6 +85,16 @@ public class UserEntitlement
     /// Project entitlements for the user.
     /// </summary>
     public List<ProjectEntitlement>? ProjectEntitlements { get; set; }
+
+    /// <summary>
+    /// Extensions assigned to the user.
+    /// </summary>
+    public List<object>? Extensions { get; set; }
+
+    /// <summary>
+    /// Group assignments for the user.
+    /// </summary>
+    public List<object>? GroupAssignments { get; set; }
 }
 
 /// <summary>
@@ -126,6 +136,37 @@ public class User
     /// User origin ID.
     /// </summary>
     public string? OriginId { get; set; }
+
+    /// <summary>
+    /// Meta type (member, guest, etc).
+    /// </summary>
+    public string? MetaType { get; set; }
+
+    /// <summary>
+    /// Directory alias.
+    /// </summary>
+    public string? DirectoryAlias { get; set; }
+
+    /// <summary>
+    /// Mail address.
+    /// </summary>
+    public string? MailAddress { get; set; }
+
+    /// <summary>
+    /// User URL.
+    /// </summary>
+    public string? Url { get; set; }
+
+    /// <summary>
+    /// User descriptor.
+    /// </summary>
+    public string? Descriptor { get; set; }
+
+    /// <summary>
+    /// Links to related resources.
+    /// </summary>
+    [JsonPropertyName("_links")]
+    public Dictionary<string, LinkReference>? Links { get; set; }
 }
 
 /// <summary>
@@ -152,6 +193,26 @@ public class AccessLevel
     /// Licensing source.
     /// </summary>
     public string? LicensingSource { get; set; }
+
+    /// <summary>
+    /// MSDN license type.
+    /// </summary>
+    public string? MsdnLicenseType { get; set; }
+
+    /// <summary>
+    /// GitHub license type.
+    /// </summary>
+    public string? GitHubLicenseType { get; set; }
+
+    /// <summary>
+    /// Status message.
+    /// </summary>
+    public string? StatusMessage { get; set; }
+
+    /// <summary>
+    /// Assignment source.
+    /// </summary>
+    public string? AssignmentSource { get; set; }
 }
 
 /// <summary>
@@ -203,6 +264,17 @@ public class Group
 }
 
 /// <summary>
+/// Link reference model for API links.
+/// </summary>
+public class LinkReference
+{
+    /// <summary>
+    /// Link href.
+    /// </summary>
+    public string? Href { get; set; }
+}
+
+/// <summary>
 /// User entitlement list response model from Azure DevOps API.
 /// </summary>
 public class UserEntitlementListResponse
@@ -210,12 +282,18 @@ public class UserEntitlementListResponse
     /// <summary>
     /// List of user entitlements.
     /// </summary>
-    public List<UserEntitlement> Value { get; set; } = new();
+    [JsonPropertyName("items")]
+    public List<UserEntitlement> Items { get; set; } = new();
+
+    /// <summary>
+    /// Continuation token for paging.
+    /// </summary>
+    public string? ContinuationToken { get; set; }
 
     /// <summary>
     /// Total count of user entitlements.
     /// </summary>
-    public int Count { get; set; }
+    public int TotalCount { get; set; }
 }
 
 /// <summary>
