@@ -1,0 +1,60 @@
+### Variables
+@baseUrl = https://localhost:18193
+@apiUrl = {{baseUrl}}/api/chat
+
+### Test 1: Send a simple message (no conversation ID)
+POST {{apiUrl}}/message
+Content-Type: application/json
+
+{
+  "message": "What users exist on org chris0477?",
+  "conversationId": "0a3df353-9b01-476c-a0c1-e2fbabdf1da7"
+}
+
+### Test 2: Send a message with conversation ID
+POST {{apiUrl}}/message
+Content-Type: application/json
+
+{
+  "message": "Can you show me the details of work item #12345?",
+  "conversationId": "conv-123e4567-e89b-12d3-a456-426614174000"
+}
+
+### Test 3: Send a message with context
+POST {{apiUrl}}/message
+Content-Type: application/json
+
+{
+  "message": "Create a new bug",
+  "conversationId": "conv-123e4567-e89b-12d3-a456-426614174000",
+  "context": {
+    "projectName": "MyProject",
+    "areaPath": "MyProject\\Area1",
+    "priority": 2
+  }
+}
+
+### Test 4: Send message with Authorization header (when DisableAuth = false)
+POST {{apiUrl}}/message
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+{
+  "message": "List all active sprints"
+}
+
+### Test 5: Invalid request - empty message (should return 400)
+POST {{apiUrl}}/message
+Content-Type: application/json
+
+{
+  "message": ""
+}
+
+### Test 6: Invalid request - missing message field (should return 400)
+POST {{apiUrl}}/message
+Content-Type: application/json
+
+{
+  "conversationId": "conv-123e4567-e89b-12d3-a456-426614174000"
+}

@@ -1,0 +1,41 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "AZURE_DEVOPS_ORGANIZATION": "",
+  "ENVIRONMENT": "dev",
+  "App": {
+    "Environment": "dev"
+  },
+  "AzureDevOps": {
+    "Organization": ""
+  },
+  "AzureAuth": {
+    "ClientId": "",
+    "TenantId": "",
+    "ClientSecret": "",
+    "Instance": "https://login.microsoftonline.com/",
+    "Audience": ""
+  },
+  "AzureOpenAI": {
+    "Endpoint": "https://azdo-ai-agent-dev-oai.services.ai.azure.com/",
+    "ChatDeploymentName": "gpt-4o",
+    "UseManagedIdentity": true,
+    "UseUserAssignedIdentity": false,
+    "Temperature": 0.7,
+    "MaxTokens": 4000
+  },
+  "ManagedIdentityClientId": "083a95bb-15c4-4547-89ba-41ea1fbcc64f",
+  "CosmosDb": {
+    "Endpoint": "https://azdo-ai-agent-dev-cosmos.documents.azure.com",
+    "DatabaseName": "AzureDevOpsAIAgent",
+    "ChatHistoryContainerName": "chat-history",
+    "ThoughtProcessContainerName": "thought-process",
+    "UseManagedIdentity": false,
+    "ClientId": ""
+  }
+}
