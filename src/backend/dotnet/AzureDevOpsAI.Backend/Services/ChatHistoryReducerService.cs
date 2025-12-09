@@ -210,11 +210,22 @@ Summary:";
         {
             _logger.LogError(ex, "Error generating conversation summary");
             // Return a simple concatenation as fallback
-            return $"Previous conversation covered: {string.Join(", ", messages.Take(5).Select(m => {
-                var contentLength = m.Content?.Length ?? 0;
-                var previewLength = Math.Min(50, contentLength);
-                return contentLength > 0 ? m.Content?.Substring(0, previewLength) : "";
-            }))}...";
+            return BuildFallbackSummary(messages);
         }
+    }
+
+    /// <summary>
+    /// Build a fallback summary when AI summarization fails.
+    /// </summary>
+    private string BuildFallbackSummary(List<ChatMessageContent> messages)
+    {
+        var previews = messages.Take(5).Select(m =>
+        {
+            var content = m.Content ?? "";
+            var previewLength = Math.Min(50, content.Length);
+            return content.Substring(0, previewLength);
+        }).Where(p => !string.IsNullOrEmpty(p));
+
+        return $"Previous conversation covered: {string.Join(", ", previews)}...";
     }
 }

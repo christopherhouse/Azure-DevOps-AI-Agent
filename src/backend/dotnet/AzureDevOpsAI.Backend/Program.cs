@@ -77,7 +77,7 @@ builder.Services.AddSingleton<ICosmosDbService>(sp =>
 builder.Services.AddHttpClient();
 
 // Add chat history reducer service
-builder.Services.AddScoped<IChatHistoryReducer>(sp =>
+builder.Services.AddScoped<IChatHistoryReducer?>(sp =>
 {
     var reductionSettings = sp.GetRequiredService<IOptions<ChatHistoryReductionSettings>>().Value;
     var logger = sp.GetRequiredService<ILoggerFactory>();
@@ -85,7 +85,7 @@ builder.Services.AddScoped<IChatHistoryReducer>(sp =>
     // Return null if disabled, otherwise create the appropriate reducer
     if (!reductionSettings.Enabled)
     {
-        return null!;
+        return null;
     }
     
     if (reductionSettings.UseSummarization)
