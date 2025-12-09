@@ -56,7 +56,7 @@ export function ChatMessageComponent({
         >
           {/* Render content based on format */}
           {message.format === 'markdown' && !isUser ? (
-            <div className="text-sm leading-relaxed prose prose-sm max-w-none dark:prose-invert prose-p:my-2 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-table:my-2 prose-thead:bg-gray-50 prose-th:px-3 prose-th:py-2 prose-th:font-semibold prose-td:px-3 prose-td:py-2 prose-tr:border-gray-200">
+            <div className="text-sm leading-relaxed prose prose-sm max-w-none prose-slate prose-p:my-2 prose-p:text-gray-900 prose-headings:my-2 prose-headings:text-gray-900 prose-headings:font-semibold prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-li:text-gray-900 prose-table:my-2 prose-thead:bg-gray-200 prose-th:px-3 prose-th:py-2 prose-th:font-semibold prose-th:text-gray-900 prose-td:px-3 prose-td:py-2 prose-td:text-gray-900 prose-tr:border-gray-300 prose-strong:text-gray-900 prose-strong:font-semibold prose-code:text-gray-900 prose-pre:bg-gray-800 prose-pre:text-gray-100">
               <div className="overflow-x-auto">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {message.content}
