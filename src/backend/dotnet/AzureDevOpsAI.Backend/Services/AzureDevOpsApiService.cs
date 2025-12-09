@@ -9,29 +9,31 @@ using System.IdentityModel.Tokens.Jwt;
 namespace AzureDevOpsAI.Backend.Services;
 
 /// <summary>
-/// Interface for Azure DevOps API operations using ManagedIdentityCredential.
+/// Interface for Azure DevOps API operations using Azure Identity or Personal Access Token.
 /// </summary>
 public interface IAzureDevOpsApiService
 {
     /// <summary>
-    /// Makes an authenticated GET request to Azure DevOps API using managed identity.
+    /// Makes an authenticated GET request to Azure DevOps API using managed identity or PAT.
     /// </summary>
     Task<T?> GetAsync<T>(string organization, string apiPath, string? apiVersion = "7.1", CancellationToken cancellationToken = default) where T : class;
     
     /// <summary>
-    /// Makes an authenticated POST request to Azure DevOps API using managed identity.
+    /// Makes an authenticated POST request to Azure DevOps API using managed identity or PAT.
     /// </summary>
     Task<T?> PostAsync<T>(string organization, string apiPath, object? body = null, string? apiVersion = "7.1", CancellationToken cancellationToken = default) where T : class;
 }
 
 /// <summary>
-/// Service for making authenticated calls to Azure DevOps APIs using ManagedIdentityCredential with User Assigned Managed Identity.
+/// Service for making authenticated calls to Azure DevOps APIs using ManagedIdentityCredential with User Assigned Managed Identity or Personal Access Token.
 /// </summary>
 public class AzureDevOpsApiService : IAzureDevOpsApiService
 {
-    private readonly TokenCredential _credential;
+    private readonly TokenCredential? _credential;
     private readonly HttpClient _httpClient;
     private readonly ILogger<AzureDevOpsApiService> _logger;
+    private readonly string? _pat;
+    private readonly bool _usePat;
     
     private const string AzureDevOpsScope = "https://app.vssps.visualstudio.com/.default";
     private const string ExpectedAudience = "499b84ac-1321-427f-aa17-267ca6975798";
@@ -43,26 +45,39 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
-    public AzureDevOpsApiService(HttpClient httpClient, ILogger<AzureDevOpsApiService> logger, string? managedIdentityClientId)
+    public AzureDevOpsApiService(HttpClient httpClient, ILogger<AzureDevOpsApiService> logger, string? managedIdentityClientId, string? pat = null, bool usePat = false)
     {
         _httpClient = httpClient;
         _logger = logger;
+        _pat = pat;
+        _usePat = usePat;
 
-        _credential = string.IsNullOrWhiteSpace(managedIdentityClientId) ? new DefaultAzureCredential() : new DefaultAzureCredential(new DefaultAzureCredentialOptions{ ManagedIdentityClientId = managedIdentityClientId });
-
-        if (string.IsNullOrWhiteSpace(managedIdentityClientId))
+        if (_usePat)
         {
-            _logger.LogInformation("AzureDevOpsApiService initialized with DefaultAzureCredential");
+            if (string.IsNullOrWhiteSpace(_pat))
+            {
+                throw new ArgumentException("Personal Access Token cannot be null or empty when UsePat is true", nameof(pat));
+            }
+            _logger.LogInformation("AzureDevOpsApiService initialized with Personal Access Token authentication");
         }
         else
         {
-            _logger.LogInformation("AzureDevOpsApiService initialized with User Assigned Managed Identity, client-id: {ManagedIdentityCientId}",
-                managedIdentityClientId);
+            _credential = string.IsNullOrWhiteSpace(managedIdentityClientId) ? new DefaultAzureCredential() : new DefaultAzureCredential(new DefaultAzureCredentialOptions{ ManagedIdentityClientId = managedIdentityClientId });
+
+            if (string.IsNullOrWhiteSpace(managedIdentityClientId))
+            {
+                _logger.LogInformation("AzureDevOpsApiService initialized with DefaultAzureCredential");
+            }
+            else
+            {
+                _logger.LogInformation("AzureDevOpsApiService initialized with User Assigned Managed Identity, client-id: {ManagedIdentityCientId}",
+                    managedIdentityClientId);
+            }
         }
     }
 
     /// <summary>
-    /// Makes an authenticated GET request to Azure DevOps API using managed identity.
+    /// Makes an authenticated GET request to Azure DevOps API using managed identity or PAT.
     /// </summary>
     public async Task<T?> GetAsync<T>(string organization, string apiPath, string? apiVersion = "7.1", CancellationToken cancellationToken = default) where T : class
     {
@@ -71,16 +86,29 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
             var url = BuildApiUrl(organization, apiPath, apiVersion);
             _logger.LogDebug("Making GET request to Azure DevOps API: {Url}", url);
 
-            // Acquire token using ManagedIdentityCredential (User Assigned Managed Identity)
-            var tokenRequestContext = new TokenRequestContext(new[] { AzureDevOpsScope });
-            var accessToken = await _credential.GetTokenAsync(tokenRequestContext, cancellationToken);
-            
-            // Log token metadata for troubleshooting (not the token itself)
-            LogTokenMetadata(accessToken);
-
             // Create HttpRequestMessage with authorization header (thread-safe approach)
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
-            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken.Token);
+            
+            // Set authorization header based on authentication type
+            if (_usePat)
+            {
+                // Use Basic Authentication with PAT
+                var patBytes = System.Text.Encoding.ASCII.GetBytes($":{_pat}");
+                var base64Pat = Convert.ToBase64String(patBytes);
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", base64Pat);
+            }
+            else
+            {
+                // Acquire token using ManagedIdentityCredential (User Assigned Managed Identity)
+                var tokenRequestContext = new TokenRequestContext(new[] { AzureDevOpsScope });
+                var accessToken = await _credential!.GetTokenAsync(tokenRequestContext, cancellationToken);
+                
+                // Log token metadata for troubleshooting (not the token itself)
+                LogTokenMetadata(accessToken);
+
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken.Token);
+            }
+            
             request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
 
             var response = await _httpClient.SendAsync(request, cancellationToken);
@@ -107,7 +135,7 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
     }
 
     /// <summary>
-    /// Makes an authenticated POST request to Azure DevOps API using managed identity.
+    /// Makes an authenticated POST request to Azure DevOps API using managed identity or PAT.
     /// </summary>
     public async Task<T?> PostAsync<T>(string organization, string apiPath, object? body = null, string? apiVersion = "7.1", CancellationToken cancellationToken = default) where T : class
     {
@@ -116,16 +144,29 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
             var url = BuildApiUrl(organization, apiPath, apiVersion);
             _logger.LogDebug("Making POST request to Azure DevOps API: {Url}", url);
 
-            // Acquire token using ManagedIdentityCredential (User Assigned Managed Identity)
-            var tokenRequestContext = new TokenRequestContext(new[] { AzureDevOpsScope });
-            var accessToken = await _credential.GetTokenAsync(tokenRequestContext, cancellationToken);
-            
-            // Log token metadata for troubleshooting (not the token itself)
-            LogTokenMetadata(accessToken);
-
             // Create HttpRequestMessage with authorization header (thread-safe approach)
             using var request = new HttpRequestMessage(HttpMethod.Post, url);
-            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken.Token);
+            
+            // Set authorization header based on authentication type
+            if (_usePat)
+            {
+                // Use Basic Authentication with PAT
+                var patBytes = System.Text.Encoding.ASCII.GetBytes($":{_pat}");
+                var base64Pat = Convert.ToBase64String(patBytes);
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", base64Pat);
+            }
+            else
+            {
+                // Acquire token using ManagedIdentityCredential (User Assigned Managed Identity)
+                var tokenRequestContext = new TokenRequestContext(new[] { AzureDevOpsScope });
+                var accessToken = await _credential!.GetTokenAsync(tokenRequestContext, cancellationToken);
+                
+                // Log token metadata for troubleshooting (not the token itself)
+                LogTokenMetadata(accessToken);
+
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken.Token);
+            }
+            
             request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
 
             if (body != null)

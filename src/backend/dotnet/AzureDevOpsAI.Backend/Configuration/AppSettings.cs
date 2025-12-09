@@ -90,6 +90,11 @@ public class AzureDevOpsSettings
     /// Azure DevOps Personal Access Token.
     /// </summary>
     public string? Pat { get; set; }
+
+    /// <summary>
+    /// Use Personal Access Token for authentication. When false, uses Azure Identity (DefaultAzureCredential).
+    /// </summary>
+    public bool UsePat { get; set; } = false;
 }
 
 /// <summary>

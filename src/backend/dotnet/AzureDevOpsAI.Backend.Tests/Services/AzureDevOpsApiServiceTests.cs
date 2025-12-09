@@ -20,7 +20,7 @@ public class AzureDevOpsApiServiceTests
         
         // Create service with an HttpClient - it will use ManagedIdentityCredential internally
         var httpClient = new HttpClient();
-        _service = new AzureDevOpsApiService(httpClient, _mockLogger.Object, _managedIdentityClientId);
+        _service = new AzureDevOpsApiService(httpClient, _mockLogger.Object, _managedIdentityClientId, null, false);
     }
 
     [Fact]
@@ -38,7 +38,7 @@ public class AzureDevOpsApiServiceTests
         var httpClient = new HttpClient();
 
         // Act
-        var service = new AzureDevOpsApiService(httpClient, mockLogger.Object, _managedIdentityClientId);
+        var service = new AzureDevOpsApiService(httpClient, mockLogger.Object, _managedIdentityClientId, null, false);
 
         // Assert
         service.Should().NotBeNull();
@@ -83,7 +83,7 @@ public class AzureDevOpsApiServiceTests
         var managedIdentityClientId = "valid-managed-identity-client-id";
 
         // Act
-        var service = new AzureDevOpsApiService(httpClient, _mockLogger.Object, managedIdentityClientId);
+        var service = new AzureDevOpsApiService(httpClient, _mockLogger.Object, managedIdentityClientId, null, false);
 
         // Assert
         service.Should().NotBeNull();
@@ -112,7 +112,7 @@ public class AzureDevOpsApiServiceTests
         var managedIdentityClientId = "test-mi-client-id";
 
         // Act
-        var service = new AzureDevOpsApiService(httpClient, mockLogger.Object, managedIdentityClientId);
+        var service = new AzureDevOpsApiService(httpClient, mockLogger.Object, managedIdentityClientId, null, false);
 
         // Assert
         service.Should().NotBeNull();
@@ -134,9 +134,111 @@ public class AzureDevOpsApiServiceTests
         var httpClient = new HttpClient();
 
         // Act - null client ID is valid for system-assigned managed identity
-        var service = new AzureDevOpsApiService(httpClient, mockLogger.Object, null);
+        var service = new AzureDevOpsApiService(httpClient, mockLogger.Object, null, null, false);
 
         // Assert
         service.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void Constructor_WithPat_ShouldInitializeWithPatAuthentication()
+    {
+        // Arrange
+        var mockLogger = new Mock<ILogger<AzureDevOpsApiService>>();
+        var httpClient = new HttpClient();
+        var pat = "test-personal-access-token";
+
+        // Act
+        var service = new AzureDevOpsApiService(httpClient, mockLogger.Object, null, pat, true);
+
+        // Assert
+        service.Should().NotBeNull();
+        mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("AzureDevOpsApiService initialized with Personal Access Token authentication")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public void Constructor_WithPatEnabledButNullPat_ShouldThrowArgumentException()
+    {
+        // Arrange
+        var mockLogger = new Mock<ILogger<AzureDevOpsApiService>>();
+        var httpClient = new HttpClient();
+
+        // Act & Assert
+        var exception = Assert.Throws<ArgumentException>(() => 
+            new AzureDevOpsApiService(httpClient, mockLogger.Object, null, null, true));
+        
+        exception.Message.Should().Contain("Personal Access Token cannot be null or empty when UsePat is true");
+    }
+
+    [Fact]
+    public void Constructor_WithPatEnabledButEmptyPat_ShouldThrowArgumentException()
+    {
+        // Arrange
+        var mockLogger = new Mock<ILogger<AzureDevOpsApiService>>();
+        var httpClient = new HttpClient();
+
+        // Act & Assert
+        var exception = Assert.Throws<ArgumentException>(() => 
+            new AzureDevOpsApiService(httpClient, mockLogger.Object, null, "", true));
+        
+        exception.Message.Should().Contain("Personal Access Token cannot be null or empty when UsePat is true");
+    }
+
+    [Fact]
+    public void Constructor_WithPatEnabledButWhitespacePat_ShouldThrowArgumentException()
+    {
+        // Arrange
+        var mockLogger = new Mock<ILogger<AzureDevOpsApiService>>();
+        var httpClient = new HttpClient();
+
+        // Act & Assert
+        var exception = Assert.Throws<ArgumentException>(() => 
+            new AzureDevOpsApiService(httpClient, mockLogger.Object, null, "   ", true));
+        
+        exception.Message.Should().Contain("Personal Access Token cannot be null or empty when UsePat is true");
+    }
+
+    [Fact]
+    public void Constructor_WithValidPat_ShouldNotThrow()
+    {
+        // Arrange
+        var mockLogger = new Mock<ILogger<AzureDevOpsApiService>>();
+        var httpClient = new HttpClient();
+        var pat = "valid-pat-token";
+
+        // Act
+        var service = new AzureDevOpsApiService(httpClient, mockLogger.Object, null, pat, true);
+
+        // Assert
+        service.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void Constructor_WithPatDisabledAndNullPat_ShouldInitializeWithAzureIdentity()
+    {
+        // Arrange
+        var mockLogger = new Mock<ILogger<AzureDevOpsApiService>>();
+        var httpClient = new HttpClient();
+
+        // Act
+        var service = new AzureDevOpsApiService(httpClient, mockLogger.Object, null, null, false);
+
+        // Assert
+        service.Should().NotBeNull();
+        mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("AzureDevOpsApiService initialized with DefaultAzureCredential")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
 }
