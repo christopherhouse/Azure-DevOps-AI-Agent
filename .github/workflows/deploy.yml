@@ -326,6 +326,13 @@ jobs:
           --env-var "CosmosDb__ThoughtProcessContainerName=thought-process" \
           --env-var "CosmosDb__UseManagedIdentity=true" \
           --env-var "CosmosDb__ClientId=${{ steps.deploy-infra.outputs.backendManagedIdentityClientId }}" \
+          --env-var "ChatHistoryReduction__Enabled=true" \
+          --env-var "ChatHistoryReduction__UseSummarization=true" \
+          --env-var "ChatHistoryReduction__TargetCount=15" \
+          --env-var "ChatHistoryReduction__ThresholdCount=30" \
+          --env-var "ChatHistoryReduction__KeepLastMessages=10" \
+          --env-var "ChatHistoryReduction__EstimatedTokensPerMessage=200" \
+          --env-var "ChatHistoryReduction__MaxContextTokens=100000" \
           --env-var "ManagedIdentityClientId=${{ steps.deploy-infra.outputs.backendManagedIdentityClientId }}" \
           --env-var "ApplicationInsights__ConnectionString=${APP_INSIGHTS_CONNECTION_STRING}" \
           --env-var "AzureAuth__Instance=https://login.microsoftonline.com/" \
