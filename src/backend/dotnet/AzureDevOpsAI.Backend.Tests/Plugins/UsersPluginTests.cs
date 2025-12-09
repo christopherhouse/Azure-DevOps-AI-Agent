@@ -37,7 +37,7 @@ public class UsersPluginTests
         var organization = "test-org";
         var userEntitlements = new UserEntitlementListResponse
         {
-            Value = new List<UserEntitlement>
+            Items = new List<UserEntitlement>
             {
                 new UserEntitlement
                 {
@@ -78,7 +78,7 @@ public class UsersPluginTests
                     DateCreated = new DateTime(2023, 8, 15)
                 }
             },
-            Count = 2
+            TotalCount = 2
         };
 
         _mockApiService
@@ -111,8 +111,8 @@ public class UsersPluginTests
         var organization = "empty-org";
         var emptyUsers = new UserEntitlementListResponse
         {
-            Value = new List<UserEntitlement>(),
-            Count = 0
+            Items = new List<UserEntitlement>(),
+            TotalCount = 0
         };
 
         _mockApiService
@@ -181,7 +181,7 @@ public class UsersPluginTests
         var organization = "test-org";
         var userEntitlements = new UserEntitlementListResponse
         {
-            Value = new List<UserEntitlement>
+            Items = new List<UserEntitlement>
             {
                 new UserEntitlement
                 {
@@ -195,7 +195,7 @@ public class UsersPluginTests
                     AccessLevel = null
                 }
             },
-            Count = 1
+            TotalCount = 1
         };
 
         _mockApiService
@@ -222,7 +222,7 @@ public class UsersPluginTests
         var organization = "test-org";
         var userEntitlements = new UserEntitlementListResponse
         {
-            Value = new List<UserEntitlement>
+            Items = new List<UserEntitlement>
             {
                 new UserEntitlement
                 {
@@ -233,7 +233,7 @@ public class UsersPluginTests
                     }
                 }
             },
-            Count = 1
+            TotalCount = 1
         };
 
         _mockApiService

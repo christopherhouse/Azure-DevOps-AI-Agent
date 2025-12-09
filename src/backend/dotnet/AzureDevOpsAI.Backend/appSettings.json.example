@@ -14,7 +14,7 @@
   "AzureDevOps": {
     "Organization": "",
     "Pat": "",
-    "UsePat": false
+    "UsePat": true
   },
   "AzureAuth": {
     "ClientId": "",

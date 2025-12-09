@@ -38,14 +38,14 @@ public class UsersPlugin
             var userEntitlements = await _azureDevOpsApiService.GetAsync<UserEntitlementListResponse>(
                 organization, "https://vsaex.dev.azure.com/" + organization + "/_apis/userentitlements", "7.1");
 
-            if (userEntitlements?.Value == null || !userEntitlements.Value.Any())
+            if (userEntitlements?.Items == null || !userEntitlements.Items.Any())
             {
                 return "No users found in this organization.";
             }
 
             // Format the response for the AI
             var result = $"Users in organization '{organization}':\n\n";
-            foreach (var entitlement in userEntitlements.Value)
+            foreach (var entitlement in userEntitlements.Items)
             {
                 if (entitlement.User != null)
                 {
@@ -75,10 +75,10 @@ public class UsersPlugin
                 }
             }
 
-            result += $"Total: {userEntitlements.Value.Count} user(s)";
+            result += $"Total: {userEntitlements.Items.Count} user(s)";
 
             _logger.LogInformation("Successfully retrieved {Count} users for organization: {Organization}", 
-                userEntitlements.Value.Count, organization);
+                userEntitlements.Items.Count, organization);
             return result;
         }
         catch (Exception ex)
