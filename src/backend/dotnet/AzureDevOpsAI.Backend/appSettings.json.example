@@ -39,5 +39,14 @@
     "ThoughtProcessContainerName": "thought-process",
     "UseManagedIdentity": false,
     "ClientId": ""
+  },
+  "ChatHistoryReduction": {
+    "Enabled": true,
+    "UseSummarization": true,
+    "TargetCount": 15,
+    "ThresholdCount": 30,
+    "KeepLastMessages": 10,
+    "EstimatedTokensPerMessage": 200,
+    "MaxContextTokens": 100000
   }
 }

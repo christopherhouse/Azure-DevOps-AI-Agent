@@ -225,3 +225,44 @@ public class CosmosDbSettings
     /// </summary>
     public string? ClientId { get; set; }
 }
+
+/// <summary>
+/// Chat history reduction configuration settings.
+/// </summary>
+public class ChatHistoryReductionSettings
+{
+    /// <summary>
+    /// Target message count after reduction.
+    /// </summary>
+    public int TargetCount { get; set; } = 15;
+
+    /// <summary>
+    /// Threshold message count to trigger reduction.
+    /// </summary>
+    public int ThresholdCount { get; set; } = 30;
+
+    /// <summary>
+    /// Number of recent messages to always keep (in addition to system message).
+    /// </summary>
+    public int KeepLastMessages { get; set; } = 10;
+
+    /// <summary>
+    /// Enable chat history reduction.
+    /// </summary>
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>
+    /// Use summarization instead of simple truncation.
+    /// </summary>
+    public bool UseSummarization { get; set; } = true;
+
+    /// <summary>
+    /// Estimated tokens per message for threshold calculation.
+    /// </summary>
+    public int EstimatedTokensPerMessage { get; set; } = 200;
+
+    /// <summary>
+    /// Maximum tokens to allow in context (safety margin relative to model limit).
+    /// </summary>
+    public int MaxContextTokens { get; set; } = 100000; // Leave room for response
+}

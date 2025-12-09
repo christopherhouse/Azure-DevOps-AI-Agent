@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Abstractions;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.SemanticKernel;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -51,6 +52,7 @@ builder.Services.Configure<CosmosDbSettings>(options =>
         options.ClientId = managedIdentityClientId;
     }
 });
+builder.Services.Configure<ChatHistoryReductionSettings>(builder.Configuration.GetSection("ChatHistoryReduction"));
 
 // Read ManagedIdentityClientId from configuration for AzureDevOpsApiService
 var managedIdentityClientIdForDevOps = builder.Configuration["ManagedIdentityClientId"];
@@ -73,6 +75,69 @@ builder.Services.AddSingleton<ICosmosDbService>(sp =>
 
 // Add AI services
 builder.Services.AddHttpClient();
+
+// Add chat history reducer service
+builder.Services.AddScoped<IChatHistoryReducer>(sp =>
+{
+    var reductionSettings = sp.GetRequiredService<IOptions<ChatHistoryReductionSettings>>().Value;
+    var logger = sp.GetRequiredService<ILoggerFactory>();
+    
+    // Return null if disabled, otherwise create the appropriate reducer
+    if (!reductionSettings.Enabled)
+    {
+        return null!;
+    }
+    
+    if (reductionSettings.UseSummarization)
+    {
+        // For summarization, we need the chat completion service and kernel
+        // We'll create a separate kernel instance for summarization to avoid conflicts
+        var azureOpenAISettings = sp.GetRequiredService<IOptions<AzureOpenAISettings>>().Value;
+        var kernelBuilder = Kernel.CreateBuilder();
+        
+        // Configure the same Azure OpenAI service for summarization
+        if (azureOpenAISettings.UseManagedIdentity)
+        {
+            Azure.Core.TokenCredential credential;
+            if (azureOpenAISettings.UseUserAssignedIdentity)
+            {
+                credential = new Azure.Identity.ManagedIdentityCredential(azureOpenAISettings.ClientId);
+            }
+            else
+            {
+                credential = new Azure.Identity.DefaultAzureCredential();
+            }
+            
+            kernelBuilder.AddAzureOpenAIChatCompletion(
+                deploymentName: azureOpenAISettings.ChatDeploymentName,
+                endpoint: azureOpenAISettings.Endpoint,
+                credentials: credential);
+        }
+        else
+        {
+            kernelBuilder.AddAzureOpenAIChatCompletion(
+                deploymentName: azureOpenAISettings.ChatDeploymentName,
+                endpoint: azureOpenAISettings.Endpoint,
+                apiKey: azureOpenAISettings.ApiKey!);
+        }
+        
+        var summarizationKernel = kernelBuilder.Build();
+        var chatCompletionService = summarizationKernel.GetRequiredService<Microsoft.SemanticKernel.ChatCompletion.IChatCompletionService>();
+        return new ChatHistorySummarizationReducer(
+            sp.GetRequiredService<IOptions<ChatHistoryReductionSettings>>(),
+            chatCompletionService,
+            summarizationKernel,
+            logger.CreateLogger<ChatHistorySummarizationReducer>());
+    }
+    else
+    {
+        // Use simple truncation
+        return new ChatHistoryTruncationReducer(
+            sp.GetRequiredService<IOptions<ChatHistoryReductionSettings>>(),
+            logger.CreateLogger<ChatHistoryTruncationReducer>());
+    }
+});
+
 builder.Services.AddScoped<IAIService, AIService>();
 builder.Services.AddScoped<IAzureDevOpsApiService>(sp =>
 {

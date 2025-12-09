@@ -57,6 +57,7 @@ public class AIService : IAIService
     private readonly ILoggerFactory _loggerFactory;
     private readonly IAzureDevOpsApiService _azureDevOpsApiService;
     private readonly ICosmosDbService _cosmosDbService;
+    private readonly IChatHistoryReducer? _chatHistoryReducer;
     private readonly string _systemPrompt;
 
     /// <summary>
@@ -73,7 +74,8 @@ public class AIService : IAIService
     public AIService(IOptions<AzureOpenAISettings> azureOpenAISettings, ILogger<AIService> logger, 
         IHttpClientFactory httpClientFactory, ILoggerFactory loggerFactory,
         IAzureDevOpsApiService azureDevOpsApiService,
-        ICosmosDbService cosmosDbService)
+        ICosmosDbService cosmosDbService,
+        IChatHistoryReducer? chatHistoryReducer = null)
     {
         _azureOpenAISettings = azureOpenAISettings.Value;
         _logger = logger;
@@ -81,6 +83,7 @@ public class AIService : IAIService
         _loggerFactory = loggerFactory;
         _azureDevOpsApiService = azureDevOpsApiService;
         _cosmosDbService = cosmosDbService ?? throw new ArgumentNullException(nameof(cosmosDbService), "CosmosDB service is required.");
+        _chatHistoryReducer = chatHistoryReducer;
 
         // Load system prompt from embedded resource
         _systemPrompt = LoadSystemPrompt();
@@ -288,12 +291,42 @@ public class AIService : IAIService
             _logger.LogDebug("[ConversationContext] Preparing AI request - ConversationId: {ConversationId}, TotalMessages: {TotalMessages}, HistorySummary: {Summary}",
                 conversationId, chatHistory.Count, GetChatHistorySummary(chatHistory));
 
+            // Apply chat history reduction if configured
+            ChatHistory? reducedHistory = null;
+            if (_chatHistoryReducer != null)
+            {
+                reducedHistory = await _chatHistoryReducer.ReduceAsync(chatHistory, cancellationToken);
+                
+                if (reducedHistory != null)
+                {
+                    _logger.LogInformation("[ChatHistoryReduction] Applied history reduction - Original: {OriginalCount} messages, Reduced: {ReducedCount} messages",
+                        chatHistory.Count, reducedHistory.Count);
+                    
+                    // Track reduction in thought process
+                    thoughtProcess.Steps.Add(new ThoughtStep
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Description = "Applied chat history reduction",
+                        Type = "optimization",
+                        Details = new Dictionary<string, object>
+                        {
+                            ["original_message_count"] = chatHistory.Count,
+                            ["reduced_message_count"] = reducedHistory.Count,
+                            ["reduction_applied"] = true
+                        }
+                    });
+                }
+            }
+
+            // Use reduced history for AI call, but keep full history for storage
+            var historyForAI = reducedHistory ?? chatHistory;
+
             // Register plugins for Azure DevOps operations
             RegisterPluginsWithUserContext();
 
             // Get AI response
             var response = await _chatCompletionService.GetChatMessageContentAsync(
-                chatHistory,
+                historyForAI,
                 executionSettings,
                 _kernel,
                 cancellationToken);
