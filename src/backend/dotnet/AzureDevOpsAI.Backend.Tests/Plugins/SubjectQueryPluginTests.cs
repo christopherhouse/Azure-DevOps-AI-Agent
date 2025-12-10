@@ -239,9 +239,6 @@ public class SubjectQueryPluginTests
     }
 
 
-
-
-
     [Fact]
     public async Task QuerySubjectsAsync_ShouldAcceptMultipleSubjectKinds()
     {
