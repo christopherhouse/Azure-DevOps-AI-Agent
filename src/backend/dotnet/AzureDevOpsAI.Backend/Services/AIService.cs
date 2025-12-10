@@ -380,16 +380,28 @@ public class AIService : IAIService
             LogTokenMetrics(response.Metadata, conversationId);
 
             // Track response generation completion
+            var completionDetails = new Dictionary<string, object>
+            {
+                ["response_length"] = response.Content.Length
+            };
+
+            // Extract serializable token usage to avoid JSON serialization errors
+            var tokenUsage = ExtractSerializableTokenUsage(response.Metadata);
+            if (tokenUsage != null)
+            {
+                completionDetails["tokens_used"] = tokenUsage;
+            }
+            else
+            {
+                completionDetails["tokens_used"] = "unknown";
+            }
+
             thoughtProcess.Steps.Add(new ThoughtStep
             {
                 Id = Guid.NewGuid().ToString(),
                 Description = "AI response generated successfully",
                 Type = "completion",
-                Details = new Dictionary<string, object>
-                {
-                    ["response_length"] = response.Content.Length,
-                    ["tokens_used"] = response.Metadata?.GetValueOrDefault("Usage", null) ?? "unknown"
-                }
+                Details = completionDetails
             });
 
             // Add AI response to history
@@ -675,6 +687,43 @@ public class AIService : IAIService
             .Select(g => $"{g.Key}:{g.Count()}")
             .ToList();
         return $"[{string.Join(", ", roles)}]";
+    }
+
+    /// <summary>
+    /// Extract serializable token usage information from metadata.
+    /// This converts the ChatTokenUsage object to a simple dictionary to avoid
+    /// JSON serialization issues with non-serializable properties like JsonPatch&.
+    /// </summary>
+    /// <param name="metadata">Response metadata containing token usage information</param>
+    /// <returns>Dictionary with serializable token usage data or null if not available</returns>
+    private Dictionary<string, object>? ExtractSerializableTokenUsage(IReadOnlyDictionary<string, object?>? metadata)
+    {
+        if (metadata == null || !metadata.TryGetValue("Usage", out var usageObject) || usageObject is not ChatTokenUsage tokenUsage)
+        {
+            return null;
+        }
+
+        var usageData = new Dictionary<string, object>
+        {
+            ["input_tokens"] = tokenUsage.InputTokenCount,
+            ["output_tokens"] = tokenUsage.OutputTokenCount,
+            ["total_tokens"] = tokenUsage.TotalTokenCount
+        };
+
+        // Add input token details if available
+        if (tokenUsage.InputTokenDetails != null)
+        {
+            usageData["cached_tokens"] = tokenUsage.InputTokenDetails.CachedTokenCount;
+            usageData["audio_tokens"] = tokenUsage.InputTokenDetails.AudioTokenCount;
+        }
+
+        // Add output token details if available
+        if (tokenUsage.OutputTokenDetails != null)
+        {
+            usageData["reasoning_tokens"] = tokenUsage.OutputTokenDetails.ReasoningTokenCount;
+        }
+
+        return usageData;
     }
 
     /// <summary>

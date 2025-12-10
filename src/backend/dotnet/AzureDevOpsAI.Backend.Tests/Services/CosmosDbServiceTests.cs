@@ -230,4 +230,44 @@ public class CosmosDbServiceTests
         invocation.Status.Should().Be("error");
         invocation.ErrorMessage.Should().Be("Connection refused");
     }
+
+    [Fact]
+    public void ThoughtStepEntry_ShouldSerializeTokenUsageAsNestedDictionary()
+    {
+        // Arrange - Simulate serializable token usage data (extracted format)
+        var tokenUsageData = new Dictionary<string, object>
+        {
+            ["input_tokens"] = 100,
+            ["output_tokens"] = 50,
+            ["total_tokens"] = 150,
+            ["cached_tokens"] = 20,
+            ["reasoning_tokens"] = 10
+        };
+
+        var step = new ThoughtStepEntry
+        {
+            Id = "step-1",
+            Description = "AI response generated successfully",
+            Type = "completion",
+            Details = new Dictionary<string, object>
+            {
+                ["response_length"] = 500,
+                ["tokens_used"] = tokenUsageData
+            }
+        };
+
+        // Act - Serialize to JSON (simulating Cosmos DB serialization)
+        var json = System.Text.Json.JsonSerializer.Serialize(step);
+
+        // Assert - Should serialize without errors
+        json.Should().NotBeNullOrEmpty();
+        json.Should().Contain("input_tokens");
+        json.Should().Contain("output_tokens");
+        json.Should().Contain("total_tokens");
+        
+        // Verify deserialization works
+        var deserialized = System.Text.Json.JsonSerializer.Deserialize<ThoughtStepEntry>(json);
+        deserialized.Should().NotBeNull();
+        deserialized!.Details.Should().ContainKey("tokens_used");
+    }
 }
