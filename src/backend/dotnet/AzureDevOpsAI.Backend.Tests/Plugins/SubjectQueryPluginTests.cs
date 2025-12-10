@@ -64,7 +64,7 @@ public class SubjectQueryPluginTests
                 organization,
                 It.Is<string>(s => s.Contains("graph/subjectquery")),
                 It.Is<SubjectQueryRequest>(r => r.Query == query && r.SubjectKind != null && r.SubjectKind.Contains("User")),
-                "7.1",
+                "7.1-preview.1",
                 default))
             .ReturnsAsync(response);
 
@@ -114,7 +114,7 @@ public class SubjectQueryPluginTests
                 organization,
                 It.Is<string>(s => s.Contains("graph/subjectquery")),
                 It.Is<SubjectQueryRequest>(r => r.Query == query && r.SubjectKind != null && r.SubjectKind.Contains("Group")),
-                "7.1",
+                "7.1-preview.1",
                 default))
             .ReturnsAsync(response);
 
@@ -168,7 +168,7 @@ public class SubjectQueryPluginTests
                 organization,
                 It.Is<string>(s => s.Contains("graph/subjectquery")),
                 It.Is<SubjectQueryRequest>(r => r.Query == query && r.SubjectKind == null),
-                "7.1",
+                "7.1-preview.1",
                 default))
             .ReturnsAsync(response);
 
@@ -203,7 +203,7 @@ public class SubjectQueryPluginTests
                 organization,
                 It.Is<string>(s => s.Contains("graph/subjectquery")),
                 It.IsAny<SubjectQueryRequest>(),
-                "7.1",
+                "7.1-preview.1",
                 default))
             .ReturnsAsync(response);
 
@@ -286,7 +286,7 @@ public class SubjectQueryPluginTests
                 organization,
                 It.Is<string>(s => s.Contains("graph/subjectquery")),
                 It.Is<SubjectQueryRequest>(r => r.SubjectKind != null && r.SubjectKind.Contains("User")),
-                "7.1",
+                "7.1-preview.1",
                 default))
             .ReturnsAsync(response);
 
@@ -302,7 +302,7 @@ public class SubjectQueryPluginTests
             organization,
             It.IsAny<string>(),
             It.Is<SubjectQueryRequest>(r => r.SubjectKind != null && r.SubjectKind.Contains("User")),
-            "7.1",
+            "7.1-preview.1",
             default), Times.Once);
     }
 
@@ -318,7 +318,7 @@ public class SubjectQueryPluginTests
                 organization,
                 It.IsAny<string>(),
                 It.IsAny<SubjectQueryRequest>(),
-                "7.1",
+                "7.1-preview.1",
                 default))
             .ThrowsAsync(new Exception("API Error"));
 
