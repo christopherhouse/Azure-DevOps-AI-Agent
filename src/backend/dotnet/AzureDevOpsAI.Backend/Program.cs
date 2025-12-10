@@ -32,7 +32,7 @@ builder.Services.Configure<SecuritySettings>(builder.Configuration.GetSection("S
 builder.Services.Configure<AzureOpenAISettings>(options =>
 {
     builder.Configuration.GetSection("AzureOpenAI").Bind(options);
-    
+
     // Override ClientId with ManagedIdentityClientId environment variable if provided
     var managedIdentityClientId = builder.Configuration["ManagedIdentityClientId"];
     if (!string.IsNullOrEmpty(managedIdentityClientId))
@@ -43,7 +43,7 @@ builder.Services.Configure<AzureOpenAISettings>(options =>
 builder.Services.Configure<CosmosDbSettings>(options =>
 {
     builder.Configuration.GetSection("CosmosDb").Bind(options);
-    
+
     // Override ClientId with ManagedIdentityClientId environment variable if provided
     var managedIdentityClientId = builder.Configuration["ManagedIdentityClientId"];
     if (!string.IsNullOrEmpty(managedIdentityClientId))
@@ -90,12 +90,12 @@ if (!string.IsNullOrEmpty(applicationInsightsSettings?.ConnectionString))
     {
         options.ConnectionString = applicationInsightsSettings.ConnectionString;
     });
-    
+
     // Explicitly add Application Insights logging provider
     builder.Logging.AddApplicationInsights(
-        configureTelemetryConfiguration: (config) => 
+        configureTelemetryConfiguration: (config) =>
             config.ConnectionString = applicationInsightsSettings.ConnectionString,
-        configureApplicationInsightsLoggerOptions: (options) => 
+        configureApplicationInsightsLoggerOptions: (options) =>
         {
             // Capture all log levels
             options.IncludeScopes = true;
@@ -232,8 +232,8 @@ app.MapGet("/", () =>
     {
         message = "Azure DevOps AI Agent Backend API",
         version = appSettings?.AppVersion ?? "1.0.0",
-        docs_url = app.Environment.IsDevelopment() || securitySettings?.DisableAuth == true 
-            ? "/docs" 
+        docs_url = app.Environment.IsDevelopment() || securitySettings?.DisableAuth == true
+            ? "/docs"
             : "Documentation disabled in production"
     });
 })

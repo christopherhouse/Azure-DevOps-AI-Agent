@@ -48,9 +48,9 @@ public class AzureDevOpsDescriptorService : IAzureDevOpsDescriptorService
 
             // Use the Graph API to get the descriptor
             var descriptor = await _azureDevOpsApiService.GetAsync<GraphDescriptor>(
-                organization, 
-                $"https://vssps.dev.azure.com/{organization}/_apis/graph/descriptors/{storageKey}", 
-                "7.1", 
+                organization,
+                $"https://vssps.dev.azure.com/{organization}/_apis/graph/descriptors/{storageKey}",
+                "7.1",
                 cancellationToken);
 
             if (descriptor?.Value == null)

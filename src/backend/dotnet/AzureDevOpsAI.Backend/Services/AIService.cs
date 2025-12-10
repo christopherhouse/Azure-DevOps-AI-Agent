@@ -64,7 +64,7 @@ public class AIService : IAIService
     /// <summary>
     /// Rate limit metadata keys that may be available in Azure OpenAI response headers.
     /// </summary>
-    private static readonly string[] RateLimitMetadataKeys = 
+    private static readonly string[] RateLimitMetadataKeys =
     {
         "x-ratelimit-remaining-tokens",
         "x-ratelimit-remaining-requests",
@@ -72,7 +72,7 @@ public class AIService : IAIService
         "RateLimitRemainingRequests"
     };
 
-    public AIService(IOptions<AzureOpenAISettings> azureOpenAISettings, ILogger<AIService> logger, 
+    public AIService(IOptions<AzureOpenAISettings> azureOpenAISettings, ILogger<AIService> logger,
         IHttpClientFactory httpClientFactory, ILoggerFactory loggerFactory,
         IAzureDevOpsApiService azureDevOpsApiService,
         IAzureDevOpsDescriptorService descriptorService,
@@ -96,7 +96,7 @@ public class AIService : IAIService
         {
             // Use managed identity authentication with ManagedIdentityCredential
             TokenCredential credential;
-            
+
             // Configure User Assigned Managed Identity with ClientId
             if (_azureOpenAISettings.UseUserAssignedIdentity)
             {
@@ -109,7 +109,7 @@ public class AIService : IAIService
                 credential = new DefaultAzureCredential();
                 _logger.LogInformation("Configured ManagedIdentityCredential with System Assigned Managed Identity");
             }
-            
+
             builder.AddAzureOpenAIChatCompletion(
                 deploymentName: _azureOpenAISettings.ChatDeploymentName,
                 endpoint: _azureOpenAISettings.Endpoint,
@@ -137,7 +137,7 @@ public class AIService : IAIService
             {
                 UseSingleSummary = _azureOpenAISettings.ChatHistoryReducerUseSingleSummary
             };
-            
+
             _logger.LogInformation("Chat history reducer enabled - TargetCount: {TargetCount}, ThresholdCount: {ThresholdCount}, UseSingleSummary: {UseSingleSummary}",
                 _azureOpenAISettings.ChatHistoryReducerTargetCount,
                 _azureOpenAISettings.ChatHistoryReducerThresholdCount,
@@ -149,8 +149,8 @@ public class AIService : IAIService
         }
 
         // Note: Plugins are now registered per request in ProcessChatMessageAsync to include user context
-        
-        _logger.LogInformation("AI Service initialized with Azure OpenAI endpoint: {Endpoint}, Deployment: {Deployment}, CosmosDB: Enabled", 
+
+        _logger.LogInformation("AI Service initialized with Azure OpenAI endpoint: {Endpoint}, Deployment: {Deployment}, CosmosDB: Enabled",
             _azureOpenAISettings.Endpoint, _azureOpenAISettings.ChatDeploymentName);
     }
 
@@ -163,27 +163,27 @@ public class AIService : IAIService
         {
             // Clear any existing plugins
             _kernel.Plugins.Clear();
-            
+
             // Register plugins with the Azure DevOps API service (using managed identity)
             var projectPlugin = new ProjectPlugin(
                 _azureDevOpsApiService,
                 _loggerFactory.CreateLogger<ProjectPlugin>());
-                
+
             _kernel.ImportPluginFromObject(projectPlugin, nameof(ProjectPlugin));
-            
+
             var usersPlugin = new UsersPlugin(
                 _azureDevOpsApiService,
                 _loggerFactory.CreateLogger<UsersPlugin>());
-                
+
             _kernel.ImportPluginFromObject(usersPlugin, nameof(UsersPlugin));
-            
+
             var groupsPlugin = new GroupsPlugin(
                 _azureDevOpsApiService,
                 _descriptorService,
                 _loggerFactory.CreateLogger<GroupsPlugin>());
-                
+
             _kernel.ImportPluginFromObject(groupsPlugin, nameof(GroupsPlugin));
-            
+
             _logger.LogDebug("Plugins registered successfully");
         }
         catch (Exception ex)
@@ -220,18 +220,18 @@ public class AIService : IAIService
         var startTime = DateTime.UtcNow;
         var thoughtProcessId = Guid.NewGuid().ToString();
         var messageId = Guid.NewGuid().ToString();
-        
+
         // Diagnostic logging: Track incoming conversation context
         var wasConversationIdProvided = !string.IsNullOrEmpty(conversationId);
-        _logger.LogDebug("[ConversationContext] ProcessChatMessageAsync called - ConversationId provided: {WasProvided}, Value: {ConversationId}", 
+        _logger.LogDebug("[ConversationContext] ProcessChatMessageAsync called - ConversationId provided: {WasProvided}, Value: {ConversationId}",
             wasConversationIdProvided, conversationId ?? "(null)");
-        
+
         try
         {
             // Generate conversation ID if not provided
             var originalConversationId = conversationId;
             conversationId ??= Guid.NewGuid().ToString();
-            
+
             if (!wasConversationIdProvided)
             {
                 _logger.LogInformation("[ConversationContext] New conversation started - Generated ConversationId: {ConversationId}", conversationId);
@@ -261,7 +261,7 @@ public class AIService : IAIService
 
             // Get or create chat history for conversation
             var (chatHistory, isExistingConversation) = await GetOrCreateChatHistoryAsync(conversationId, cancellationToken);
-            
+
             // Diagnostic logging: Track conversation history state
             _logger.LogDebug("[ConversationContext] History lookup - ConversationId: {ConversationId}, ExistingConversation: {IsExisting}, MessageCount: {MessageCount}",
                 conversationId, isExistingConversation, chatHistory.Count);
@@ -282,7 +282,7 @@ public class AIService : IAIService
             // Add user message to history
             var messageCountBeforeAdd = chatHistory.Count;
             chatHistory.AddUserMessage(message);
-            
+
             // Diagnostic logging: Track message addition
             _logger.LogDebug("[ConversationContext] User message added - ConversationId: {ConversationId}, MessagesBefore: {Before}, MessagesAfter: {After}, MessagePreview: {Preview}",
                 conversationId, messageCountBeforeAdd, chatHistory.Count, message.Length > 50 ? message.Substring(0, 50) + "..." : message);
@@ -315,7 +315,7 @@ public class AIService : IAIService
             });
 
             _logger.LogInformation("Processing chat message for conversation {ConversationId}", conversationId);
-            
+
             // Diagnostic logging: Detailed history summary before AI call
             _logger.LogDebug("[ConversationContext] Preparing AI request - ConversationId: {ConversationId}, TotalMessages: {TotalMessages}, HistorySummary: {Summary}",
                 conversationId, chatHistory.Count, GetChatHistorySummary(chatHistory));
@@ -326,7 +326,7 @@ public class AIService : IAIService
             {
                 var originalMessageCount = chatHistory.Count;
                 var reducedMessages = await _chatHistoryReducer.ReduceAsync(chatHistory, cancellationToken);
-                
+
                 if (reducedMessages != null)
                 {
                     // Create new ChatHistory with reduced messages
@@ -335,11 +335,11 @@ public class AIService : IAIService
                     {
                         reducedHistory.Add(msg);
                     }
-                    
+
                     _logger.LogInformation("[ChatHistoryReducer] History reduced for model input - ConversationId: {ConversationId}, OriginalCount: {OriginalCount}, ReducedCount: {ReducedCount}, ReductionPercent: {ReductionPercent:F1}%",
-                        conversationId, originalMessageCount, reducedHistory.Count, 
+                        conversationId, originalMessageCount, reducedHistory.Count,
                         (originalMessageCount - reducedHistory.Count) * 100.0 / originalMessageCount);
-                    
+
                     // Track reduction in thought process
                     thoughtProcess.Steps.Add(new ThoughtStep
                     {
@@ -395,7 +395,7 @@ public class AIService : IAIService
             // Add AI response to history
             var messageCountBeforeResponse = chatHistory.Count;
             chatHistory.AddAssistantMessage(response.Content);
-            
+
             // Diagnostic logging: Track AI response addition
             _logger.LogDebug("[ConversationContext] AI response added - ConversationId: {ConversationId}, MessagesBefore: {Before}, MessagesAfter: {After}, ResponseLength: {Length}",
                 conversationId, messageCountBeforeResponse, chatHistory.Count, response.Content.Length);
@@ -430,7 +430,7 @@ public class AIService : IAIService
             };
 
             _logger.LogInformation("Successfully processed chat message for conversation {ConversationId}", conversationId);
-            
+
             // Diagnostic logging: Final conversation state
             _logger.LogDebug("[ConversationContext] Request completed - ConversationId: {ConversationId}, FinalMessageCount: {MessageCount}, ProcessingTimeMs: {Duration}",
                 conversationId, chatHistory.Count, thoughtProcess.DurationMs);
@@ -440,7 +440,7 @@ public class AIService : IAIService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing chat message for conversation {ConversationId}", conversationId);
-            
+
             // Store error in thought process
             var errorThoughtProcess = new ThoughtProcess
             {
@@ -462,7 +462,7 @@ public class AIService : IAIService
                     ["error_type"] = ex.GetType().Name
                 }
             });
-            
+
             // Try to save the error thought process
             try
             {
@@ -472,7 +472,7 @@ public class AIService : IAIService
             {
                 _logger.LogWarning(saveEx, "Failed to save error thought process for {ThoughtProcessId}", thoughtProcessId);
             }
-            
+
             throw;
         }
     }
@@ -499,13 +499,13 @@ public class AIService : IAIService
         {
             throw new ArgumentException("Conversation ID cannot be null or empty", nameof(conversationId));
         }
-        
+
         var document = await _cosmosDbService.GetThoughtProcessAsync(thoughtProcessId, conversationId, cancellationToken);
         if (document != null)
         {
             return ConvertToThoughtProcess(document);
         }
-        
+
         throw new KeyNotFoundException($"Thought process with ID '{thoughtProcessId}' not found");
     }
 
@@ -590,13 +590,13 @@ public class AIService : IAIService
                 Timestamp = DateTime.UtcNow
             }).ToList()
         };
-        
+
         // Set system prompt if first message is system
         if (document.Messages.Count > 0 && document.Messages[0].Role.Equals("System", StringComparison.OrdinalIgnoreCase))
         {
             document.SystemPrompt = document.Messages[0].Content;
         }
-        
+
         return document;
     }
 
@@ -665,7 +665,7 @@ public class AIService : IAIService
             DurationMs = document.DurationMs
         };
     }
-    
+
     /// <summary>
     /// Generate a summary of chat history for diagnostic logging.
     /// </summary>
@@ -850,7 +850,7 @@ public class AIService : IAIService
             {
                 Title = "Azure Repos Documentation",
                 Url = "https://docs.microsoft.com/en-us/azure/devops/repos/",
-                Type = "documentation", 
+                Type = "documentation",
                 Description = "Official documentation for Azure Repos Git repositories and version control"
             });
 

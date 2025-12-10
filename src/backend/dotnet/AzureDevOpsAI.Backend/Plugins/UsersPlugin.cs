@@ -56,9 +56,9 @@ public class UsersPlugin
                 dateCreated = e.DateCreated?.ToString("yyyy-MM-dd")
             }).ToList();
 
-            _logger.LogInformation("Successfully retrieved {Count} users for organization: {Organization}", 
+            _logger.LogInformation("Successfully retrieved {Count} users for organization: {Organization}",
                 userEntitlements.Items.Count, organization);
-            
+
             return JsonSerializer.Serialize(new
             {
                 organization,
@@ -91,7 +91,7 @@ public class UsersPlugin
     {
         try
         {
-            _logger.LogInformation("Adding user entitlement for {PrincipalName} in organization: {Organization}", 
+            _logger.LogInformation("Adding user entitlement for {PrincipalName} in organization: {Organization}",
                 principalName, organization);
 
             // Validate inputs
@@ -173,9 +173,9 @@ public class UsersPlugin
 
             // Use vsaex API endpoint for user entitlements
             var result = await _azureDevOpsApiService.PostAsync<object>(
-                organization, 
-                "https://vsaex.dev.azure.com/" + organization + "/_apis/userentitlements", 
-                request, 
+                organization,
+                "https://vsaex.dev.azure.com/" + organization + "/_apis/userentitlements",
+                request,
                 "7.1");
 
             if (result == null)
@@ -199,7 +199,7 @@ public class UsersPlugin
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error adding user entitlement for {PrincipalName} in organization: {Organization}", 
+            _logger.LogError(ex, "Error adding user entitlement for {PrincipalName} in organization: {Organization}",
                 principalName, organization);
             return JsonSerializer.Serialize(new { error = ex.Message });
         }
@@ -213,7 +213,7 @@ internal class ProjectEntitlementInput
 {
     [System.Text.Json.Serialization.JsonPropertyName("projectId")]
     public string ProjectId { get; set; } = string.Empty;
-    
+
     [System.Text.Json.Serialization.JsonPropertyName("groupType")]
     public string GroupType { get; set; } = string.Empty;
 }

@@ -132,7 +132,7 @@ public class ProjectPlugin
 
             // Parse the response to get project details
             var projectElement = JsonSerializer.SerializeToElement(createdProject);
-            
+
             string? projectId = null;
             string? projectUrl = null;
             string? status = null;
@@ -203,7 +203,7 @@ public class ProjectPlugin
             }
 
             // Find exact match first
-            var exactMatch = processTemplates.Value.FirstOrDefault(t => 
+            var exactMatch = processTemplates.Value.FirstOrDefault(t =>
                 t.IsEnabled && string.Equals(t.Name, templateName, StringComparison.OrdinalIgnoreCase));
 
             if (exactMatch != null)
@@ -222,7 +222,7 @@ public class ProjectPlugin
             }
 
             // Find partial matches
-            var partialMatches = processTemplates.Value.Where(t => 
+            var partialMatches = processTemplates.Value.Where(t =>
                 t.IsEnabled && t.Name.Contains(templateName, StringComparison.OrdinalIgnoreCase)).ToList();
 
             if (partialMatches.Count == 1)
