@@ -4,7 +4,6 @@ using AzureDevOpsAI.Backend.Services;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System.Text.Json;
 
 namespace AzureDevOpsAI.Backend.Tests.Plugins;
 
@@ -34,7 +33,7 @@ public class GroupsPluginTests
     }
 
     [Fact]
-    public async Task ListGroupsAsync_ShouldReturnFormattedList_WhenGroupsExist()
+    public async Task ListGroupsAsync_ShouldReturnGroupsList_WhenGroupsExist()
     {
         // Arrange
         var organization = "test-org";
@@ -75,21 +74,16 @@ public class GroupsPluginTests
         // Act
         var result = await _plugin.ListGroupsAsync(organization);
 
-        // Assert - verify JSON format
-        var jsonDoc = JsonDocument.Parse(result);
-        jsonDoc.RootElement.GetProperty("organization").GetString().Should().Be("test-org");
-        jsonDoc.RootElement.GetProperty("totalGroups").GetInt32().Should().Be(2);
-
-        var groupsArray = jsonDoc.RootElement.GetProperty("groups");
-        groupsArray.GetArrayLength().Should().Be(2);
-
-        var firstGroup = groupsArray[0];
-        firstGroup.GetProperty("displayName").GetString().Should().Be("Project Administrators");
-        firstGroup.GetProperty("descriptor").GetString().Should().Be("vssgp.Uy0xLTktMTU1MTM3NDI0NS0xMjA0NDAwOTY5");
+        // Assert
+        result.Should().NotBeNull();
+        result.Value.Should().HaveCount(2);
+        result.Value[0].DisplayName.Should().Be("Project Administrators");
+        result.Value[0].Descriptor.Should().Be("vssgp.Uy0xLTktMTU1MTM3NDI0NS0xMjA0NDAwOTY5");
+        result.Value[1].DisplayName.Should().Be("Contributors");
     }
 
     [Fact]
-    public async Task ListGroupsAsync_ShouldReturnNoGroupsMessage_WhenNoGroupsExist()
+    public async Task ListGroupsAsync_ShouldReturnEmptyList_WhenNoGroupsExist()
     {
         // Arrange
         var organization = "empty-org";
@@ -111,8 +105,9 @@ public class GroupsPluginTests
         var result = await _plugin.ListGroupsAsync(organization);
 
         // Assert
-        var jsonDoc = JsonDocument.Parse(result);
-        jsonDoc.RootElement.GetProperty("message").GetString().Should().Be("No groups found in this organization.");
+        result.Should().NotBeNull();
+        result.Value.Should().BeEmpty();
+        result.Count.Should().Be(0);
     }
 
     [Fact]
@@ -153,12 +148,13 @@ public class GroupsPluginTests
 
         // Assert
         _mockDescriptorService.Verify(x => x.GetScopeDescriptorAsync(organization, projectId, default), Times.Once);
-        var jsonDoc = JsonDocument.Parse(result);
-        jsonDoc.RootElement.GetProperty("projectId").GetString().Should().Be(projectId);
+        result.Should().NotBeNull();
+        result.Value.Should().HaveCount(1);
+        result.Value[0].DisplayName.Should().Be("Test Group");
     }
 
     [Fact]
-    public async Task ListGroupMembersAsync_ShouldReturnFormattedList_WhenMembersExist()
+    public async Task ListGroupMembersAsync_ShouldReturnMembersList_WhenMembersExist()
     {
         // Arrange
         var organization = "test-org";
@@ -200,22 +196,16 @@ public class GroupsPluginTests
         // Act
         var result = await _plugin.ListGroupMembersAsync(organization, groupDescriptor);
 
-        // Assert - verify JSON format
-        var jsonDoc = JsonDocument.Parse(result);
-        jsonDoc.RootElement.GetProperty("organization").GetString().Should().Be("test-org");
-        jsonDoc.RootElement.GetProperty("groupDescriptor").GetString().Should().Be(groupDescriptor);
-        jsonDoc.RootElement.GetProperty("totalMembers").GetInt32().Should().Be(2);
-
-        var membersArray = jsonDoc.RootElement.GetProperty("members");
-        membersArray.GetArrayLength().Should().Be(2);
-
-        var firstMember = membersArray[0];
-        firstMember.GetProperty("displayName").GetString().Should().Be("John Doe");
-        firstMember.GetProperty("principalName").GetString().Should().Be("john.doe@contoso.com");
+        // Assert
+        result.Should().NotBeNull();
+        result.Value.Should().HaveCount(2);
+        result.Value[0].DisplayName.Should().Be("John Doe");
+        result.Value[0].PrincipalName.Should().Be("john.doe@contoso.com");
+        result.Value[1].DisplayName.Should().Be("Jane Smith");
     }
 
     [Fact]
-    public async Task CreateGroupAsync_ShouldReturnSuccess_WhenGroupCreated()
+    public async Task CreateGroupAsync_ShouldReturnCreatedGroup_WhenGroupCreated()
     {
         // Arrange
         var organization = "test-org";
@@ -242,10 +232,10 @@ public class GroupsPluginTests
         var result = await _plugin.CreateGroupAsync(organization, displayName, description);
 
         // Assert
-        var jsonDoc = JsonDocument.Parse(result);
-        jsonDoc.RootElement.GetProperty("success").GetBoolean().Should().BeTrue();
-        jsonDoc.RootElement.GetProperty("displayName").GetString().Should().Be(displayName);
-        jsonDoc.RootElement.GetProperty("descriptor").GetString().Should().Be("vssgp.NewGroupDescriptor");
+        result.Should().NotBeNull();
+        result.DisplayName.Should().Be(displayName);
+        result.Description.Should().Be(description);
+        result.Descriptor.Should().Be("vssgp.NewGroupDescriptor");
     }
 
     [Fact]
@@ -281,12 +271,13 @@ public class GroupsPluginTests
 
         // Assert
         _mockDescriptorService.Verify(x => x.GetScopeDescriptorAsync(organization, projectId, default), Times.Once);
-        var jsonDoc = JsonDocument.Parse(result);
-        jsonDoc.RootElement.GetProperty("projectId").GetString().Should().Be(projectId);
+        result.Should().NotBeNull();
+        result.DisplayName.Should().Be(displayName);
+        result.Descriptor.Should().Be("vssgp.ProjectGroupDescriptor");
     }
 
     [Fact]
-    public async Task AddGroupMemberAsync_ShouldReturnSuccess_WhenMemberAdded()
+    public async Task AddGroupMemberAsync_ShouldReturnMembershipState_WhenMemberAdded()
     {
         // Arrange
         var organization = "test-org";
@@ -310,42 +301,33 @@ public class GroupsPluginTests
         var result = await _plugin.AddGroupMemberAsync(organization, groupDescriptor, memberDescriptor);
 
         // Assert
-        var jsonDoc = JsonDocument.Parse(result);
-        jsonDoc.RootElement.GetProperty("success").GetBoolean().Should().BeTrue();
-        jsonDoc.RootElement.GetProperty("groupDescriptor").GetString().Should().Be(groupDescriptor);
-        jsonDoc.RootElement.GetProperty("memberDescriptor").GetString().Should().Be(memberDescriptor);
-        jsonDoc.RootElement.GetProperty("membershipActive").GetBoolean().Should().BeTrue();
+        result.Should().NotBeNull();
+        result.Active.Should().BeTrue();
     }
 
     [Fact]
-    public async Task AddGroupMemberAsync_ShouldReturnError_WhenGroupDescriptorIsEmpty()
+    public async Task AddGroupMemberAsync_ShouldThrowArgumentException_WhenGroupDescriptorIsEmpty()
     {
         // Arrange
         var organization = "test-org";
         var groupDescriptor = "";
         var memberDescriptor = "aad.MemberDescriptor";
 
-        // Act
-        var result = await _plugin.AddGroupMemberAsync(organization, groupDescriptor, memberDescriptor);
-
-        // Assert
-        var jsonDoc = JsonDocument.Parse(result);
-        jsonDoc.RootElement.GetProperty("error").GetString().Should().Contain("Group descriptor is required");
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(
+            async () => await _plugin.AddGroupMemberAsync(organization, groupDescriptor, memberDescriptor));
     }
 
     [Fact]
-    public async Task AddGroupMemberAsync_ShouldReturnError_WhenMemberDescriptorIsEmpty()
+    public async Task AddGroupMemberAsync_ShouldThrowArgumentException_WhenMemberDescriptorIsEmpty()
     {
         // Arrange
         var organization = "test-org";
         var groupDescriptor = "vssgp.GroupDescriptor";
         var memberDescriptor = "";
 
-        // Act
-        var result = await _plugin.AddGroupMemberAsync(organization, groupDescriptor, memberDescriptor);
-
-        // Assert
-        var jsonDoc = JsonDocument.Parse(result);
-        jsonDoc.RootElement.GetProperty("error").GetString().Should().Contain("Member descriptor is required");
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(
+            async () => await _plugin.AddGroupMemberAsync(organization, groupDescriptor, memberDescriptor));
     }
 }
