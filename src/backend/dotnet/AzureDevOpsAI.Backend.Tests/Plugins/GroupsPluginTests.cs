@@ -300,7 +300,7 @@ public class GroupsPluginTests
         };
 
         _mockApiService
-            .Setup(x => x.PostAsync<GraphMembershipState>(
+            .Setup(x => x.PutAsync<GraphMembershipState>(
                 organization,
                 It.Is<string>(s => s.Contains($"graph/memberships/{memberDescriptor}/{groupDescriptor}")),
                 null,
