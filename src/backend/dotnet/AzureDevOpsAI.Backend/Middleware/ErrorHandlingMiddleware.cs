@@ -90,31 +90,31 @@ public class ErrorHandlingMiddleware
                 };
                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                 // Add WWW-Authenticate header for OAuth2 compliance
-                context.Response.Headers["WWW-Authenticate"] = 
+                context.Response.Headers["WWW-Authenticate"] =
                     $"Bearer error=\"insufficient_claims\", error_description=\"{mfaEx.ClaimsChallenge}\"";
                 break;
-            
+
             case ArgumentException argEx:
                 response.Error.Code = (int)HttpStatusCode.BadRequest;
                 response.Error.Message = argEx.Message;
                 response.Error.Type = "validation_error";
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 break;
-            
+
             case UnauthorizedAccessException:
                 response.Error.Code = (int)HttpStatusCode.Unauthorized;
                 response.Error.Message = "Unauthorized access";
                 response.Error.Type = "authentication_error";
                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                 break;
-            
+
             case NotImplementedException:
                 response.Error.Code = (int)HttpStatusCode.NotImplemented;
                 response.Error.Message = "Feature not implemented";
                 response.Error.Type = "not_implemented_error";
                 context.Response.StatusCode = (int)HttpStatusCode.NotImplemented;
                 break;
-            
+
             default:
                 response.Error.Code = (int)HttpStatusCode.InternalServerError;
                 response.Error.Message = "Internal server error";

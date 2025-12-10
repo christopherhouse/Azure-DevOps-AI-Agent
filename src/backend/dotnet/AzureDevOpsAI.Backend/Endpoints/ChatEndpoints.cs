@@ -86,10 +86,10 @@ public static class ChatEndpoints
 
             // Process message using AI service (which uses managed identity for Azure DevOps API access)
             var response = await aiService.ProcessChatMessageAsync(
-                request.Message, 
+                request.Message,
                 request.ConversationId);
 
-            logger.LogInformation("Successfully processed chat message for user {UserId}, conversation {ConversationId}", 
+            logger.LogInformation("Successfully processed chat message for user {UserId}, conversation {ConversationId}",
                 userId, response.ConversationId);
 
             return Results.Ok(response);
@@ -98,7 +98,7 @@ public static class ChatEndpoints
         {
             var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("ChatEndpoints");
             logger.LogError(ex, "Error processing chat message");
-            
+
             return Results.Problem("An error occurred while processing the chat message. Please try again later.");
         }
     }
@@ -192,7 +192,7 @@ public static class ChatEndpoints
                 });
             }
 
-            logger.LogInformation("Getting thought process {ThoughtProcessId} for conversation {ConversationId}, user {UserId}", 
+            logger.LogInformation("Getting thought process {ThoughtProcessId} for conversation {ConversationId}, user {UserId}",
                 thoughtProcessId, conversationId, userId);
 
             var thoughtProcess = await aiService.GetThoughtProcessAsync(thoughtProcessId, conversationId);
@@ -227,7 +227,7 @@ public static class ChatEndpoints
         {
             var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("ChatEndpoints");
             logger.LogError(ex, "Error getting thought process {ThoughtProcessId}", thoughtProcessId);
-            
+
             return Results.Problem("An error occurred while getting the thought process");
         }
     }
@@ -253,7 +253,7 @@ public static class ChatEndpoints
     private static string? ExtractUserTokenFromRequest(HttpContext context, SecuritySettings securitySettings)
     {
         var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("ChatEndpoints.ExtractUserToken");
-        
+
         logger.LogDebug("ExtractUserTokenFromRequest called - starting token extraction");
 
         if (securitySettings.DisableAuth)
@@ -263,7 +263,7 @@ public static class ChatEndpoints
         }
 
         logger.LogDebug("Authentication is enabled, checking Authorization header");
-        
+
         var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
         if (string.IsNullOrEmpty(authHeader))
         {
@@ -279,14 +279,14 @@ public static class ChatEndpoints
             var token = authHeader.Substring("Bearer ".Length).Trim();
             var tokenLength = token.Length;
             var tokenPreview = tokenLength > 20 ? token.Substring(0, 20) + "..." : token;
-            
-            logger.LogInformation("Bearer token successfully extracted, token length: {TokenLength}, preview: {TokenPreview}", 
+
+            logger.LogInformation("Bearer token successfully extracted, token length: {TokenLength}, preview: {TokenPreview}",
                 tokenLength, tokenPreview);
-            
+
             return token;
         }
 
-        logger.LogWarning("Authorization header does not contain a valid Bearer token. Header starts with: {HeaderStart}", 
+        logger.LogWarning("Authorization header does not contain a valid Bearer token. Header starts with: {HeaderStart}",
             authHeader.Length > 20 ? authHeader.Substring(0, 20) + "..." : authHeader);
 
         return null;

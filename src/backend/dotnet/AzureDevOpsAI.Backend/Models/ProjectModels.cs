@@ -63,7 +63,7 @@ public class ProjectStateJsonConverter : JsonConverter<ProjectState>
         {
             return ProjectState.WellFormed;
         }
-        
+
         // Handle camelCase values from Azure DevOps REST API
         return value.ToLowerInvariant() switch
         {
