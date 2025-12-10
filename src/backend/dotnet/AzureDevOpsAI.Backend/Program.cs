@@ -80,6 +80,7 @@ builder.Services.AddScoped<IAzureDevOpsApiService>(sp =>
     var logger = sp.GetRequiredService<ILogger<AzureDevOpsApiService>>();
     return new AzureDevOpsApiService(httpClient, logger, managedIdentityClientIdForDevOps, azureDevOpsSettings.Pat, azureDevOpsSettings.UsePat);
 });
+builder.Services.AddScoped<IAzureDevOpsDescriptorService, AzureDevOpsDescriptorService>();
 
 // Add Application Insights
 var applicationInsightsSettings = builder.Configuration.GetSection("ApplicationInsights").Get<ApplicationInsightsSettings>();

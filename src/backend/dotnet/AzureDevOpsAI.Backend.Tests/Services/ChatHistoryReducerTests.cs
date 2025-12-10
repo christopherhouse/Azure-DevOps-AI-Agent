@@ -9,7 +9,7 @@ namespace AzureDevOpsAI.Backend.Tests.Services;
 
 public class ChatHistoryReducerTests
 {
-    private static (Mock<IOptions<AzureOpenAISettings>>, Mock<ILogger<AIService>>, Mock<IHttpClientFactory>, Mock<ILoggerFactory>, Mock<IAzureDevOpsApiService>, Mock<ICosmosDbService>) CreateMocks(AzureOpenAISettings settings)
+    private static (Mock<IOptions<AzureOpenAISettings>>, Mock<ILogger<AIService>>, Mock<IHttpClientFactory>, Mock<ILoggerFactory>, Mock<IAzureDevOpsApiService>, Mock<IAzureDevOpsDescriptorService>, Mock<ICosmosDbService>) CreateMocks(AzureOpenAISettings settings)
     {
         var mockOptions = new Mock<IOptions<AzureOpenAISettings>>();
         mockOptions.Setup(o => o.Value).Returns(settings);
@@ -18,6 +18,7 @@ public class ChatHistoryReducerTests
         var mockHttpClientFactory = new Mock<IHttpClientFactory>();
         var mockLoggerFactory = new Mock<ILoggerFactory>();
         var mockAzureDevOpsApiService = new Mock<IAzureDevOpsApiService>();
+        var mockDescriptorService = new Mock<IAzureDevOpsDescriptorService>();
         var mockCosmosDbService = new Mock<ICosmosDbService>();
         
         // Setup HttpClient mock
@@ -28,7 +29,7 @@ public class ChatHistoryReducerTests
         var mockPluginLogger = new Mock<ILogger>();
         mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>())).Returns(mockPluginLogger.Object);
 
-        return (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockCosmosDbService);
+        return (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockDescriptorService, mockCosmosDbService);
     }
 
     [Fact]
@@ -48,10 +49,10 @@ public class ChatHistoryReducerTests
             ChatHistoryReducerUseSingleSummary = true
         };
 
-        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockCosmosDbService) = CreateMocks(azureOpenAISettings);
+        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockDescriptorService, mockCosmosDbService) = CreateMocks(azureOpenAISettings);
 
         // Act
-        var exception = Record.Exception(() => new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockAzureDevOpsApiService.Object, mockCosmosDbService.Object));
+        var exception = Record.Exception(() => new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockAzureDevOpsApiService.Object, mockDescriptorService.Object, mockCosmosDbService.Object));
 
         // Assert
         exception.Should().BeNull("Constructor should succeed with chat history reducer enabled");
@@ -81,10 +82,10 @@ public class ChatHistoryReducerTests
             EnableChatHistoryReducer = false
         };
 
-        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockCosmosDbService) = CreateMocks(azureOpenAISettings);
+        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockDescriptorService, mockCosmosDbService) = CreateMocks(azureOpenAISettings);
 
         // Act
-        var exception = Record.Exception(() => new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockAzureDevOpsApiService.Object, mockCosmosDbService.Object));
+        var exception = Record.Exception(() => new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockAzureDevOpsApiService.Object, mockDescriptorService.Object, mockCosmosDbService.Object));
 
         // Assert
         exception.Should().BeNull("Constructor should succeed with chat history reducer disabled");
@@ -120,10 +121,10 @@ public class ChatHistoryReducerTests
             ChatHistoryReducerUseSingleSummary = true
         };
 
-        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockCosmosDbService) = CreateMocks(azureOpenAISettings);
+        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockDescriptorService, mockCosmosDbService) = CreateMocks(azureOpenAISettings);
 
         // Act
-        var exception = Record.Exception(() => new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockAzureDevOpsApiService.Object, mockCosmosDbService.Object));
+        var exception = Record.Exception(() => new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockAzureDevOpsApiService.Object, mockDescriptorService.Object, mockCosmosDbService.Object));
 
         // Assert
         exception.Should().BeNull($"Constructor should succeed with TargetCount={targetCount} and ThresholdCount={thresholdCount}");

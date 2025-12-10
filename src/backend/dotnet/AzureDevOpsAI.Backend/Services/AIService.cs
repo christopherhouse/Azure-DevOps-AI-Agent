@@ -56,6 +56,7 @@ public class AIService : IAIService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILoggerFactory _loggerFactory;
     private readonly IAzureDevOpsApiService _azureDevOpsApiService;
+    private readonly IAzureDevOpsDescriptorService _descriptorService;
     private readonly ICosmosDbService _cosmosDbService;
     private readonly string _systemPrompt;
     private readonly IChatHistoryReducer? _chatHistoryReducer;
@@ -74,6 +75,7 @@ public class AIService : IAIService
     public AIService(IOptions<AzureOpenAISettings> azureOpenAISettings, ILogger<AIService> logger, 
         IHttpClientFactory httpClientFactory, ILoggerFactory loggerFactory,
         IAzureDevOpsApiService azureDevOpsApiService,
+        IAzureDevOpsDescriptorService descriptorService,
         ICosmosDbService cosmosDbService)
     {
         _azureOpenAISettings = azureOpenAISettings.Value;
@@ -81,6 +83,7 @@ public class AIService : IAIService
         _httpClientFactory = httpClientFactory;
         _loggerFactory = loggerFactory;
         _azureDevOpsApiService = azureDevOpsApiService;
+        _descriptorService = descriptorService;
         _cosmosDbService = cosmosDbService ?? throw new ArgumentNullException(nameof(cosmosDbService), "CosmosDB service is required.");
 
         // Load system prompt from embedded resource
@@ -173,6 +176,13 @@ public class AIService : IAIService
                 _loggerFactory.CreateLogger<UsersPlugin>());
                 
             _kernel.ImportPluginFromObject(usersPlugin, nameof(UsersPlugin));
+            
+            var groupsPlugin = new GroupsPlugin(
+                _azureDevOpsApiService,
+                _descriptorService,
+                _loggerFactory.CreateLogger<GroupsPlugin>());
+                
+            _kernel.ImportPluginFromObject(groupsPlugin, nameof(GroupsPlugin));
             
             _logger.LogDebug("Plugins registered successfully");
         }
