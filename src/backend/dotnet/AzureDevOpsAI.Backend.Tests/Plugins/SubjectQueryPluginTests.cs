@@ -37,7 +37,7 @@ public class SubjectQueryPluginTests
         // Arrange
         var organization = "test-org";
         var query = "john@example.com";
-        var subjectKind = "User";
+        var subjectKind = new[] { SubjectKind.User };
 
         var response = new SubjectQueryResponse
         {
@@ -63,7 +63,7 @@ public class SubjectQueryPluginTests
             .Setup(x => x.PostAsync<SubjectQueryResponse>(
                 organization,
                 It.Is<string>(s => s.Contains("graph/subjectquery")),
-                It.Is<SubjectQueryRequest>(r => r.Query == query && r.SubjectKind != null && r.SubjectKind.Contains("User")),
+                It.Is<SubjectQueryRequest>(r => r.SubjectQuery == query && r.SubjectKind != null && r.SubjectKind.Contains(SubjectKind.User)),
                 "7.1-preview.1",
                 default))
             .ReturnsAsync(response);
@@ -88,7 +88,7 @@ public class SubjectQueryPluginTests
         // Arrange
         var organization = "test-org";
         var query = "[MyProject]\\Contributors";
-        var subjectKind = "Group";
+        var subjectKind = new[] { SubjectKind.Group };
 
         var response = new SubjectQueryResponse
         {
@@ -113,7 +113,7 @@ public class SubjectQueryPluginTests
             .Setup(x => x.PostAsync<SubjectQueryResponse>(
                 organization,
                 It.Is<string>(s => s.Contains("graph/subjectquery")),
-                It.Is<SubjectQueryRequest>(r => r.Query == query && r.SubjectKind != null && r.SubjectKind.Contains("Group")),
+                It.Is<SubjectQueryRequest>(r => r.SubjectQuery == query && r.SubjectKind != null && r.SubjectKind.Contains(SubjectKind.Group)),
                 "7.1-preview.1",
                 default))
             .ReturnsAsync(response);
@@ -167,7 +167,7 @@ public class SubjectQueryPluginTests
             .Setup(x => x.PostAsync<SubjectQueryResponse>(
                 organization,
                 It.Is<string>(s => s.Contains("graph/subjectquery")),
-                It.Is<SubjectQueryRequest>(r => r.Query == query && r.SubjectKind == null),
+                It.Is<SubjectQueryRequest>(r => r.SubjectQuery == query && r.SubjectKind == null),
                 "7.1-preview.1",
                 default))
             .ReturnsAsync(response);
@@ -238,33 +238,14 @@ public class SubjectQueryPluginTests
         jsonResult.GetProperty("error").GetString().Should().Contain("Search query is required");
     }
 
+
     [Fact]
-    public async Task QuerySubjectsAsync_ShouldReturnError_WhenInvalidSubjectKindProvided()
+    public async Task QuerySubjectsAsync_ShouldAcceptMultipleSubjectKinds()
     {
         // Arrange
         var organization = "test-org";
-        var query = "test@example.com";
-        var invalidSubjectKind = "InvalidKind";
-
-        // Act
-        var result = await _plugin.QuerySubjectsAsync(organization, query, invalidSubjectKind);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Should().Contain("error");
-        result.Should().Contain("Invalid subjectKind");
-
-        var jsonResult = JsonSerializer.Deserialize<JsonElement>(result);
-        jsonResult.GetProperty("error").GetString().Should().Contain("Invalid subjectKind");
-    }
-
-    [Fact]
-    public async Task QuerySubjectsAsync_ShouldHandleCaseInsensitiveSubjectKind()
-    {
-        // Arrange
-        var organization = "test-org";
-        var query = "john@example.com";
-        var subjectKind = "user"; // lowercase
+        var query = "admin";
+        var subjectKind = new[] { SubjectKind.User, SubjectKind.Group };
 
         var response = new SubjectQueryResponse
         {
@@ -273,19 +254,29 @@ public class SubjectQueryPluginTests
                 new GraphSubject
                 {
                     Descriptor = "aad.MWY3ZDQ4YTktNzU1Yy03YzQwLWJlNTktYmQ3YjYwYzA0ZTY5",
-                    DisplayName = "John Doe",
+                    DisplayName = "Admin User",
                     SubjectKind = "User",
-                    PrincipalName = "john@example.com"
+                    PrincipalName = "admin@example.com"
+                },
+                new GraphSubject
+                {
+                    Descriptor = "vssgp.Uy0xLTktMTU1MTM3NDI0NS0xMjA0NDAwOTY5",
+                    DisplayName = "Administrators",
+                    SubjectKind = "Group",
+                    PrincipalName = "[MyProject]\\Administrators"
                 }
             },
-            Count = 1
+            Count = 2
         };
 
         _mockApiService
             .Setup(x => x.PostAsync<SubjectQueryResponse>(
                 organization,
                 It.Is<string>(s => s.Contains("graph/subjectquery")),
-                It.Is<SubjectQueryRequest>(r => r.SubjectKind != null && r.SubjectKind.Contains("User")),
+                It.Is<SubjectQueryRequest>(r => r.SubjectQuery == query && 
+                    r.SubjectKind != null && 
+                    r.SubjectKind.Contains(SubjectKind.User) && 
+                    r.SubjectKind.Contains(SubjectKind.Group)),
                 "7.1-preview.1",
                 default))
             .ReturnsAsync(response);
@@ -295,15 +286,12 @@ public class SubjectQueryPluginTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().Contain("John Doe");
+        result.Should().Contain("Admin User");
+        result.Should().Contain("Administrators");
 
-        // Verify that the subject kind was normalized to "User" with proper casing
-        _mockApiService.Verify(x => x.PostAsync<SubjectQueryResponse>(
-            organization,
-            It.IsAny<string>(),
-            It.Is<SubjectQueryRequest>(r => r.SubjectKind != null && r.SubjectKind.Contains("User")),
-            "7.1-preview.1",
-            default), Times.Once);
+        var jsonResult = JsonSerializer.Deserialize<JsonElement>(result);
+        jsonResult.GetProperty("totalResults").GetInt32().Should().Be(2);
+        jsonResult.GetProperty("subjectKind").GetString().Should().Be("User, Group");
     }
 
     [Fact]

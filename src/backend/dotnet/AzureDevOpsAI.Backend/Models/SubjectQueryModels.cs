@@ -12,13 +12,13 @@ public class SubjectQueryRequest
     /// The search query string (email, display name, or principal name).
     /// </summary>
     [Required]
-    public string Query { get; set; } = string.Empty;
+    public string SubjectQuery { get; set; } = string.Empty;
 
     /// <summary>
-    /// Optional list of subject kinds to filter by (e.g., "User", "Group").
+    /// Optional list of subject kinds to filter by (e.g., User, Group).
     /// If not provided, searches both users and groups.
     /// </summary>
-    public List<string>? SubjectKind { get; set; }
+    public List<SubjectKind>? SubjectKind { get; set; }
 
     /// <summary>
     /// Optional scope descriptor to limit search to specific project or organization scope.

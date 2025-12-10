@@ -29,19 +29,20 @@ public class SubjectQueryPlugin
     /// </summary>
     /// <param name="organization">The Azure DevOps organization name</param>
     /// <param name="query">The search query - can be an email address, display name, or principal name</param>
-    /// <param name="subjectKind">Optional filter for subject type: 'User', 'Group', or omit to search both. Use 'User' when looking for user descriptors, 'Group' when looking for group descriptors, or omit when unsure.</param>
+    /// <param name="subjectKind">Optional filter for subject types: User, Group, or omit to search both. Can specify multiple types as an array.</param>
     /// <returns>List of matching subjects with their descriptors and details</returns>
     [KernelFunction("query_subjects")]
-    [Description("Search for users and/or groups in Azure DevOps by email, display name, or principal name. This is the PRIMARY function to use when you need to find descriptors for users or groups. Returns descriptor, display name, principal name, email, origin, and other details. Use subjectKind='User' to search only users, 'Group' to search only groups, or omit to search both.")]
+    [Description("Search for users and/or groups in Azure DevOps by email, display name, or principal name. This is the PRIMARY function to use when you need to find descriptors for users or groups. Returns descriptor, display name, principal name, email, origin, and other details. Use subjectKind with User and/or Group values to filter results.")]
     public async Task<string> QuerySubjectsAsync(
         [Description("The Azure DevOps organization name")] string organization,
         [Description("Search query - email address, display name, or principal name (e.g., 'john@example.com', 'John Doe', or '[ProjectName]\\GroupName')")] string query,
-        [Description("Optional subject type filter: 'User' for users only, 'Group' for groups only, or omit for both users and groups")] string? subjectKind = null)
+        [Description("Optional subject type filter: array of SubjectKind enum values (User and/or Group), or omit for both")] SubjectKind[]? subjectKind = null)
     {
         try
         {
+            var subjectKindStr = subjectKind != null ? string.Join(", ", subjectKind) : "all";
             _logger.LogInformation("Querying subjects in organization: {Organization}, query: {Query}, subjectKind: {SubjectKind}",
-                organization, query, subjectKind ?? "all");
+                organization, query, subjectKindStr);
 
             if (string.IsNullOrWhiteSpace(query))
             {
@@ -51,28 +52,14 @@ public class SubjectQueryPlugin
             // Build the subject query request
             var subjectQueryRequest = new SubjectQueryRequest
             {
-                Query = query
+                SubjectQuery = query
             };
 
             // Add subject kind filter if specified
-            if (!string.IsNullOrWhiteSpace(subjectKind))
+            if (subjectKind != null && subjectKind.Length > 0)
             {
-                var normalizedSubjectKind = subjectKind.Trim();
-                
-                // Validate subject kind
-                if (!normalizedSubjectKind.Equals("User", StringComparison.OrdinalIgnoreCase) &&
-                    !normalizedSubjectKind.Equals("Group", StringComparison.OrdinalIgnoreCase))
-                {
-                    return JsonSerializer.Serialize(new { error = $"Invalid subjectKind '{subjectKind}'. Valid values are 'User', 'Group', or omit for both." });
-                }
-
-                // Capitalize first letter to match API expectations
-                subjectQueryRequest.SubjectKind = new List<string> 
-                { 
-                    char.ToUpper(normalizedSubjectKind[0]) + normalizedSubjectKind.Substring(1).ToLower()
-                };
-
-                _logger.LogInformation("Filtering by subject kind: {SubjectKind}", string.Join(", ", subjectQueryRequest.SubjectKind));
+                subjectQueryRequest.SubjectKind = subjectKind.ToList();
+                _logger.LogInformation("Filtering by subject kind: {SubjectKind}", string.Join(", ", subjectKind));
             }
             else
             {
@@ -93,7 +80,7 @@ public class SubjectQueryPlugin
                 {
                     message = "No subjects found matching the query.",
                     query,
-                    subjectKind = subjectKind ?? "all",
+                    subjectKind = subjectKindStr,
                     results = new List<object>()
                 });
             }
@@ -118,7 +105,7 @@ public class SubjectQueryPlugin
             {
                 organization,
                 query,
-                subjectKind = subjectKind ?? "all",
+                subjectKind = subjectKindStr,
                 totalResults = results.Count,
                 results
             }, new JsonSerializerOptions { WriteIndented = true });
