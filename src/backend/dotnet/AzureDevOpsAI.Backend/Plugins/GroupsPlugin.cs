@@ -208,7 +208,7 @@ public class GroupsPlugin
         // Use the Graph API memberships endpoint to add the member
         var apiPath = $"https://vssps.dev.azure.com/{organization}/_apis/graph/memberships/{memberDescriptor}/{groupDescriptor}";
 
-        var membership = await _azureDevOpsApiService.PostAsync<GraphMembershipState>(
+        var membership = await _azureDevOpsApiService.PutAsync<GraphMembershipState>(
             organization, apiPath, null, "7.1-preview.1");
 
         if (membership == null)
