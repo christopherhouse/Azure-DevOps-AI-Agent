@@ -85,7 +85,7 @@ public class SubjectQueryPlugin
                 organization,
                 apiPath,
                 subjectQueryRequest,
-                "7.1");
+                "7.1-preview.1");
 
             if (response == null || response.Value == null || response.Value.Count == 0)
             {
