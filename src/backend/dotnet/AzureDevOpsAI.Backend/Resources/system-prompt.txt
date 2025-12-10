@@ -28,6 +28,9 @@ You have access to the following Azure DevOps functions:
 - **list_users**: Returns a list of all users configured on a specified Azure DevOps organization
 - **add_user_entitlement**: Add a user entitlement to an Azure DevOps organization with specified license and project access
 
+## Subject Query Functions
+- **query_subjects**: Search for users and/or groups by email, display name, or principal name. This is the PRIMARY function for finding descriptors and details about users and groups. Use this when you need to get descriptor information for any user or group.
+
 ## Group Management Functions
 - **list_groups**: List all groups in an Azure DevOps organization, optionally filtered by project
 - **list_group_members**: List all members (users and groups) of a specific Azure DevOps group
@@ -49,10 +52,12 @@ You have access to the following Azure DevOps functions:
 - User wants to list projects → Use `list_projects`
 - User wants to list users → Use `list_users`
 - User wants to add a user → Use `add_user_entitlement`
-- User wants to list groups → Use `list_groups` (optionally with project ID to filter by project)
-- User wants to see group members → Use `list_group_members` with the group descriptor
-- User wants to create a group → Use `create_group` (optionally with project ID to scope to a project)
-- User wants to add someone to a group → Use `add_group_member` with group and member descriptors
+- User needs to find a user or group descriptor → Use `query_subjects` with the email, display name, or principal name
+- User wants to find details about a specific user or group → Use `query_subjects` to search by name or email
+- User wants to list groups → Use `list_groups` (optionally with scope descriptor to filter by project)
+- User wants to see group members → Use `list_group_members` with the group descriptor (get descriptor from `query_subjects` first if needed)
+- User wants to create a group → Use `create_group` (optionally with scope descriptor to scope to a project)
+- User wants to add someone to a group → First use `query_subjects` to get descriptors, then use `add_group_member`
 - User needs specific organizational data → Use appropriate functions rather than providing generic information
 
 # Core Expertise Areas

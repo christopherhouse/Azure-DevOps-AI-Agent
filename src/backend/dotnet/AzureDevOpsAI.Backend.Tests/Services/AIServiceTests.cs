@@ -11,7 +11,7 @@ namespace AzureDevOpsAI.Backend.Tests.Services;
 
 public class AIServiceTests
 {
-    private static (Mock<IOptions<AzureOpenAISettings>>, Mock<ILogger<AIService>>, Mock<IHttpClientFactory>, Mock<ILoggerFactory>, Mock<IAzureDevOpsApiService>, Mock<IAzureDevOpsDescriptorService>, Mock<ICosmosDbService>) CreateMocks(AzureOpenAISettings settings)
+    private static (Mock<IOptions<AzureOpenAISettings>>, Mock<ILogger<AIService>>, Mock<IHttpClientFactory>, Mock<ILoggerFactory>, Mock<IAzureDevOpsApiService>, Mock<ICosmosDbService>) CreateMocks(AzureOpenAISettings settings)
     {
         var mockOptions = new Mock<IOptions<AzureOpenAISettings>>();
         mockOptions.Setup(o => o.Value).Returns(settings);
@@ -20,7 +20,6 @@ public class AIServiceTests
         var mockHttpClientFactory = new Mock<IHttpClientFactory>();
         var mockLoggerFactory = new Mock<ILoggerFactory>();
         var mockAzureDevOpsApiService = new Mock<IAzureDevOpsApiService>();
-        var mockDescriptorService = new Mock<IAzureDevOpsDescriptorService>();
         var mockCosmosDbService = new Mock<ICosmosDbService>();
         
         // Setup HttpClient mock
@@ -31,7 +30,7 @@ public class AIServiceTests
         var mockPluginLogger = new Mock<ILogger>();
         mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>())).Returns(mockPluginLogger.Object);
 
-        return (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockDescriptorService, mockCosmosDbService);
+        return (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockCosmosDbService);
     }
     [Fact]
     public void Constructor_ShouldLoadSystemPrompt_WhenInitialized()
@@ -46,10 +45,10 @@ public class AIServiceTests
             ClientId = "test-client-id" // Required field
         };
 
-        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockDescriptorService, mockCosmosDbService) = CreateMocks(azureOpenAISettings);
+        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockCosmosDbService) = CreateMocks(azureOpenAISettings);
 
         // Act & Assert - Should not throw exception during construction
-        var exception = Record.Exception(() => new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockAzureDevOpsApiService.Object, mockDescriptorService.Object, mockCosmosDbService.Object));
+        var exception = Record.Exception(() => new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockAzureDevOpsApiService.Object, mockCosmosDbService.Object));
 
         // Assert
         exception.Should().BeNull("Constructor should succeed with valid configuration");
@@ -67,10 +66,10 @@ public class AIServiceTests
             ClientId = "12345678-1234-1234-1234-123456789012" // UAMI client ID
         };
 
-        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockDescriptorService, mockCosmosDbService) = CreateMocks(azureOpenAISettings);
+        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockCosmosDbService) = CreateMocks(azureOpenAISettings);
 
         // Act & Assert - Should not throw exception during construction
-        var exception = Record.Exception(() => new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockAzureDevOpsApiService.Object, mockDescriptorService.Object, mockCosmosDbService.Object));
+        var exception = Record.Exception(() => new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockAzureDevOpsApiService.Object, mockCosmosDbService.Object));
 
         // Assert
         exception.Should().BeNull("Constructor should succeed with UAMI configuration");
@@ -104,14 +103,14 @@ public class AIServiceTests
             ClientId = "test-client-id" // Required field
         };
 
-        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockDescriptorService, mockCosmosDbService) = CreateMocks(azureOpenAISettings);
+        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockCosmosDbService) = CreateMocks(azureOpenAISettings);
 
         // Note: This test will fail with actual Azure OpenAI calls due to missing credentials
         // In a real test environment, you would mock the Semantic Kernel components
         // For now, we'll just test the service construction and configuration
         
         // Act & Assert - Constructor should not throw
-        var service = new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockAzureDevOpsApiService.Object, mockDescriptorService.Object, mockCosmosDbService.Object);
+        var service = new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockAzureDevOpsApiService.Object, mockCosmosDbService.Object);
         
         // Assert that service is created
         service.Should().NotBeNull();
@@ -131,10 +130,10 @@ public class AIServiceTests
             ClientId = "test-client-id"
         };
 
-        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockDescriptorService, mockCosmosDbService) = CreateMocks(azureOpenAISettings);
+        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockCosmosDbService) = CreateMocks(azureOpenAISettings);
 
         // Act
-        var service = new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockAzureDevOpsApiService.Object, mockDescriptorService.Object, mockCosmosDbService.Object);
+        var service = new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockAzureDevOpsApiService.Object, mockCosmosDbService.Object);
 
         // Assert
         // We can't directly access the system prompt, but we can verify the service was constructed
@@ -174,13 +173,13 @@ public class AIServiceTests
             ClientId = "test-client-id" // Required field
         };
 
-        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockDescriptorService, mockCosmosDbService) = CreateMocks(azureOpenAISettings);
+        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockCosmosDbService) = CreateMocks(azureOpenAISettings);
         
         // Mock CosmosDbService to return null (no existing history)
         mockCosmosDbService.Setup(x => x.GetChatHistoryAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((AzureDevOpsAI.Backend.Models.ChatHistoryDocument?)null);
 
-        var service = new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockAzureDevOpsApiService.Object, mockDescriptorService.Object, mockCosmosDbService.Object);
+        var service = new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockAzureDevOpsApiService.Object, mockCosmosDbService.Object);
         var conversationId = Guid.NewGuid().ToString();
 
         // Act
@@ -205,11 +204,11 @@ public class AIServiceTests
             ClientId = "test-client-id"
         };
 
-        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockDescriptorService, _) = CreateMocks(azureOpenAISettings);
+        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, _) = CreateMocks(azureOpenAISettings);
 
         // Act & Assert - Should throw ArgumentNullException when cosmosDbService is null
         var exception = Assert.Throws<ArgumentNullException>(() => 
-            new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockAzureDevOpsApiService.Object, mockDescriptorService.Object, null!));
+            new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockAzureDevOpsApiService.Object, null!));
 
         exception.ParamName.Should().Be("cosmosDbService");
     }
@@ -237,10 +236,10 @@ public class AIServiceTests
             ClientId = "test-client-id"
         };
 
-        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockDescriptorService, mockCosmosDbService) = CreateMocks(azureOpenAISettings);
+        var (mockOptions, mockLogger, mockHttpClientFactory, mockLoggerFactory, mockAzureDevOpsApiService, mockCosmosDbService) = CreateMocks(azureOpenAISettings);
 
         // Act
-        var service = new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockAzureDevOpsApiService.Object, mockDescriptorService.Object, mockCosmosDbService.Object);
+        var service = new AIService(mockOptions.Object, mockLogger.Object, mockHttpClientFactory.Object, mockLoggerFactory.Object, mockAzureDevOpsApiService.Object, mockCosmosDbService.Object);
 
         // Assert
         service.Should().NotBeNull("Service should be successfully created with token metrics logging capability");

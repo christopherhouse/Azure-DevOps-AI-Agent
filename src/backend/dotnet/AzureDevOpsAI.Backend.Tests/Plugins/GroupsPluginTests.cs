@@ -10,23 +10,21 @@ namespace AzureDevOpsAI.Backend.Tests.Plugins;
 public class GroupsPluginTests
 {
     private readonly Mock<IAzureDevOpsApiService> _mockApiService;
-    private readonly Mock<IAzureDevOpsDescriptorService> _mockDescriptorService;
     private readonly Mock<ILogger<GroupsPlugin>> _mockLogger;
     private readonly GroupsPlugin _plugin;
 
     public GroupsPluginTests()
     {
         _mockApiService = new Mock<IAzureDevOpsApiService>();
-        _mockDescriptorService = new Mock<IAzureDevOpsDescriptorService>();
         _mockLogger = new Mock<ILogger<GroupsPlugin>>();
-        _plugin = new GroupsPlugin(_mockApiService.Object, _mockDescriptorService.Object, _mockLogger.Object);
+        _plugin = new GroupsPlugin(_mockApiService.Object, _mockLogger.Object);
     }
 
     [Fact]
     public void Constructor_ShouldInitializePlugin()
     {
         // Arrange & Act
-        var plugin = new GroupsPlugin(_mockApiService.Object, _mockDescriptorService.Object, _mockLogger.Object);
+        var plugin = new GroupsPlugin(_mockApiService.Object, _mockLogger.Object);
 
         // Assert
         plugin.Should().NotBeNull();
@@ -117,16 +115,11 @@ public class GroupsPluginTests
     }
 
     [Fact]
-    public async Task ListGroupsAsync_WithProjectId_ShouldCallDescriptorService()
+    public async Task ListGroupsAsync_WithScopeDescriptor_ShouldFilterByScope()
     {
         // Arrange
         var organization = "test-org";
-        var projectId = "project-123";
         var scopeDescriptor = "scp.ZGU4Y2YyYzYtZjBiZS00NTJjLWFhMjYtZmE3ZDI4OWJhMWQ2";
-
-        _mockDescriptorService
-            .Setup(x => x.GetScopeDescriptorAsync(organization, projectId, default))
-            .ReturnsAsync(scopeDescriptor);
 
         var groups = new GraphGroupListResponse
         {
@@ -153,10 +146,9 @@ public class GroupsPluginTests
             .ReturnsAsync(groups);
 
         // Act
-        var result = await _plugin.ListGroupsAsync(organization, projectId);
+        var result = await _plugin.ListGroupsAsync(organization, scopeDescriptor);
 
         // Assert
-        _mockDescriptorService.Verify(x => x.GetScopeDescriptorAsync(organization, projectId, default), Times.Once);
         result.Should().NotBeNull();
         result.Should().BeOfType<SlimGroupListResponse>();
         result.Value.Should().HaveCount(1);
@@ -250,17 +242,12 @@ public class GroupsPluginTests
     }
 
     [Fact]
-    public async Task CreateGroupAsync_WithProjectId_ShouldCallDescriptorService()
+    public async Task CreateGroupAsync_WithScopeDescriptor_ShouldCreateInProjectScope()
     {
         // Arrange
         var organization = "test-org";
         var displayName = "Project Group";
-        var projectId = "project-123";
         var scopeDescriptor = "scp.ProjectScope";
-
-        _mockDescriptorService
-            .Setup(x => x.GetScopeDescriptorAsync(organization, projectId, default))
-            .ReturnsAsync(scopeDescriptor);
 
         var createdGroup = new GraphGroup
         {
@@ -278,10 +265,9 @@ public class GroupsPluginTests
             .ReturnsAsync(createdGroup);
 
         // Act
-        var result = await _plugin.CreateGroupAsync(organization, displayName, null, projectId);
+        var result = await _plugin.CreateGroupAsync(organization, displayName, null, scopeDescriptor);
 
         // Assert
-        _mockDescriptorService.Verify(x => x.GetScopeDescriptorAsync(organization, projectId, default), Times.Once);
         result.Should().NotBeNull();
         result.DisplayName.Should().Be(displayName);
         result.Descriptor.Should().Be("vssgp.ProjectGroupDescriptor");
