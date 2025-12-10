@@ -67,8 +67,8 @@ public class SubjectQueryPlugin
             }
 
             // Log the serialized SubjectQueryRequest
-            var serializedRequest = JsonSerializer.Serialize(subjectQueryRequest, new JsonSerializerOptions { WriteIndented = true });
-            _logger.LogInformation("SubjectQueryRequest: {SerializedRequest}", serializedRequest);
+            var serializedRequest = JsonSerializer.Serialize(subjectQueryRequest);
+            _logger.LogDebug("SubjectQueryRequest: {SerializedRequest}", serializedRequest);
 
             // Call the Subject Query API
             var apiPath = $"https://vssps.dev.azure.com/{organization}/_apis/graph/subjectquery";
