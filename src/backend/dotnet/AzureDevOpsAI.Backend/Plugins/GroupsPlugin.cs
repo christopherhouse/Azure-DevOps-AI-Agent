@@ -29,10 +29,10 @@ public class GroupsPlugin
     /// </summary>
     /// <param name="organization">The Azure DevOps organization name</param>
     /// <param name="projectId">Optional project ID to filter groups by project (use list_projects to obtain project IDs)</param>
-    /// <returns>List of groups</returns>
+    /// <returns>List of groups with essential attributes only</returns>
     [KernelFunction("list_groups")]
     [Description("List all groups in an Azure DevOps organization. Optionally filter by project using a project ID from list_projects. If no project ID is provided, returns all organization-level groups.")]
-    public async Task<GraphGroupListResponse> ListGroupsAsync(
+    public async Task<SlimGroupListResponse> ListGroupsAsync(
         [Description("The Azure DevOps organization name")] string organization,
         [Description("Optional project ID to filter groups by project (use list_projects to obtain)")] string? projectId = null)
     {
@@ -65,8 +65,23 @@ public class GroupsPlugin
             throw new InvalidOperationException("Failed to retrieve groups from Azure DevOps API");
         }
 
-        _logger.LogInformation("Successfully retrieved {Count} groups for organization: {Organization}", groups.Value?.Count ?? 0, organization);
-        return groups;
+        // Transform to slim groups with only essential attributes
+        var slimGroups = new SlimGroupListResponse
+        {
+            Value = groups.Value.Select(g => new SlimGroup
+            {
+                Description = g.Description,
+                PrincipalName = g.PrincipalName,
+                Origin = g.Origin,
+                DisplayName = g.DisplayName,
+                Descriptor = g.Descriptor
+            }).ToList(),
+            Count = groups.Count,
+            ContinuationToken = groups.ContinuationToken
+        };
+
+        _logger.LogInformation("Successfully retrieved {Count} groups for organization: {Organization}", slimGroups.Value?.Count ?? 0, organization);
+        return slimGroups;
     }
 
     /// <summary>

@@ -244,3 +244,55 @@ public class GraphDescriptor
     [JsonPropertyName("_links")]
     public Dictionary<string, LinkReference>? Links { get; set; }
 }
+
+/// <summary>
+/// Slim group model containing only essential attributes to reduce payload size.
+/// </summary>
+public class SlimGroup
+{
+    /// <summary>
+    /// Group description.
+    /// </summary>
+    public string? Description { get; set; }
+
+    /// <summary>
+    /// Group principal name.
+    /// </summary>
+    public string? PrincipalName { get; set; }
+
+    /// <summary>
+    /// Group origin (aad, vsts, etc).
+    /// </summary>
+    public string? Origin { get; set; }
+
+    /// <summary>
+    /// Group display name.
+    /// </summary>
+    public string? DisplayName { get; set; }
+
+    /// <summary>
+    /// Group descriptor (unique identifier).
+    /// </summary>
+    public string? Descriptor { get; set; }
+}
+
+/// <summary>
+/// Slim group list response model with reduced attributes.
+/// </summary>
+public class SlimGroupListResponse
+{
+    /// <summary>
+    /// List of slim groups from the API response.
+    /// </summary>
+    public List<SlimGroup> Value { get; set; } = new();
+
+    /// <summary>
+    /// Total count of groups.
+    /// </summary>
+    public int Count { get; set; }
+
+    /// <summary>
+    /// Continuation token for paging.
+    /// </summary>
+    public string? ContinuationToken { get; set; }
+}
