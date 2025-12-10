@@ -52,7 +52,7 @@ public class SubjectQueryPlugin
             // Build the subject query request
             var subjectQueryRequest = new SubjectQueryRequest
             {
-                SubjectQuery = query
+                Query = query
             };
 
             // Add subject kind filter if specified
@@ -65,6 +65,10 @@ public class SubjectQueryPlugin
             {
                 _logger.LogInformation("No subject kind filter specified, searching both users and groups");
             }
+
+            // Log the serialized SubjectQueryRequest
+            var serializedRequest = JsonSerializer.Serialize(subjectQueryRequest, new JsonSerializerOptions { WriteIndented = true });
+            _logger.LogInformation("SubjectQueryRequest: {SerializedRequest}", serializedRequest);
 
             // Call the Subject Query API
             var apiPath = $"https://vssps.dev.azure.com/{organization}/_apis/graph/subjectquery";
