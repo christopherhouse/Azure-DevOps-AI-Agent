@@ -160,6 +160,31 @@ public class AzureOpenAISettings
     /// Use User Assigned Managed Identity. When false, ManagedIdentityCredential will use System Assigned Managed Identity.
     /// </summary>
     public bool UseUserAssignedIdentity { get; set; } = true;
+
+    /// <summary>
+    /// Enable chat history reduction/summarization to manage context window size.
+    /// </summary>
+    public bool EnableChatHistoryReducer { get; set; } = true;
+
+    /// <summary>
+    /// Target number of messages to retain after chat history reduction (excluding system message).
+    /// Recommended: 10-20 messages to maintain conversation context while managing token usage.
+    /// </summary>
+    public int ChatHistoryReducerTargetCount { get; set; } = 15;
+
+    /// <summary>
+    /// Threshold count: number of messages beyond target count that must be present before reduction is triggered.
+    /// This prevents reduction on every message and provides a buffer. Recommended: 5-10 messages.
+    /// Example: If target=15 and threshold=5, reduction only occurs when history exceeds 20 messages.
+    /// </summary>
+    public int ChatHistoryReducerThresholdCount { get; set; } = 5;
+
+    /// <summary>
+    /// Use a single summary message that gets updated, or maintain a series of summaries over time.
+    /// Single summary (true) prevents unbounded growth but may lose some historical context.
+    /// Multiple summaries (false) preserve more context but may still exceed token limits over time.
+    /// </summary>
+    public bool ChatHistoryReducerUseSingleSummary { get; set; } = true;
 }
 
 /// <summary>

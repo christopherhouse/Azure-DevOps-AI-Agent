@@ -29,7 +29,11 @@
     "UseManagedIdentity": true,
     "UseUserAssignedIdentity": false,
     "Temperature": 0.7,
-    "MaxTokens": 4000
+    "MaxTokens": 4000,
+    "EnableChatHistoryReducer": true,
+    "ChatHistoryReducerTargetCount": 15,
+    "ChatHistoryReducerThresholdCount": 5,
+    "ChatHistoryReducerUseSingleSummary": true
   },
   "ManagedIdentityClientId": "083a95bb-15c4-4547-89ba-41ea1fbcc64f",
   "CosmosDb": {
