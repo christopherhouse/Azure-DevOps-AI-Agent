@@ -273,16 +273,10 @@ public class GroupsPlugin
             }
 
             // Use the Graph API memberships endpoint to add the member
-            // PUT https://vssps.dev.azure.com/{organization}/_apis/graph/memberships/{memberDescriptor}/{groupDescriptor}
             var apiPath = $"https://vssps.dev.azure.com/{organization}/_apis/graph/memberships/{memberDescriptor}/{groupDescriptor}";
 
-            // Create an HTTP request using PostAsync (which internally handles PUT via HttpMethod)
-            // For PUT requests, we need to use a workaround since PostAsync only supports POST
-            // We'll use the memberships API which accepts PUT but we'll call it as POST to the members endpoint
-            var membersApiPath = $"https://vssps.dev.azure.com/{organization}/_apis/graph/memberships/{memberDescriptor}/{groupDescriptor}";
-
             var membership = await _azureDevOpsApiService.PostAsync<GraphMembershipState>(
-                organization, membersApiPath, null, "7.1-preview.1");
+                organization, apiPath, null, "7.1-preview.1");
 
             if (membership == null)
             {
