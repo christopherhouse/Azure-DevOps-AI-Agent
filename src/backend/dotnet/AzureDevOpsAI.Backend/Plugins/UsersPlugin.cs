@@ -205,15 +205,3 @@ public class UsersPlugin
         }
     }
 }
-
-/// <summary>
-/// Helper class for parsing project entitlement input.
-/// </summary>
-internal class ProjectEntitlementInput
-{
-    [System.Text.Json.Serialization.JsonPropertyName("projectId")]
-    public string ProjectId { get; set; } = string.Empty;
-
-    [System.Text.Json.Serialization.JsonPropertyName("groupType")]
-    public string GroupType { get; set; } = string.Empty;
-}

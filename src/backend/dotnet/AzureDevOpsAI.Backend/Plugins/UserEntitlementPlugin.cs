@@ -14,6 +14,7 @@ public class UserEntitlementPlugin
     private readonly IAzureDevOpsApiService _azureDevOpsApiService;
     private readonly ILogger<UserEntitlementPlugin> _logger;
     private const string VsaexBaseUrl = "https://vsaex.dev.azure.com";
+    private static readonly string[] ValidLicenseTypes = new[] { "express", "stakeholder", "advanced", "professional", "earlyadopter" };
 
     public UserEntitlementPlugin(IAzureDevOpsApiService azureDevOpsApiService, ILogger<UserEntitlementPlugin> logger)
     {
@@ -149,8 +150,7 @@ public class UserEntitlementPlugin
             var normalizedLicenseType = accountLicenseType.ToLower();
 
             // Validate license type
-            var validLicenseTypes = new[] { "express", "stakeholder", "advanced", "professional", "earlyadopter" };
-            if (!validLicenseTypes.Contains(normalizedLicenseType, StringComparer.OrdinalIgnoreCase))
+            if (!ValidLicenseTypes.Contains(normalizedLicenseType, StringComparer.OrdinalIgnoreCase))
             {
                 return JsonSerializer.Serialize(new { error = $"Invalid license type '{accountLicenseType}'. Valid values: express, stakeholder, advanced, professional, earlyAdopter." });
             }
@@ -278,9 +278,8 @@ public class UserEntitlementPlugin
             if (!string.IsNullOrWhiteSpace(accountLicenseType))
             {
                 var normalizedLicenseType = accountLicenseType.ToLower();
-                var validLicenseTypes = new[] { "express", "stakeholder", "advanced", "professional", "earlyadopter" };
                 
-                if (!validLicenseTypes.Contains(normalizedLicenseType, StringComparer.OrdinalIgnoreCase))
+                if (!ValidLicenseTypes.Contains(normalizedLicenseType, StringComparer.OrdinalIgnoreCase))
                 {
                     return JsonSerializer.Serialize(new { error = $"Invalid license type '{accountLicenseType}'. Valid values: express, stakeholder, advanced, professional, earlyAdopter." });
                 }
