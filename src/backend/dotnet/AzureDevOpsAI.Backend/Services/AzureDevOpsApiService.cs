@@ -182,6 +182,9 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
             if (body != null)
             {
                 var jsonBody = JsonSerializer.Serialize(body, JsonOptions);
+
+                _logger.LogDebug("POST request body for type {Type}: {JsonBody}", typeof(T).FullName, jsonBody);
+
                 request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
             }
 

@@ -7,7 +7,7 @@ POST {{apiUrl}}/message
 Content-Type: application/json
 
 {
-  "message": "What users exist on org chris0477?",
+  "message": "Let's add user chhouse@microsoft.com to group LucyUsers, on org chris0477",
   "conversationId": "0a3df353-9b01-476c-a0c1-e2fbabdf1da7"
 }
 
@@ -57,4 +57,15 @@ Content-Type: application/json
 
 {
   "conversationId": "conv-123e4567-e89b-12d3-a456-426614174000"
+}
+
+### 
+POST https://vssps.dev.azure.com/chris0477/_apis/graph/subjectquery?api-version=7.1-preview.1
+Authorization: Basic :
+Accept: application/json
+Content-Type: application/json
+
+{
+  "query":"LucyUsers",
+  "subjectKind":["Group"]
 }
