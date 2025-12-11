@@ -12,7 +12,7 @@ public class SubjectQueryRequest
     /// The search query string (email, display name, or principal name).
     /// </summary>
     [Required]
-    public string SubjectQuery { get; set; } = string.Empty;
+    public string Query { get; set; } = string.Empty;
 
     /// <summary>
     /// Optional list of subject kinds to filter by (e.g., User, Group).

@@ -63,7 +63,7 @@ public class SubjectQueryPluginTests
             .Setup(x => x.PostAsync<SubjectQueryResponse>(
                 organization,
                 It.Is<string>(s => s.Contains("graph/subjectquery")),
-                It.Is<SubjectQueryRequest>(r => r.SubjectQuery == query && r.SubjectKind != null && r.SubjectKind.Contains(SubjectKind.User)),
+                It.Is<SubjectQueryRequest>(r => r.Query == query && r.SubjectKind != null && r.SubjectKind.Contains(SubjectKind.User)),
                 "7.1-preview.1",
                 default))
             .ReturnsAsync(response);
@@ -113,7 +113,7 @@ public class SubjectQueryPluginTests
             .Setup(x => x.PostAsync<SubjectQueryResponse>(
                 organization,
                 It.Is<string>(s => s.Contains("graph/subjectquery")),
-                It.Is<SubjectQueryRequest>(r => r.SubjectQuery == query && r.SubjectKind != null && r.SubjectKind.Contains(SubjectKind.Group)),
+                It.Is<SubjectQueryRequest>(r => r.Query == query && r.SubjectKind != null && r.SubjectKind.Contains(SubjectKind.Group)),
                 "7.1-preview.1",
                 default))
             .ReturnsAsync(response);
@@ -167,7 +167,7 @@ public class SubjectQueryPluginTests
             .Setup(x => x.PostAsync<SubjectQueryResponse>(
                 organization,
                 It.Is<string>(s => s.Contains("graph/subjectquery")),
-                It.Is<SubjectQueryRequest>(r => r.SubjectQuery == query && r.SubjectKind == null),
+                It.Is<SubjectQueryRequest>(r => r.Query == query && r.SubjectKind == null),
                 "7.1-preview.1",
                 default))
             .ReturnsAsync(response);
@@ -273,7 +273,7 @@ public class SubjectQueryPluginTests
             .Setup(x => x.PostAsync<SubjectQueryResponse>(
                 organization,
                 It.Is<string>(s => s.Contains("graph/subjectquery")),
-                It.Is<SubjectQueryRequest>(r => r.SubjectQuery == query && 
+                It.Is<SubjectQueryRequest>(r => r.Query == query && 
                     r.SubjectKind != null && 
                     r.SubjectKind.Contains(SubjectKind.User) && 
                     r.SubjectKind.Contains(SubjectKind.Group)),
