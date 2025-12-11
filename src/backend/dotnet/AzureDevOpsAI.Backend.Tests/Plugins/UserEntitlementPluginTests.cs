@@ -88,7 +88,7 @@ public class UserEntitlementPluginTests
             .Setup(x => x.GetAsync<UserEntitlementListResponse>(
                 organization,
                 "https://vsaex.dev.azure.com/test-org/_apis/userentitlements",
-                "7.1",
+                "5.1-preview.2",
                 default))
             .ReturnsAsync(userEntitlements);
 
@@ -98,7 +98,9 @@ public class UserEntitlementPluginTests
         // Assert
         var jsonDoc = JsonDocument.Parse(result);
         jsonDoc.RootElement.GetProperty("organization").GetString().Should().Be("test-org");
-        jsonDoc.RootElement.GetProperty("totalEntitlements").GetInt32().Should().Be(2);
+        jsonDoc.RootElement.GetProperty("pageSize").GetInt32().Should().Be(2);
+        jsonDoc.RootElement.GetProperty("totalCount").GetInt32().Should().Be(2);
+        jsonDoc.RootElement.GetProperty("hasMoreResults").GetBoolean().Should().BeFalse();
 
         var entitlementsArray = jsonDoc.RootElement.GetProperty("entitlements");
         entitlementsArray.GetArrayLength().Should().Be(2);
@@ -134,7 +136,7 @@ public class UserEntitlementPluginTests
             .Setup(x => x.GetAsync<UserEntitlementListResponse>(
                 organization,
                 "https://vsaex.dev.azure.com/empty-org/_apis/userentitlements",
-                "7.1",
+                "5.1-preview.2",
                 default))
             .ReturnsAsync(emptyEntitlements);
 
@@ -145,6 +147,7 @@ public class UserEntitlementPluginTests
         var jsonDoc = JsonDocument.Parse(result);
         jsonDoc.RootElement.GetProperty("message").GetString().Should().Be("No user entitlements found in this organization.");
         jsonDoc.RootElement.GetProperty("entitlements").GetArrayLength().Should().Be(0);
+        jsonDoc.RootElement.GetProperty("hasMoreResults").GetBoolean().Should().BeFalse();
     }
 
     [Fact]
@@ -158,7 +161,7 @@ public class UserEntitlementPluginTests
             .Setup(x => x.GetAsync<UserEntitlementListResponse>(
                 organization,
                 It.IsAny<string>(),
-                "7.1",
+                "5.1-preview.2",
                 default))
             .ThrowsAsync(new Exception(exceptionMessage));
 
@@ -168,6 +171,99 @@ public class UserEntitlementPluginTests
         // Assert
         var jsonDoc = JsonDocument.Parse(result);
         jsonDoc.RootElement.GetProperty("error").GetString().Should().Be(exceptionMessage);
+    }
+
+    [Fact]
+    public async Task ListEntitlementsAsync_ShouldSupportPaging_WhenTopParameterProvided()
+    {
+        // Arrange
+        var organization = "test-org";
+        var userEntitlements = new UserEntitlementListResponse
+        {
+            Items = new List<UserEntitlement>
+            {
+                new UserEntitlement
+                {
+                    Id = "entitlement-1",
+                    User = new User { Id = "user-1", DisplayName = "User 1", PrincipalName = "user1@test.com" },
+                    AccessLevel = new AccessLevel { AccountLicenseType = "express", Status = "Active" }
+                }
+            },
+            TotalCount = 150,
+            ContinuationToken = "next-page-token-123"
+        };
+
+        _mockApiService
+            .Setup(x => x.GetAsync<UserEntitlementListResponse>(
+                organization,
+                "https://vsaex.dev.azure.com/test-org/_apis/userentitlements?top=50",
+                "5.1-preview.2",
+                default))
+            .ReturnsAsync(userEntitlements);
+
+        // Act
+        var result = await _plugin.ListEntitlementsAsync(organization, 50);
+
+        // Assert
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("hasMoreResults").GetBoolean().Should().BeTrue();
+        jsonDoc.RootElement.GetProperty("continuationToken").GetString().Should().Be("next-page-token-123");
+        jsonDoc.RootElement.GetProperty("totalCount").GetInt32().Should().Be(150);
+        jsonDoc.RootElement.GetProperty("pageSize").GetInt32().Should().Be(1);
+    }
+
+    [Fact]
+    public async Task ListEntitlementsAsync_ShouldSupportPaging_WhenContinuationTokenProvided()
+    {
+        // Arrange
+        var organization = "test-org";
+        var continuationToken = "next-page-token-123";
+        var userEntitlements = new UserEntitlementListResponse
+        {
+            Items = new List<UserEntitlement>
+            {
+                new UserEntitlement
+                {
+                    Id = "entitlement-51",
+                    User = new User { Id = "user-51", DisplayName = "User 51", PrincipalName = "user51@test.com" },
+                    AccessLevel = new AccessLevel { AccountLicenseType = "stakeholder", Status = "Active" }
+                }
+            },
+            TotalCount = 150,
+            ContinuationToken = null // Last page
+        };
+
+        _mockApiService
+            .Setup(x => x.GetAsync<UserEntitlementListResponse>(
+                organization,
+                It.Is<string>(s => s.Contains($"continuationToken={Uri.EscapeDataString(continuationToken)}")),
+                "5.1-preview.2",
+                default))
+            .ReturnsAsync(userEntitlements);
+
+        // Act
+        var result = await _plugin.ListEntitlementsAsync(organization, null, continuationToken);
+
+        // Assert
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("hasMoreResults").GetBoolean().Should().BeFalse();
+        jsonDoc.RootElement.TryGetProperty("continuationToken", out var token).Should().BeTrue();
+        token.ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    [Fact]
+    public async Task ListEntitlementsAsync_ShouldReturnError_WhenTopParameterIsInvalid()
+    {
+        // Arrange
+        var organization = "test-org";
+        var invalidTop = 15000; // Exceeds max of 10000
+
+        // Act
+        var result = await _plugin.ListEntitlementsAsync(organization, invalidTop);
+
+        // Assert
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("error").GetString().Should().Contain("must be between 1 and 10000");
     }
 
     #endregion
@@ -187,7 +283,7 @@ public class UserEntitlementPluginTests
                 organization,
                 "https://vsaex.dev.azure.com/test-org/_apis/userentitlements",
                 It.IsAny<AddUserEntitlementRequest>(),
-                "7.1",
+                "5.1-preview.2",
                 default))
             .ReturnsAsync(new { success = true });
 
@@ -216,7 +312,7 @@ public class UserEntitlementPluginTests
                 organization,
                 "https://vsaex.dev.azure.com/test-org/_apis/userentitlements",
                 It.IsAny<AddUserEntitlementRequest>(),
-                "7.1",
+                "5.1-preview.2",
                 default))
             .ReturnsAsync(new { success = true });
 
@@ -318,7 +414,7 @@ public class UserEntitlementPluginTests
                 organization,
                 "https://vsaex.dev.azure.com/test-org/_apis/userentitlements/user-guid-1",
                 It.IsAny<object>(),
-                "7.1",
+                "5.1-preview.2",
                 default))
             .ReturnsAsync(new { success = true });
 
@@ -345,7 +441,7 @@ public class UserEntitlementPluginTests
                 organization,
                 "https://vsaex.dev.azure.com/test-org/_apis/userentitlements/user-guid-1",
                 It.IsAny<object>(),
-                "7.1",
+                "5.1-preview.2",
                 default))
             .ReturnsAsync(new { success = true });
 
@@ -378,7 +474,7 @@ public class UserEntitlementPluginTests
                 organization,
                 "https://vsaex.dev.azure.com/test-org/_apis/userentitlements/user-guid-1",
                 It.IsAny<object>(),
-                "7.1",
+                "5.1-preview.2",
                 default))
             .ReturnsAsync(new { success = true });
 
@@ -469,7 +565,7 @@ public class UserEntitlementPluginTests
                 organization,
                 It.IsAny<string>(),
                 It.IsAny<object>(),
-                "7.1",
+                "5.1-preview.2",
                 default))
             .ReturnsAsync((object?)null);
 
@@ -496,7 +592,7 @@ public class UserEntitlementPluginTests
             .Setup(x => x.DeleteAsync(
                 organization,
                 "https://vsaex.dev.azure.com/test-org/_apis/userentitlements/user-guid-1",
-                "7.1",
+                "5.1-preview.2",
                 default))
             .ReturnsAsync(true);
 
@@ -536,7 +632,7 @@ public class UserEntitlementPluginTests
             .Setup(x => x.DeleteAsync(
                 organization,
                 It.IsAny<string>(),
-                "7.1",
+                "5.1-preview.2",
                 default))
             .ReturnsAsync(false);
 
@@ -560,7 +656,7 @@ public class UserEntitlementPluginTests
             .Setup(x => x.DeleteAsync(
                 organization,
                 It.IsAny<string>(),
-                "7.1",
+                "5.1-preview.2",
                 default))
             .ThrowsAsync(new Exception(exceptionMessage));
 

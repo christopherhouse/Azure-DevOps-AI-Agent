@@ -13,6 +13,7 @@ public class UserEntitlementPlugin
 {
     private readonly IAzureDevOpsApiService _azureDevOpsApiService;
     private readonly ILogger<UserEntitlementPlugin> _logger;
+    private const string VsaexBaseUrl = "https://vsaex.dev.azure.com";
 
     public UserEntitlementPlugin(IAzureDevOpsApiService azureDevOpsApiService, ILogger<UserEntitlementPlugin> logger)
     {
@@ -21,26 +22,62 @@ public class UserEntitlementPlugin
     }
 
     /// <summary>
-    /// List all user entitlements in an Azure DevOps organization with their licensing levels and GUIDs.
+    /// List user entitlements in an Azure DevOps organization with their licensing levels and GUIDs.
+    /// Supports paging for large result sets.
     /// </summary>
     /// <param name="organization">The Azure DevOps organization name</param>
+    /// <param name="top">Optional number of results to return per page (default: 100, max: 10000)</param>
+    /// <param name="continuationToken">Optional continuation token from previous page for retrieving next page of results</param>
     /// <returns>List of user entitlements with their licensing information</returns>
     [KernelFunction("list_entitlements")]
-    [Description("List all user entitlements in an Azure DevOps organization. Returns user principal names, display names, GUIDs, licensing levels, and last access dates.")]
+    [Description("List user entitlements in an Azure DevOps organization with paging support. Returns user principal names, display names, GUIDs, licensing levels, and last access dates. For large organizations, use 'top' to limit results per page (default 100, max 10000) and 'continuationToken' from previous response to get next page.")]
     public async Task<string> ListEntitlementsAsync(
-        [Description("The Azure DevOps organization name")] string organization)
+        [Description("The Azure DevOps organization name")] string organization,
+        [Description("Optional: Number of entitlements to return per page. Default is 100, maximum is 10000. Use smaller values for faster responses.")] int? top = null,
+        [Description("Optional: Continuation token from previous page's response. Include this to retrieve the next page of results when there are more entitlements available.")] string? continuationToken = null)
     {
         try
         {
-            _logger.LogInformation("Listing user entitlements for organization: {Organization}", organization);
+            _logger.LogInformation("Listing user entitlements for organization: {Organization}, top: {Top}, hasContinuationToken: {HasToken}", 
+                organization, top ?? 100, !string.IsNullOrEmpty(continuationToken));
 
-            // Use vsaex API endpoint for user entitlements
+            // Build API URL with query parameters
+            var apiPath = $"{VsaexBaseUrl}/{organization}/_apis/userentitlements";
+            var queryParams = new List<string>();
+            
+            if (top.HasValue)
+            {
+                // Validate top parameter
+                if (top.Value < 1 || top.Value > 10000)
+                {
+                    return JsonSerializer.Serialize(new { error = "The 'top' parameter must be between 1 and 10000." });
+                }
+                queryParams.Add($"top={top.Value}");
+            }
+            
+            if (!string.IsNullOrWhiteSpace(continuationToken))
+            {
+                queryParams.Add($"continuationToken={Uri.EscapeDataString(continuationToken)}");
+            }
+            
+            if (queryParams.Any())
+            {
+                apiPath += "?" + string.Join("&", queryParams);
+            }
+
+            // Use vsaex API endpoint for user entitlements with API version 5.1-preview.2
             var userEntitlements = await _azureDevOpsApiService.GetAsync<UserEntitlementListResponse>(
-                organization, "https://vsaex.dev.azure.com/" + organization + "/_apis/userentitlements", "7.1");
+                organization, apiPath, "5.1-preview.2");
 
             if (userEntitlements?.Items == null || !userEntitlements.Items.Any())
             {
-                return JsonSerializer.Serialize(new { message = "No user entitlements found in this organization.", entitlements = new List<object>() });
+                return JsonSerializer.Serialize(new 
+                { 
+                    message = "No user entitlements found in this organization.", 
+                    entitlements = new List<object>(),
+                    continuationToken = (string?)null,
+                    hasMoreResults = false
+                });
             }
 
             // Return raw JSON data for the AI to format
@@ -56,14 +93,17 @@ public class UserEntitlementPlugin
                 dateCreated = e.DateCreated?.ToString("yyyy-MM-dd")
             }).ToList();
 
-            _logger.LogInformation("Successfully retrieved {Count} user entitlements for organization: {Organization}",
-                userEntitlements.Items.Count, organization);
+            _logger.LogInformation("Successfully retrieved {Count} user entitlements for organization: {Organization}, hasMoreResults: {HasMore}",
+                userEntitlements.Items.Count, organization, !string.IsNullOrEmpty(userEntitlements.ContinuationToken));
 
             return JsonSerializer.Serialize(new
             {
                 organization,
-                totalEntitlements = userEntitlements.Items.Count,
-                entitlements = entitlementsData
+                pageSize = userEntitlements.Items.Count,
+                totalCount = userEntitlements.TotalCount,
+                entitlements = entitlementsData,
+                continuationToken = userEntitlements.ContinuationToken,
+                hasMoreResults = !string.IsNullOrEmpty(userEntitlements.ContinuationToken)
             });
         }
         catch (Exception ex)
@@ -171,12 +211,12 @@ public class UserEntitlementPlugin
                 _logger.LogInformation("No project entitlements specified. User will have organization-level access only.");
             }
 
-            // Use vsaex API endpoint for user entitlements
+            // Use vsaex API endpoint for user entitlements with API version 5.1-preview.2
             var result = await _azureDevOpsApiService.PostAsync<object>(
                 organization,
-                "https://vsaex.dev.azure.com/" + organization + "/_apis/userentitlements",
+                $"{VsaexBaseUrl}/{organization}/_apis/userentitlements",
                 request,
-                "7.1");
+                "5.1-preview.2");
 
             if (result == null)
             {
@@ -300,12 +340,12 @@ public class UserEntitlementPlugin
                 return JsonSerializer.Serialize(new { error = "At least one field (accountLicenseType or projectEntitlements) must be provided for update." });
             }
 
-            // Use vsaex API endpoint for user entitlements with PATCH
+            // Use vsaex API endpoint for user entitlements with PATCH and API version 5.1-preview.2
             var result = await _azureDevOpsApiService.PatchAsync<object>(
                 organization,
-                "https://vsaex.dev.azure.com/" + organization + "/_apis/userentitlements/" + userId,
+                $"{VsaexBaseUrl}/{organization}/_apis/userentitlements/{userId}",
                 patchOperations,
-                "7.1");
+                "5.1-preview.2");
 
             if (result == null)
             {
@@ -355,11 +395,11 @@ public class UserEntitlementPlugin
                 return JsonSerializer.Serialize(new { error = "User ID is required. Use list_entitlements to find the user ID." });
             }
 
-            // Use vsaex API endpoint for user entitlements with DELETE
+            // Use vsaex API endpoint for user entitlements with DELETE and API version 5.1-preview.2
             var success = await _azureDevOpsApiService.DeleteAsync(
                 organization,
-                "https://vsaex.dev.azure.com/" + organization + "/_apis/userentitlements/" + userId,
-                "7.1");
+                $"{VsaexBaseUrl}/{organization}/_apis/userentitlements/{userId}",
+                "5.1-preview.2");
 
             if (!success)
             {

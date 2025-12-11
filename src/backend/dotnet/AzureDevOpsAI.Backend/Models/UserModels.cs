@@ -391,20 +391,3 @@ public class GroupRequest
     [Required]
     public string GroupType { get; set; } = string.Empty;
 }
-
-/// <summary>
-/// Update user entitlement request model for Azure DevOps API (PATCH operations).
-/// Uses JSON Patch document format for partial updates.
-/// </summary>
-public class UpdateUserEntitlementRequest
-{
-    /// <summary>
-    /// Access level update (optional).
-    /// </summary>
-    public AccessLevelRequest? AccessLevel { get; set; }
-
-    /// <summary>
-    /// Project entitlements update (optional).
-    /// </summary>
-    public List<ProjectEntitlementRequest>? ProjectEntitlements { get; set; }
-}
