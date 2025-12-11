@@ -24,6 +24,16 @@ public interface IAzureDevOpsApiService
     Task<T?> PostAsync<T>(string organization, string apiPath, object? body = null, string? apiVersion = "7.1", CancellationToken cancellationToken = default) where T : class;
 
     Task<T?> PutAsync<T>(string organization, string apiPath, object? body = null, string? apiVersion = "7.1", CancellationToken cancellationToken = default) where T : class;
+
+    /// <summary>
+    /// Makes an authenticated PATCH request to Azure DevOps API using managed identity or PAT.
+    /// </summary>
+    Task<T?> PatchAsync<T>(string organization, string apiPath, object? body = null, string? apiVersion = "7.1", CancellationToken cancellationToken = default) where T : class;
+
+    /// <summary>
+    /// Makes an authenticated DELETE request to Azure DevOps API using managed identity or PAT.
+    /// </summary>
+    Task<bool> DeleteAsync(string organization, string apiPath, string? apiVersion = "7.1", CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -270,6 +280,124 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to make PUT request to Azure DevOps API: {Organization}/{ApiPath}", organization, apiPath);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Makes an authenticated PATCH request to Azure DevOps API using managed identity or PAT.
+    /// </summary>
+    public async Task<T?> PatchAsync<T>(string organization, string apiPath, object? body = null, string? apiVersion = "7.1", CancellationToken cancellationToken = default) where T : class
+    {
+        try
+        {
+            var url = BuildApiUrl(organization, apiPath, apiVersion);
+            _logger.LogDebug("Making PATCH request to Azure DevOps API: {Url}", url);
+
+            // Create HttpRequestMessage with authorization header (thread-safe approach)
+            using var request = new HttpRequestMessage(HttpMethod.Patch, url);
+
+            // Set authorization header based on authentication type
+            if (_usePat)
+            {
+                // Use Basic Authentication with PAT
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", CreateBasicAuthHeader(_pat!));
+            }
+            else
+            {
+                // Acquire token using ManagedIdentityCredential (User Assigned Managed Identity)
+                // _credential is guaranteed to be non-null when _usePat is false (initialized in constructor)
+                var tokenRequestContext = new TokenRequestContext(new[] { AzureDevOpsScope });
+                var accessToken = await _credential!.GetTokenAsync(tokenRequestContext, cancellationToken);
+
+                // Log token metadata for troubleshooting (not the token itself)
+                LogTokenMetadata(accessToken);
+
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken.Token);
+            }
+
+            request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+
+            if (body != null)
+            {
+                var jsonBody = JsonSerializer.Serialize(body, JsonOptions);
+                request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json-patch+json");
+            }
+
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                var result = JsonSerializer.Deserialize<T>(responseContent, JsonOptions);
+                _logger.LogDebug("Successfully completed PATCH request to Azure DevOps API: {Url}", url);
+                return result;
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("PATCH request to Azure DevOps API failed. Status: {StatusCode}, Error: {Error}", response.StatusCode, errorContent);
+                return null;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to make PATCH request to Azure DevOps API: {Organization}/{ApiPath}", organization, apiPath);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Makes an authenticated DELETE request to Azure DevOps API using managed identity or PAT.
+    /// </summary>
+    public async Task<bool> DeleteAsync(string organization, string apiPath, string? apiVersion = "7.1", CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var url = BuildApiUrl(organization, apiPath, apiVersion);
+            _logger.LogDebug("Making DELETE request to Azure DevOps API: {Url}", url);
+
+            // Create HttpRequestMessage with authorization header (thread-safe approach)
+            using var request = new HttpRequestMessage(HttpMethod.Delete, url);
+
+            // Set authorization header based on authentication type
+            if (_usePat)
+            {
+                // Use Basic Authentication with PAT
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", CreateBasicAuthHeader(_pat!));
+            }
+            else
+            {
+                // Acquire token using ManagedIdentityCredential (User Assigned Managed Identity)
+                // _credential is guaranteed to be non-null when _usePat is false (initialized in constructor)
+                var tokenRequestContext = new TokenRequestContext(new[] { AzureDevOpsScope });
+                var accessToken = await _credential!.GetTokenAsync(tokenRequestContext, cancellationToken);
+
+                // Log token metadata for troubleshooting (not the token itself)
+                LogTokenMetadata(accessToken);
+
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken.Token);
+            }
+
+            request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogDebug("Successfully completed DELETE request to Azure DevOps API: {Url}", url);
+                return true;
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("DELETE request to Azure DevOps API failed. Status: {StatusCode}, Error: {Error}", response.StatusCode, errorContent);
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to make DELETE request to Azure DevOps API: {Organization}/{ApiPath}", organization, apiPath);
             throw;
         }
     }
