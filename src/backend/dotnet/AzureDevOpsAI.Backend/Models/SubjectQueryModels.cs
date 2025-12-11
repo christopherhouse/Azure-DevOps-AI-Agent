@@ -23,6 +23,7 @@ public class SubjectQueryRequest
     /// <summary>
     /// Optional scope descriptor to limit search to specific project or organization scope.
     /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? ScopeDescriptor { get; set; }
 }
 
