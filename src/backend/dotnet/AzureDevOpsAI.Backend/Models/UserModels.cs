@@ -391,3 +391,21 @@ public class GroupRequest
     [Required]
     public string GroupType { get; set; } = string.Empty;
 }
+
+/// <summary>
+/// Helper class for parsing project entitlement input from JSON.
+/// </summary>
+public class ProjectEntitlementInput
+{
+    /// <summary>
+    /// Project ID (GUID).
+    /// </summary>
+    [JsonPropertyName("projectId")]
+    public string ProjectId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Group type (e.g., "projectContributor", "projectReader", "projectAdministrator").
+    /// </summary>
+    [JsonPropertyName("groupType")]
+    public string GroupType { get; set; } = string.Empty;
+}
