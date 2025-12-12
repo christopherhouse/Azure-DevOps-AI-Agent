@@ -46,24 +46,73 @@ Error responses:
 
 ### GET /health
 
-Check API health status.
+Check API health status with comprehensive dependency checks.
 
-**Response:**
+This endpoint performs active health checks on critical dependencies including Azure OpenAI and Cosmos DB. It returns HTTP 200 (OK) if all dependencies are healthy, or HTTP 503 (Service Unavailable) if any dependency is unhealthy.
+
+**Authentication:** None required (anonymous access)
+
+**Response (Healthy):**
 ```json
 {
-  "success": true,
-  "data": {
-    "status": "healthy",
-    "version": "1.0.0",
-    "timestamp": "2024-01-15T10:30:00Z",
-    "dependencies": {
-      "azure_devops": "healthy",
-      "azure_openai": "healthy",
-      "database": "healthy"
+  "status": "healthy",
+  "message": "Azure DevOps AI Agent Backend is running",
+  "version": "1.0.0",
+  "environment": "production",
+  "checks": [
+    {
+      "name": "cosmosdb",
+      "status": "healthy",
+      "description": "Cosmos DB is accessible. Database: AzureDevOpsAIAgent",
+      "duration": 245.67
+    },
+    {
+      "name": "azureopenai",
+      "status": "healthy",
+      "description": "Azure OpenAI is accessible. Deployment: gpt-4",
+      "duration": 1023.45
     }
-  }
+  ]
 }
 ```
+
+**Response (Unhealthy):**
+```json
+{
+  "status": "unhealthy",
+  "message": "Azure DevOps AI Agent Backend is running",
+  "version": "1.0.0",
+  "environment": "production",
+  "checks": [
+    {
+      "name": "cosmosdb",
+      "status": "unhealthy",
+      "description": "Cosmos DB authentication failed",
+      "duration": 1059.31
+    },
+    {
+      "name": "azureopenai",
+      "status": "healthy",
+      "description": "Azure OpenAI is accessible. Deployment: gpt-4",
+      "duration": 1023.45
+    }
+  ]
+}
+```
+
+**Status Codes:**
+- `200 OK` - All dependencies are healthy
+- `503 Service Unavailable` - One or more dependencies are unhealthy
+
+### GET /health/ready
+
+Kubernetes-style readiness probe endpoint. Returns a simple text response indicating overall health status.
+
+**Authentication:** None required (anonymous access)
+
+**Response:**
+- `200 OK` with body `Healthy` - Service is ready to accept requests
+- `503 Service Unavailable` with body `Unhealthy` or `Degraded` - Service is not ready
 
 ## Authentication Endpoints
 
