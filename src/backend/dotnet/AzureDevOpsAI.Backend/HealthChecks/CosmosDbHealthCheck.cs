@@ -56,7 +56,8 @@ public class CosmosDbHealthCheck : IHealthCheck
 
             using var cosmosClient = new CosmosClient(_settings.Endpoint, credential, clientOptions);
 
-            // Try to read the database account to verify connectivity
+            // Try to read the database account to verify connectivity and authentication
+            // This is sufficient to determine if the service is accessible
             var response = await cosmosClient.ReadAccountAsync();
 
             if (response == null)
@@ -65,13 +66,9 @@ public class CosmosDbHealthCheck : IHealthCheck
                 return HealthCheckResult.Degraded("Unable to read Cosmos DB account information");
             }
 
-            // Verify the database exists
-            var database = cosmosClient.GetDatabase(_settings.DatabaseName);
-            var databaseResponse = await database.ReadAsync(cancellationToken: cancellationToken);
+            _logger.LogDebug("Cosmos DB health check passed. Endpoint: {Endpoint}", _settings.Endpoint);
 
-            _logger.LogDebug("Cosmos DB health check passed. Database: {DatabaseName}", _settings.DatabaseName);
-
-            return HealthCheckResult.Healthy($"Cosmos DB is accessible. Database: {_settings.DatabaseName}");
+            return HealthCheckResult.Healthy("Cosmos DB is accessible and authenticated");
         }
         catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {

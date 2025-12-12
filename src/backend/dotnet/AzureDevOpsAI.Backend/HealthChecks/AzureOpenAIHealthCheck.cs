@@ -14,6 +14,7 @@ namespace AzureDevOpsAI.Backend.HealthChecks;
 /// </summary>
 public class AzureOpenAIHealthCheck : IHealthCheck
 {
+    private const string HealthCheckMessage = "ping";
     private readonly AzureOpenAISettings _settings;
     private readonly ILogger<AzureOpenAIHealthCheck> _logger;
 
@@ -79,13 +80,15 @@ public class AzureOpenAIHealthCheck : IHealthCheck
 
             // Create a minimal chat history for health check
             var chatHistory = new ChatHistory();
-            chatHistory.AddUserMessage("ping");
+            chatHistory.AddUserMessage(HealthCheckMessage);
 
             // Set a short timeout for health check
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             cts.CancelAfter(TimeSpan.FromSeconds(10));
 
             // Make a minimal test request to verify the service is responding
+            // Note: Semantic Kernel doesn't expose simpler health check endpoints,
+            // so we use a minimal chat completion with MaxTokens=1 to minimize cost
             var executionSettings = new AzureOpenAIPromptExecutionSettings
             {
                 MaxTokens = 1 // Minimize token usage for health check
