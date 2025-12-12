@@ -179,7 +179,13 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // Add health checks
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks()
+    .AddCheck<AzureDevOpsAI.Backend.HealthChecks.CosmosDbHealthCheck>(
+        "cosmosdb",
+        tags: new[] { "db", "cosmosdb", "ready" })
+    .AddCheck<AzureDevOpsAI.Backend.HealthChecks.AzureOpenAIHealthCheck>(
+        "azureopenai",
+        tags: new[] { "ai", "azureopenai", "ready" });
 
 // Build the application
 var app = builder.Build();
@@ -208,19 +214,32 @@ if (!securitySettings?.DisableAuth == true)
 }
 
 // Health check endpoints
-app.MapGet("/health", () =>
+app.MapGet("/health", async (Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckService healthCheckService) =>
 {
     var appSettings = app.Services.GetService<Microsoft.Extensions.Options.IOptions<AppSettings>>()?.Value;
-    return Results.Ok(new
+    var healthReport = await healthCheckService.CheckHealthAsync();
+    
+    var response = new
     {
-        status = "healthy",
+        status = healthReport.Status.ToString().ToLower(),
         message = "Azure DevOps AI Agent Backend is running",
         version = appSettings?.AppVersion ?? "1.0.0",
-        environment = appSettings?.Environment ?? "development"
-    });
+        environment = appSettings?.Environment ?? "development",
+        checks = healthReport.Entries.Select(e => new
+        {
+            name = e.Key,
+            status = e.Value.Status.ToString().ToLower(),
+            description = e.Value.Description ?? string.Empty,
+            duration = e.Value.Duration.TotalMilliseconds
+        })
+    };
+
+    return healthReport.Status == Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Healthy
+        ? Results.Ok(response)
+        : Results.Json(response, statusCode: 503);
 })
 .WithName("HealthCheck")
-.WithSummary("Health check endpoint")
+.WithSummary("Health check endpoint with dependency status")
 .WithOpenApi()
 .AllowAnonymous();
 
