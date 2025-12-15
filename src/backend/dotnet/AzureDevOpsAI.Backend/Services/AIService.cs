@@ -186,6 +186,12 @@ public class AIService : IAIService
 
             _kernel.ImportPluginFromObject(subjectQueryPlugin, nameof(SubjectQueryPlugin));
 
+            var repositoryPlugin = new RepositoryPlugin(
+                _azureDevOpsApiService,
+                _loggerFactory.CreateLogger<RepositoryPlugin>());
+
+            _kernel.ImportPluginFromObject(repositoryPlugin, nameof(RepositoryPlugin));
+
             _logger.LogDebug("Plugins registered successfully");
         }
         catch (Exception ex)
