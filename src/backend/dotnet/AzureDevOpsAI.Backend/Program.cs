@@ -9,7 +9,9 @@ builder.AddLogging();
 builder.Services.AddAppSettings(builder.Configuration);
 
 // Add application services
-builder.Services.AddApplicationServices(builder.Configuration);
+builder.Services.AddCosmosDbService();
+builder.Services.AddAIServices();
+builder.Services.AddAzureDevOpsApiService(builder.Configuration);
 
 // Add Application Insights
 builder.Services.AddApplicationInsights(builder.Configuration);

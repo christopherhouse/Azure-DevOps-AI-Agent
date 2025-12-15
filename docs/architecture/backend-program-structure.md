@@ -12,9 +12,9 @@ The backend `Program.cs` has been refactored to improve maintainability and orga
 - Difficult to navigate and maintain
 
 ### After
-- **~38 lines** in Program.cs with clear separation of concerns
-- **9 extension method classes** organized by functionality
-- **423 lines** of well-documented, focused extension methods
+- **~40 lines** in Program.cs with clear separation of concerns
+- **11 extension method classes** organized by functionality
+- **485 lines** of well-documented, focused extension methods
 - Easy to understand, test, and maintain
 
 ## Extension Methods Structure
@@ -51,22 +51,40 @@ src/backend/dotnet/AzureDevOpsAI.Backend/Configuration/ServiceCollectionExtensio
 **Special Handling**:
 - Automatically overrides `ClientId` with `ManagedIdentityClientId` environment variable for Azure OpenAI and CosmosDB settings
 
-### 3. ApplicationServicesExtensions.cs
-**Purpose**: Register application-specific services
+### 3. CosmosDbExtensions.cs
+**Purpose**: Register CosmosDB services
 
-**Extension Method**: `AddApplicationServices(IServiceCollection, IConfiguration)`
+**Extension Method**: `AddCosmosDbService(IServiceCollection)`
 
 **Services Registered**:
 - `ICosmosDbService` - CosmosDB data access (singleton)
-- `IAIService` - AI service for chat processing (scoped)
-- `IAzureDevOpsApiService` - Azure DevOps API client (scoped)
-- `HttpClient` - HTTP client factory
 
 **Validation**:
 - Validates CosmosDB endpoint is configured at service construction time
 - Allows test overrides for mocking
 
-### 4. ApplicationInsightsExtensions.cs
+### 4. AIServicesExtensions.cs
+**Purpose**: Register AI services (Azure OpenAI)
+
+**Extension Method**: `AddAIServices(IServiceCollection)`
+
+**Services Registered**:
+- `IAIService` - AI service for chat processing (scoped)
+- `HttpClient` - HTTP client factory
+
+### 5. AzureDevOpsExtensions.cs
+**Purpose**: Register Azure DevOps API services
+
+**Extension Method**: `AddAzureDevOpsApiService(IServiceCollection, IConfiguration)`
+
+**Services Registered**:
+- `IAzureDevOpsApiService` - Azure DevOps API client (scoped)
+
+**Configuration**:
+- Reads `ManagedIdentityClientId` from configuration
+- Reads Azure DevOps authentication settings (PAT, UsePat)
+
+### 6. ApplicationInsightsExtensions.cs
 **Purpose**: Configure Application Insights telemetry
 
 **Extension Method**: `AddApplicationInsights(IServiceCollection, IConfiguration)`
@@ -75,7 +93,7 @@ src/backend/dotnet/AzureDevOpsAI.Backend/Configuration/ServiceCollectionExtensio
 - Adds Application Insights with connection string if provided
 - Adds default Application Insights services without connection string (for local development)
 
-### 5. AuthenticationExtensions.cs
+### 7. AuthenticationExtensions.cs
 **Purpose**: Configure authentication and authorization
 
 **Extension Method**: `AddAuthenticationServices(IServiceCollection, IConfiguration)`
@@ -88,7 +106,7 @@ src/backend/dotnet/AzureDevOpsAI.Backend/Configuration/ServiceCollectionExtensio
 - Reads `AzureAuth` settings for tenant, client ID, and authority
 - Reads `Security:DisableAuth` flag for testing/development
 
-### 6. SwaggerExtensions.cs
+### 8. SwaggerExtensions.cs
 **Purpose**: Configure Swagger/OpenAPI documentation
 
 **Extension Method**: `AddSwaggerDocumentation(IServiceCollection, IConfiguration)`
@@ -98,7 +116,7 @@ src/backend/dotnet/AzureDevOpsAI.Backend/Configuration/ServiceCollectionExtensio
 - JWT Bearer authentication support in Swagger UI
 - Conditional security definitions based on `Security:DisableAuth` setting
 
-### 7. HealthCheckExtensions.cs
+### 9. HealthCheckExtensions.cs
 **Purpose**: Register health check services
 
 **Extension Method**: `AddHealthCheckServices(IServiceCollection)`
@@ -109,7 +127,7 @@ src/backend/dotnet/AzureDevOpsAI.Backend/Configuration/ServiceCollectionExtensio
 
 **Tags**: Each health check is tagged for filtering (e.g., "db", "cosmosdb", "ready", "ai", "azureopenai")
 
-### 8. MiddlewareExtensions.cs
+### 10. MiddlewareExtensions.cs
 **Purpose**: Configure HTTP request pipeline middleware
 
 **Extension Method**: `UseApplicationMiddleware(WebApplication, IConfiguration)`
@@ -121,7 +139,7 @@ src/backend/dotnet/AzureDevOpsAI.Backend/Configuration/ServiceCollectionExtensio
 4. `UseAuthentication()` - Authentication middleware (when enabled)
 5. `UseAuthorization()` - Authorization middleware (when enabled)
 
-### 9. EndpointExtensions.cs
+### 11. EndpointExtensions.cs
 **Purpose**: Map all HTTP endpoints
 
 **Extension Method**: `MapApplicationEndpoints(WebApplication, IConfiguration)`
@@ -148,7 +166,9 @@ builder.AddLogging();
 builder.Services.AddAppSettings(builder.Configuration);
 
 // Add application services
-builder.Services.AddApplicationServices(builder.Configuration);
+builder.Services.AddCosmosDbService();
+builder.Services.AddAIServices();
+builder.Services.AddAzureDevOpsApiService(builder.Configuration);
 
 // Add Application Insights
 builder.Services.AddApplicationInsights(builder.Configuration);
@@ -180,9 +200,26 @@ public partial class Program { }
 ## Adding New Configuration
 
 ### Adding a New Service
-1. Edit `ApplicationServicesExtensions.cs`
-2. Add service registration in the `AddApplicationServices` method
+
+**For CosmosDB-related services:**
+1. Edit `CosmosDbExtensions.cs`
+2. Add service registration in the `AddCosmosDbService` method
 3. Follow existing patterns (singleton vs. scoped vs. transient)
+
+**For AI/OpenAI-related services:**
+1. Edit `AIServicesExtensions.cs`
+2. Add service registration in the `AddAIServices` method
+3. Follow existing patterns (singleton vs. scoped vs. transient)
+
+**For Azure DevOps-related services:**
+1. Edit `AzureDevOpsExtensions.cs`
+2. Add service registration in the `AddAzureDevOpsApiService` method
+3. Follow existing patterns (singleton vs. scoped vs. transient)
+
+**For other services:**
+1. Create a new extension file (e.g., `CachingExtensions.cs`) in `ServiceCollectionExtensions/`
+2. Add service registration methods
+3. Update `Program.cs` to call the new extension method
 
 ### Adding a New Setting
 1. Add the settings class to `Configuration/AppSettings.cs`
