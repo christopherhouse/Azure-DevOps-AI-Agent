@@ -90,16 +90,16 @@ if (!string.IsNullOrEmpty(applicationInsightsSettings?.ConnectionString))
         options.ConnectionString = applicationInsightsSettings.ConnectionString;
     });
 
-    // Explicitly add Application Insights logging provider
-    builder.Logging.AddApplicationInsights(
-        configureTelemetryConfiguration: (config) =>
-            config.ConnectionString = applicationInsightsSettings.ConnectionString,
-        configureApplicationInsightsLoggerOptions: (options) =>
-        {
-            // Capture all log levels
-            options.IncludeScopes = true;
-            options.TrackExceptionsAsExceptionTelemetry = true;
-        });
+    //// Explicitly add Application Insights logging provider
+    //builder.Logging.AddApplicationInsights(
+    //    configureTelemetryConfiguration: (config) =>
+    //        config.ConnectionString = applicationInsightsSettings.ConnectionString,
+    //    configureApplicationInsightsLoggerOptions: (options) =>
+    //    {
+    //        // Capture all log levels
+    //        options.IncludeScopes = true;
+    //        options.TrackExceptionsAsExceptionTelemetry = true;
+    //    });
 }
 else
 {
@@ -262,8 +262,6 @@ app.MapGet("/", () =>
 
 // Map API endpoints
 app.MapChatEndpoints();
-//app.MapProjectEndpoints();
-//app.MapWorkItemEndpoints();
 
 // Map health checks
 app.MapHealthChecks("/health/ready");
