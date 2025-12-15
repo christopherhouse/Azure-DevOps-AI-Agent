@@ -13,6 +13,7 @@ public class RepositoryPlugin
 {
     private readonly IAzureDevOpsApiService _azureDevOpsApiService;
     private readonly ILogger<RepositoryPlugin> _logger;
+    private const string ApiVersion = "7.1";
 
     public RepositoryPlugin(IAzureDevOpsApiService azureDevOpsApiService, ILogger<RepositoryPlugin> logger)
     {
@@ -34,11 +35,22 @@ public class RepositoryPlugin
     {
         try
         {
+            // Validate inputs
+            if (string.IsNullOrWhiteSpace(organization))
+            {
+                return JsonSerializer.Serialize(new { error = "Organization name is required." });
+            }
+
+            if (string.IsNullOrWhiteSpace(project))
+            {
+                return JsonSerializer.Serialize(new { error = "Project name is required." });
+            }
+
             _logger.LogInformation("Listing repositories for project: {Project} in organization: {Organization}", project, organization);
 
             // Use the Azure DevOps API service to get repositories
             var repositories = await _azureDevOpsApiService.GetAsync<RepositoryListResponse>(
-                organization, $"{project}/_apis/git/repositories", "7.1");
+                organization, $"{project}/_apis/git/repositories", ApiVersion);
 
             if (repositories?.Value == null || !repositories.Value.Any())
             {
@@ -100,11 +112,27 @@ public class RepositoryPlugin
     {
         try
         {
+            // Validate inputs
+            if (string.IsNullOrWhiteSpace(organization))
+            {
+                return JsonSerializer.Serialize(new { error = "Organization name is required." });
+            }
+
+            if (string.IsNullOrWhiteSpace(project))
+            {
+                return JsonSerializer.Serialize(new { error = "Project name is required." });
+            }
+
+            if (string.IsNullOrWhiteSpace(repositoryId))
+            {
+                return JsonSerializer.Serialize(new { error = "Repository ID is required." });
+            }
+
             _logger.LogInformation("Getting repository: {RepositoryId} in project: {Project}, organization: {Organization}", repositoryId, project, organization);
 
             // Use the Azure DevOps API service to get repository details
             var repository = await _azureDevOpsApiService.GetAsync<GitRepository>(
-                organization, $"{project}/_apis/git/repositories/{repositoryId}", "7.1");
+                organization, $"{project}/_apis/git/repositories/{repositoryId}", ApiVersion);
 
             if (repository == null)
             {
@@ -165,17 +193,27 @@ public class RepositoryPlugin
     {
         try
         {
-            _logger.LogInformation("Creating repository '{RepositoryName}' in project: {Project}, organization: {Organization}", repositoryName, project, organization);
-
             // Validate inputs
+            if (string.IsNullOrWhiteSpace(organization))
+            {
+                return JsonSerializer.Serialize(new { error = "Organization name is required." });
+            }
+
+            if (string.IsNullOrWhiteSpace(project))
+            {
+                return JsonSerializer.Serialize(new { error = "Project name is required." });
+            }
+
             if (string.IsNullOrWhiteSpace(repositoryName))
             {
                 return JsonSerializer.Serialize(new { error = "Repository name is required." });
             }
 
+            _logger.LogInformation("Creating repository '{RepositoryName}' in project: {Project}, organization: {Organization}", repositoryName, project, organization);
+
             // First, get the project details to obtain the project ID
             var projectDetails = await _azureDevOpsApiService.GetAsync<Project>(
-                organization, $"projects/{project}", "7.1");
+                organization, $"projects/{project}", ApiVersion);
 
             if (projectDetails == null)
             {
@@ -194,7 +232,7 @@ public class RepositoryPlugin
 
             // Use the Azure DevOps API service to create the repository
             var createdRepository = await _azureDevOpsApiService.PostAsync<GitRepository>(
-                organization, $"{project}/_apis/git/repositories", repositoryRequest, "7.1");
+                organization, $"{project}/_apis/git/repositories", repositoryRequest, ApiVersion);
 
             if (createdRepository == null)
             {

@@ -133,33 +133,3 @@ public class RepositoryListResponse
     [JsonPropertyName("count")]
     public int Count { get; set; }
 }
-
-/// <summary>
-/// Request model for creating a new repository.
-/// </summary>
-public class CreateRepositoryRequest
-{
-    /// <summary>
-    /// Name of the repository to create.
-    /// </summary>
-    [JsonPropertyName("name")]
-    public string Name { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Project information.
-    /// </summary>
-    [JsonPropertyName("project")]
-    public CreateRepositoryProject Project { get; set; } = new();
-}
-
-/// <summary>
-/// Project reference for creating a repository.
-/// </summary>
-public class CreateRepositoryProject
-{
-    /// <summary>
-    /// Project ID (GUID).
-    /// </summary>
-    [JsonPropertyName("id")]
-    public string Id { get; set; } = string.Empty;
-}

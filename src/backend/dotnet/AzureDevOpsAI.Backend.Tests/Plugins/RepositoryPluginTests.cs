@@ -153,6 +153,36 @@ public class RepositoryPluginTests
     }
 
     [Fact]
+    public async Task ListRepositoriesAsync_ShouldReturnError_WhenOrganizationIsEmpty()
+    {
+        // Arrange
+        var organization = "";
+        var project = "test-project";
+
+        // Act
+        var result = await _plugin.ListRepositoriesAsync(organization, project);
+
+        // Assert
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("error").GetString().Should().Be("Organization name is required.");
+    }
+
+    [Fact]
+    public async Task ListRepositoriesAsync_ShouldReturnError_WhenProjectIsEmpty()
+    {
+        // Arrange
+        var organization = "test-org";
+        var project = "";
+
+        // Act
+        var result = await _plugin.ListRepositoriesAsync(organization, project);
+
+        // Assert
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("error").GetString().Should().Be("Project name is required.");
+    }
+
+    [Fact]
     public async Task GetRepositoryAsync_ShouldReturnRepositoryDetails_WhenRepositoryExists()
     {
         // Arrange
@@ -240,6 +270,54 @@ public class RepositoryPluginTests
         // Assert
         var jsonDoc = JsonDocument.Parse(result);
         jsonDoc.RootElement.GetProperty("error").GetString().Should().Be(errorMessage);
+    }
+
+    [Fact]
+    public async Task GetRepositoryAsync_ShouldReturnError_WhenOrganizationIsEmpty()
+    {
+        // Arrange
+        var organization = "";
+        var project = "test-project";
+        var repositoryId = "repo-1";
+
+        // Act
+        var result = await _plugin.GetRepositoryAsync(organization, project, repositoryId);
+
+        // Assert
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("error").GetString().Should().Be("Organization name is required.");
+    }
+
+    [Fact]
+    public async Task GetRepositoryAsync_ShouldReturnError_WhenProjectIsEmpty()
+    {
+        // Arrange
+        var organization = "test-org";
+        var project = "";
+        var repositoryId = "repo-1";
+
+        // Act
+        var result = await _plugin.GetRepositoryAsync(organization, project, repositoryId);
+
+        // Assert
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("error").GetString().Should().Be("Project name is required.");
+    }
+
+    [Fact]
+    public async Task GetRepositoryAsync_ShouldReturnError_WhenRepositoryIdIsEmpty()
+    {
+        // Arrange
+        var organization = "test-org";
+        var project = "test-project";
+        var repositoryId = "";
+
+        // Act
+        var result = await _plugin.GetRepositoryAsync(organization, project, repositoryId);
+
+        // Assert
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("error").GetString().Should().Be("Repository ID is required.");
     }
 
     [Fact]
@@ -391,5 +469,37 @@ public class RepositoryPluginTests
         // Assert
         var jsonDoc = JsonDocument.Parse(result);
         jsonDoc.RootElement.GetProperty("error").GetString().Should().Be(errorMessage);
+    }
+
+    [Fact]
+    public async Task CreateRepositoryAsync_ShouldReturnError_WhenOrganizationIsEmpty()
+    {
+        // Arrange
+        var organization = "";
+        var project = "test-project";
+        var repositoryName = "New Repository";
+
+        // Act
+        var result = await _plugin.CreateRepositoryAsync(organization, project, repositoryName);
+
+        // Assert
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("error").GetString().Should().Be("Organization name is required.");
+    }
+
+    [Fact]
+    public async Task CreateRepositoryAsync_ShouldReturnError_WhenProjectIsEmpty()
+    {
+        // Arrange
+        var organization = "test-org";
+        var project = "";
+        var repositoryName = "New Repository";
+
+        // Act
+        var result = await _plugin.CreateRepositoryAsync(organization, project, repositoryName);
+
+        // Assert
+        var jsonDoc = JsonDocument.Parse(result);
+        jsonDoc.RootElement.GetProperty("error").GetString().Should().Be("Project name is required.");
     }
 }
