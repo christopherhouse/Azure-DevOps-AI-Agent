@@ -162,6 +162,8 @@ module logAnalytics 'br/public:avm/res/operational-insights/workspace:0.11.1' = 
 }
 
 // Application Insights using AVM
+// NOTE: Do not route diags from App Insights to Log Analytics to avoid
+// duplicated telemetrys
 module applicationInsights 'br/public:avm/res/insights/component:0.6.0' = {
   name: 'application-insights-${deployment().name}'
   params: {
@@ -172,22 +174,6 @@ module applicationInsights 'br/public:avm/res/insights/component:0.6.0' = {
     workspaceResourceId: logAnalytics.outputs.resourceId
     publicNetworkAccessForIngestion: 'Enabled'
     publicNetworkAccessForQuery: 'Enabled'
-    diagnosticSettings: [
-      {
-        name: 'default'
-        logCategoriesAndGroups: [
-          {
-            categoryGroup: 'allLogs'
-          }
-        ]
-        metricCategories: [
-          {
-            category: 'AllMetrics'
-          }
-        ]
-        workspaceResourceId: logAnalytics.outputs.resourceId
-      }
-    ]
   }
 }
 
