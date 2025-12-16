@@ -4,6 +4,22 @@
 
 import { ApplicationInsights } from '@microsoft/applicationinsights-web';
 
+// Define interface for window client config
+interface ClientConfig {
+  telemetry: {
+    connectionString: string;
+    enabled: boolean;
+  };
+  debug: boolean;
+}
+
+// Extend Window interface to include our custom property
+declare global {
+  interface Window {
+    __CLIENT_CONFIG__?: ClientConfig;
+  }
+}
+
 // Global instance of Application Insights
 let appInsights: ApplicationInsights | null = null;
 
@@ -28,7 +44,7 @@ const getAppInsights = (): ApplicationInsights | null => {
   }
 
   // Get configuration from window object (set by ClientLayout)
-  const config = (window as any).__CLIENT_CONFIG__;
+  const config = window.__CLIENT_CONFIG__;
 
   if (!config?.telemetry?.connectionString || !config?.telemetry?.enabled) {
     console.warn('Application Insights is not configured or not enabled');
@@ -119,8 +135,10 @@ export const trackApiCall = (
 ): void => {
   const ai = getAppInsights();
   if (ai) {
+    // Use method and URL as ID for better correlation of similar API calls
+    // This allows Application Insights to group calls to the same endpoint
     ai.trackDependencyData({
-      id: `${method}_${url}_${Date.now()}`,
+      id: `${method}_${url}`,
       name: `${method} ${url}`,
       duration,
       success: success ?? (statusCode >= 200 && statusCode < 400),
