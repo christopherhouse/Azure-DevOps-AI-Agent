@@ -70,8 +70,8 @@ export class ApiClient {
         const duration = Date.now() - startTime;
 
         trackApiCall(
-          response.config.url || '',
           response.config.method?.toUpperCase() || 'GET',
+          response.config.url || '',
           response.status,
           duration,
           true
@@ -86,8 +86,8 @@ export class ApiClient {
         const duration = Date.now() - startTime;
 
         trackApiCall(
-          error.config?.url || '',
           error.config?.method?.toUpperCase() || 'GET',
+          error.config?.url || '',
           response?.status || 0,
           duration,
           false
