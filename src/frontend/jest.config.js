@@ -20,6 +20,11 @@ const customJestConfig = {
     '<rootDir>/.next/',
     '<rootDir>/node_modules/',
   ],
+  testMatch: [
+    '**/__tests__/**/*.[jt]s?(x)',
+    '!**/__tests__/**/test-helpers.[jt]s?(x)',
+    '**/?(*.)+(spec|test).[jt]s?(x)',
+  ],
   moduleNameMapper: {
     '^react-markdown$': '<rootDir>/__mocks__/react-markdown.tsx',
     '^remark-gfm$': '<rootDir>/__mocks__/remark-gfm.ts',
