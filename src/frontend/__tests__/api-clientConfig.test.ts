@@ -14,7 +14,10 @@ const mockEnvVars = {
   FRONTEND_URL: 'http://localhost:3000',
   AZURE_AUTHORITY: 'https://login.microsoftonline.com/test-tenant-id',
   AZURE_REDIRECT_URI: 'http://localhost:3000/auth/callback',
-  AZURE_SCOPES: 'openid,profile,User.Read'
+  AZURE_SCOPES: 'openid,profile,User.Read',
+  APPLICATIONINSIGHTS_CONNECTION_STRING: 'InstrumentationKey=test-key;IngestionEndpoint=https://test.applicationinsights.azure.com/',
+  ENABLE_TELEMETRY: 'true',
+  DEBUG: 'false'
 }
 
 describe('/api/clientConfig', () => {
@@ -60,7 +63,12 @@ describe('/api/clientConfig', () => {
         },
         frontend: {
           url: 'http://localhost:3000'
-        }
+        },
+        telemetry: {
+          connectionString: 'InstrumentationKey=test-key;IngestionEndpoint=https://test.applicationinsights.azure.com/',
+          enabled: true
+        },
+        debug: false
       })
     })
 
@@ -228,6 +236,62 @@ describe('/api/clientConfig', () => {
       // Should not have duplicates
       const backendApiScopes = data.azure.scopes.filter(scope => scope === 'api://test-backend-client-id/Api.All')
       expect(backendApiScopes.length).toBe(1)
+    })
+
+    it('should disable telemetry when ENABLE_TELEMETRY is false', async () => {
+      process.env.ENABLE_TELEMETRY = 'false'
+
+      // Re-import the module to pick up env changes
+      jest.resetModules()
+      const module = await import('@/app/api/clientConfig/route')
+      const response = await module.GET()
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.telemetry.enabled).toBe(false)
+    })
+
+    it('should disable telemetry when connection string is empty', async () => {
+      process.env.APPLICATIONINSIGHTS_CONNECTION_STRING = ''
+      process.env.ENABLE_TELEMETRY = 'true'
+
+      // Re-import the module to pick up env changes
+      jest.resetModules()
+      const module = await import('@/app/api/clientConfig/route')
+      const response = await module.GET()
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.telemetry.enabled).toBe(false)
+      expect(data.telemetry.connectionString).toBe('')
+    })
+
+    it('should enable telemetry when both connection string and ENABLE_TELEMETRY are set', async () => {
+      process.env.APPLICATIONINSIGHTS_CONNECTION_STRING = 'InstrumentationKey=test;IngestionEndpoint=https://test.azure.com/'
+      process.env.ENABLE_TELEMETRY = 'true'
+
+      // Re-import the module to pick up env changes
+      jest.resetModules()
+      const module = await import('@/app/api/clientConfig/route')
+      const response = await module.GET()
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.telemetry.enabled).toBe(true)
+      expect(data.telemetry.connectionString).toBe('InstrumentationKey=test;IngestionEndpoint=https://test.azure.com/')
+    })
+
+    it('should set debug mode when DEBUG is true', async () => {
+      process.env.DEBUG = 'true'
+
+      // Re-import the module to pick up env changes
+      jest.resetModules()
+      const module = await import('@/app/api/clientConfig/route')
+      const response = await module.GET()
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.debug).toBe(true)
     })
   })
 })

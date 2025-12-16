@@ -5,23 +5,10 @@
 
 import { getLoginRequest, getTokenRequest } from '@/lib/auth-config';
 import { setCachedClientConfig, clearCachedClientConfig } from '@/hooks/use-client-config';
+import { createMockClientConfigWithBackendScope } from './test-helpers';
 
 describe('JWT Scope Fix Validation', () => {
-  const mockClientConfigWithBackendScope = {
-    azure: {
-      tenantId: 'test-tenant-id',
-      clientId: 'test-client-id',
-      authority: 'https://login.microsoftonline.com/test-tenant-id',
-      redirectUri: 'http://localhost:3000/auth/callback',
-      scopes: ['openid', 'profile', 'User.Read', 'email', 'api://backend-client-id/Api.All']
-    },
-    backend: {
-      url: 'http://localhost:8000/api'
-    },
-    frontend: {
-      url: 'http://localhost:3000'
-    }
-  };
+  const mockClientConfigWithBackendScope = createMockClientConfigWithBackendScope();
 
   beforeEach(() => {
     clearCachedClientConfig();

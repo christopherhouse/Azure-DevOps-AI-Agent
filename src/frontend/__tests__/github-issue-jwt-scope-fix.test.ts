@@ -5,6 +5,7 @@
 
 import { getLoginRequest, getTokenRequest } from '@/lib/auth-config';
 import { setCachedClientConfig, clearCachedClientConfig } from '@/hooks/use-client-config';
+import { createMockClientConfig } from './test-helpers';
 
 describe('GitHub Issue JWT Scope Fix Validation', () => {
   beforeEach(() => {
@@ -36,7 +37,12 @@ describe('GitHub Issue JWT Scope Fix Validation', () => {
       },
       frontend: {
         url: 'http://localhost:3000'
-      }
+      },
+      telemetry: {
+        connectionString: '',
+        enabled: false
+      },
+      debug: false
     };
     
     // Cache the client config as it would be loaded from /api/clientConfig
@@ -96,7 +102,12 @@ describe('GitHub Issue JWT Scope Fix Validation', () => {
       },
       frontend: {
         url: 'http://localhost:3000'
-      }
+      },
+      telemetry: {
+        connectionString: '',
+        enabled: false
+      },
+      debug: false
     };
 
     setCachedClientConfig(mockClientConfig);

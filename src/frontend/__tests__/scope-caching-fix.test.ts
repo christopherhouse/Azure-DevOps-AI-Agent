@@ -6,25 +6,12 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { useClientConfig, getCachedClientConfig, clearCachedClientConfig } from '@/hooks/use-client-config';
 import { getLoginRequest, getTokenRequest } from '@/lib/auth-config';
+import { createMockClientConfigWithBackendScope } from './test-helpers';
 
 // Mock fetch
 global.fetch = jest.fn();
 
-const mockClientConfigWithBackendScope = {
-  azure: {
-    tenantId: 'test-tenant-id',
-    clientId: 'test-client-id',
-    authority: 'https://login.microsoftonline.com/test-tenant-id',
-    redirectUri: 'http://localhost:3000/auth/callback',
-    scopes: ['openid', 'profile', 'User.Read', 'email', 'api://backend-client-id/Api.All']
-  },
-  backend: {
-    url: 'http://localhost:8000/api'
-  },
-  frontend: {
-    url: 'http://localhost:3000'
-  }
-};
+const mockClientConfigWithBackendScope = createMockClientConfigWithBackendScope();
 
 describe('Scope Caching Fix', () => {
   beforeEach(() => {

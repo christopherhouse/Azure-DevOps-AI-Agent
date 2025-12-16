@@ -6,6 +6,7 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { useClientConfig, setCachedClientConfig, clearCachedClientConfig } from '@/hooks/use-client-config';
 import { getLoginRequest, getTokenRequest } from '@/lib/auth-config';
+import { createMockClientConfig } from './test-helpers';
 
 // Mock fetch
 global.fetch = jest.fn();
@@ -109,6 +110,12 @@ describe('JWT Scope Requirements - End-to-End Validation', () => {
       },
       backend: { url: 'http://localhost:8000/api' },
       frontend: { url: 'http://localhost:3000' }
+    ,
+      telemetry: {
+        connectionString: "",
+        enabled: false
+      },
+      debug: false
     };
 
     setCachedClientConfig(configWithAllScopes);

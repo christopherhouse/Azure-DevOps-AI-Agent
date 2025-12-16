@@ -5,6 +5,7 @@
 import { renderHook, act } from '@testing-library/react';
 import { useAuth } from '@/hooks/use-auth';
 import { setCachedClientConfig, clearCachedClientConfig } from '@/hooks/use-client-config';
+import { createMockClientConfigWithBackendScope, createMockClientConfigOidcOnly } from './test-helpers';
 
 // Mock MSAL React
 const mockInstance = {
@@ -44,37 +45,8 @@ jest.mock('@/services/api-client', () => ({
 }), { virtual: true });
 
 describe('useAuth Hook - Split Token Methods (Issue #232)', () => {
-  const mockClientConfigWithBackendScope = {
-    azure: {
-      tenantId: 'test-tenant-id',
-      clientId: 'test-client-id',
-      authority: 'https://login.microsoftonline.com/test-tenant-id',
-      redirectUri: 'http://localhost:3000/auth/callback',
-      scopes: ['openid', 'profile', 'User.Read', 'email', 'api://backend-client-id/Api.All']
-    },
-    backend: {
-      url: 'http://localhost:8000/api'
-    },
-    frontend: {
-      url: 'http://localhost:3000'
-    }
-  };
-
-  const mockClientConfigOidcOnly = {
-    azure: {
-      tenantId: 'test-tenant-id',
-      clientId: 'test-client-id',
-      authority: 'https://login.microsoftonline.com/test-tenant-id',
-      redirectUri: 'http://localhost:3000/auth/callback',
-      scopes: ['openid', 'profile', 'User.Read', 'email']
-    },
-    backend: {
-      url: 'http://localhost:8000/api'
-    },
-    frontend: {
-      url: 'http://localhost:3000'
-    }
-  };
+  const mockClientConfigWithBackendScope = createMockClientConfigWithBackendScope();
+  const mockClientConfigOidcOnly = createMockClientConfigOidcOnly();
 
   beforeEach(() => {
     clearCachedClientConfig();

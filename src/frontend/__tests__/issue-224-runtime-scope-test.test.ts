@@ -7,6 +7,7 @@
 
 import { getLoginRequest, getTokenRequest } from '@/lib/auth-config';
 import { setCachedClientConfig, clearCachedClientConfig } from '@/hooks/use-client-config';
+import { createMockClientConfig } from './test-helpers';
 
 describe('Issue #224: Runtime Scope Problem Reproduction', () => {
   beforeEach(() => {
@@ -42,7 +43,12 @@ describe('Issue #224: Runtime Scope Problem Reproduction', () => {
       },
       "frontend": {
         "url": "https://azdo-ai-agent-dev-frontend.kindflower-ab69ae39.eastus2.azurecontainerapps.io"
-      }
+      },
+      "telemetry": {
+        "connectionString": "",
+        "enabled": false
+      },
+      "debug": false
     };
 
     // Simulate the client config being loaded and cached
@@ -128,6 +134,12 @@ describe('Issue #224: Runtime Scope Problem Reproduction', () => {
       frontend: {
         url: 'http://localhost:3000'
       }
+    ,
+      telemetry: {
+        connectionString: "",
+        enabled: false
+      },
+      debug: false
     };
     
     setCachedClientConfig(clientConfig);
