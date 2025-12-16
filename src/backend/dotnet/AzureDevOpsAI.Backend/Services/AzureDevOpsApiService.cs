@@ -425,9 +425,10 @@ public class AzureDevOpsApiService : IAzureDevOpsApiService
         // Remove duplicate /_apis/ prefixes
         var normalizedPath = apiPath.TrimStart('/');
 
-        // If path already starts with _apis/, use it as-is with leading slash
+        // If path already contains /_apis/ anywhere (e.g., {project}/_apis/git/repositories), use it as-is
         // Otherwise, prefix with /_apis/
-        var path = normalizedPath.StartsWith("_apis/", StringComparison.OrdinalIgnoreCase)
+        var path = normalizedPath.StartsWith("_apis/", StringComparison.OrdinalIgnoreCase) ||
+                   normalizedPath.Contains("/_apis/", StringComparison.OrdinalIgnoreCase)
             ? $"/{normalizedPath}"
             : $"/_apis/{normalizedPath}";
 
