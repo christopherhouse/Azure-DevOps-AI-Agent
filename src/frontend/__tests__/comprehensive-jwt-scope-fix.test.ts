@@ -5,6 +5,7 @@
 
 import { getLoginRequest, getTokenRequest } from '@/lib/auth-config';
 import { setCachedClientConfig, clearCachedClientConfig } from '@/hooks/use-client-config';
+import { createMockClientConfig } from './test-helpers';
 
 describe('Comprehensive JWT Scope Fix', () => {
   beforeEach(() => {
@@ -17,7 +18,7 @@ describe('Comprehensive JWT Scope Fix', () => {
 
   it('should use client config scopes when available (primary scenario)', () => {
     // Test the primary path: client config is loaded and cached
-    const clientConfig = {
+    const clientConfig = createMockClientConfig({
       azure: {
         tenantId: 'test-tenant-id',
         clientId: 'test-client-id',
@@ -37,7 +38,7 @@ describe('Comprehensive JWT Scope Fix', () => {
       frontend: {
         url: 'http://localhost:3000'
       }
-    };
+    });
     
     setCachedClientConfig(clientConfig);
     

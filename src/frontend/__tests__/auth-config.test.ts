@@ -11,9 +11,10 @@ import {
   tokenRequest 
 } from '@/lib/auth-config';
 import { setCachedClientConfig, clearCachedClientConfig } from '@/hooks/use-client-config';
+import { createMockClientConfigWithBackendScope, createMockClientConfig } from './test-helpers'
 
 // Mock client config with backend API scope
-const mockClientConfigWithBackendScope = {
+const mockClientConfigWithBackendScope = createMockClientConfigWithBackendScope({
   azure: {
     tenantId: 'test-tenant-id-12345',
     clientId: 'test-client-id-67890',
@@ -27,10 +28,10 @@ const mockClientConfigWithBackendScope = {
   frontend: {
     url: 'http://localhost:3000'
   }
-};
+});
 
 // Mock client config
-const mockClientConfig = {
+const mockClientConfig = createMockClientConfig({
   azure: {
     tenantId: 'test-tenant-id-12345',
     clientId: 'test-client-id-67890',
@@ -44,7 +45,7 @@ const mockClientConfig = {
   frontend: {
     url: 'http://localhost:3000'
   }
-};
+});
 
 describe('MSAL Configuration with Client Config', () => {
   const originalWindow = global.window;

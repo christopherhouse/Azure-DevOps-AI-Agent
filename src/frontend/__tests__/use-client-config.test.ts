@@ -4,25 +4,12 @@
 
 import { renderHook, waitFor } from '@testing-library/react'
 import { useClientConfig, getCachedClientConfig, setCachedClientConfig, clearCachedClientConfig } from '@/hooks/use-client-config'
+import { createMockClientConfigOidcOnly } from './test-helpers'
 
 // Mock fetch
 global.fetch = jest.fn()
 
-const mockClientConfig = {
-  azure: {
-    tenantId: 'test-tenant-id',
-    clientId: 'test-client-id',
-    authority: 'https://login.microsoftonline.com/test-tenant-id',
-    redirectUri: 'http://localhost:3000/auth/callback',
-    scopes: ['openid', 'profile', 'User.Read', 'email']
-  },
-  backend: {
-    url: 'http://localhost:8000'
-  },
-  frontend: {
-    url: 'http://localhost:3000'
-  }
-}
+const mockClientConfig = createMockClientConfigOidcOnly()
 
 describe('useClientConfig', () => {
   beforeEach(() => {
