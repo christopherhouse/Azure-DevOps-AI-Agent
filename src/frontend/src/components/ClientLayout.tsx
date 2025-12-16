@@ -51,9 +51,13 @@ export function ClientLayout({ children }: ClientLayoutProps) {
 
           // Initialize telemetry after config is set
           // Dynamic import to avoid circular dependencies
-          import('@/lib/telemetry').then(({ initializeTelemetry }) => {
-            initializeTelemetry();
-          });
+          import('@/lib/telemetry')
+            .then(({ initializeTelemetry }) => {
+              initializeTelemetry();
+            })
+            .catch((err) => {
+              console.error('Failed to load telemetry module:', err);
+            });
         }
 
         // Create MSAL configuration from client config
