@@ -25,6 +25,11 @@ export interface ClientConfigResponse {
   frontend: {
     url: string;
   };
+  telemetry: {
+    connectionString: string;
+    enabled: boolean;
+  };
+  debug: boolean;
 }
 
 export async function GET() {
@@ -38,6 +43,13 @@ export async function GET() {
     const authority = process.env.AZURE_AUTHORITY;
     const redirectUri = process.env.AZURE_REDIRECT_URI;
     const scopes = process.env.AZURE_SCOPES;
+
+    // Read telemetry configuration (optional)
+    const appInsightsConnectionString =
+      process.env.APPLICATIONINSIGHTS_CONNECTION_STRING || '';
+    const enableTelemetry =
+      process.env.ENABLE_TELEMETRY?.toLowerCase() === 'true';
+    const debugMode = process.env.DEBUG?.toLowerCase() === 'true';
 
     // Validate required environment variables
     if (!tenantId) {
@@ -84,6 +96,11 @@ export async function GET() {
       frontend: {
         url: frontendUrl,
       },
+      telemetry: {
+        connectionString: appInsightsConnectionString,
+        enabled: enableTelemetry && appInsightsConnectionString !== '',
+      },
+      debug: debugMode,
     };
 
     return NextResponse.json(config);

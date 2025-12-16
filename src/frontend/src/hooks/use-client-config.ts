@@ -24,6 +24,11 @@ export interface ClientConfig {
   frontend: {
     url: string;
   };
+  telemetry: {
+    connectionString: string;
+    enabled: boolean;
+  };
+  debug: boolean;
 }
 
 interface ConfigError {

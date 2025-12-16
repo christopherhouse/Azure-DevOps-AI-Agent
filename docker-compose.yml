@@ -62,22 +62,6 @@ services:
     build:
       context: ./src/frontend
       dockerfile: Dockerfile
-      args:
-        # Build-time environment variables (NEXT_PUBLIC_* vars needed during build)
-        - NEXT_PUBLIC_AZURE_TENANT_ID=${AZURE_TENANT_ID}
-        - NEXT_PUBLIC_AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
-        - NEXT_PUBLIC_BACKEND_CLIENT_ID=${BACKEND_CLIENT_ID}
-        - NEXT_PUBLIC_AZURE_AUTHORITY=https://login.microsoftonline.com/${AZURE_TENANT_ID}
-        - NEXT_PUBLIC_AZURE_REDIRECT_URI=http://localhost:3000/auth/callback
-        - NEXT_PUBLIC_AZURE_SCOPES=${AZURE_SCOPES:-openid,profile,User.Read}
-        - NEXT_PUBLIC_BACKEND_URL=http://backend:8000
-        - NEXT_PUBLIC_FRONTEND_URL=http://localhost:3000
-        - NEXT_PUBLIC_ENVIRONMENT=${ENVIRONMENT:-development}
-        - NEXT_PUBLIC_DEBUG=${DEBUG:-true}
-        - NEXT_PUBLIC_APPLICATIONINSIGHTS_CONNECTION_STRING=${APPLICATIONINSIGHTS_CONNECTION_STRING}
-        - NEXT_PUBLIC_ENABLE_TELEMETRY=${ENABLE_TELEMETRY:-false}
-        - NEXT_PUBLIC_SESSION_TIMEOUT=${SESSION_TIMEOUT:-3600}
-        - NEXT_PUBLIC_REQUIRE_HTTPS=${REQUIRE_HTTPS:-false}
     container_name: azure-devops-ai-frontend
     ports:
       - "3000:3000"
@@ -89,21 +73,22 @@ services:
       - PORT=3000
       - HOSTNAME=0.0.0.0
       
-      # Next.js public environment variables
-      - NEXT_PUBLIC_AZURE_TENANT_ID=${AZURE_TENANT_ID}
-      - NEXT_PUBLIC_AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
-      - NEXT_PUBLIC_BACKEND_CLIENT_ID=${BACKEND_CLIENT_ID}
-      - NEXT_PUBLIC_AZURE_AUTHORITY=https://login.microsoftonline.com/${AZURE_TENANT_ID}
-      - NEXT_PUBLIC_AZURE_REDIRECT_URI=http://localhost:3000/auth/callback
-      - NEXT_PUBLIC_AZURE_SCOPES=${AZURE_SCOPES:-openid,profile,User.Read}
-      - NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
-      - NEXT_PUBLIC_FRONTEND_URL=http://localhost:3000
+      # Server-side configuration (accessed by /api/clientConfig)
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+      - BACKEND_CLIENT_ID=${BACKEND_CLIENT_ID}
+      - AZURE_AUTHORITY=https://login.microsoftonline.com/${AZURE_TENANT_ID}
+      - AZURE_REDIRECT_URI=http://localhost:3000/auth/callback
+      - AZURE_SCOPES=${AZURE_SCOPES:-openid,profile,User.Read}
+      - BACKEND_URL=http://backend:8000
+      - FRONTEND_URL=http://localhost:3000
+      - APPLICATIONINSIGHTS_CONNECTION_STRING=${APPLICATIONINSIGHTS_CONNECTION_STRING}
+      - ENABLE_TELEMETRY=${ENABLE_TELEMETRY:-false}
+      - DEBUG=${DEBUG:-true}
+      
+      # Next.js public environment variables (for client-side access)
       - NEXT_PUBLIC_ENVIRONMENT=${ENVIRONMENT:-development}
-      - NEXT_PUBLIC_DEBUG=${DEBUG:-true}
-      - NEXT_PUBLIC_APPLICATIONINSIGHTS_CONNECTION_STRING=${APPLICATIONINSIGHTS_CONNECTION_STRING}
-      - NEXT_PUBLIC_ENABLE_TELEMETRY=${ENABLE_TELEMETRY:-false}
-      - NEXT_PUBLIC_SESSION_TIMEOUT=${SESSION_TIMEOUT:-3600}
-      - NEXT_PUBLIC_REQUIRE_HTTPS=${REQUIRE_HTTPS:-false}
+      - NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
     depends_on:
       backend:
         condition: service_healthy

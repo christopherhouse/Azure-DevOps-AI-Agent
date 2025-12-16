@@ -353,6 +353,20 @@ jobs:
       run: |
         echo "🎨 Deploying frontend container app using custom script..."
         
+        # Get Application Insights connection string using Azure CLI for frontend telemetry
+        APP_INSIGHTS_CONNECTION_STRING=$(az monitor app-insights component show \
+          --app "${{ steps.deploy-infra.outputs.applicationInsightsName }}" \
+          -g "${{ env.AZURE_RESOURCE_GROUP }}" \
+          --query connectionString \
+          -o tsv)
+        
+        if [[ -z "$APP_INSIGHTS_CONNECTION_STRING" || "$APP_INSIGHTS_CONNECTION_STRING" == "null" ]]; then
+          echo "❌ Failed to retrieve Application Insights connection string"
+          exit 1
+        fi
+        
+        echo "✅ Retrieved Application Insights connection string for frontend"
+        
         ./scripts/deploy-containerapp.sh \
           --environment "${{ steps.deploy-infra.outputs.containerAppsEnvironmentName }}" \
           --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
@@ -372,12 +386,14 @@ jobs:
           --env-var "BACKEND_URL=https://${{ env.BACKEND_APP_NAME }}.${{ steps.deploy-infra.outputs.environmentDefaultDomain }}" \
           --env-var "NEXT_PUBLIC_BACKEND_URL=https://${{ env.BACKEND_APP_NAME }}.${{ steps.deploy-infra.outputs.environmentDefaultDomain }}" \
           --env-var "NEXT_PUBLIC_ENVIRONMENT=${{ inputs.environment }}" \
+          --env-var "APPLICATIONINSIGHTS_CONNECTION_STRING=${APP_INSIGHTS_CONNECTION_STRING}" \
+          --env-var "ENABLE_TELEMETRY=true" \
+          --env-var "DEBUG=false" \
           --secret-ref "AZURE_TENANT_ID=entra-tenant-id" \
           --secret-ref "AZURE_CLIENT_ID=frontend-client-id" \
           --secret-ref "BACKEND_CLIENT_ID=backend-client-id" \
           --secret-ref "NEXT_PUBLIC_AZURE_TENANT_ID=entra-tenant-id" \
           --secret-ref "NEXT_PUBLIC_AZURE_CLIENT_ID=frontend-client-id" \
-          --secret-ref "NEXT_PUBLIC_APPLICATIONINSIGHTS_CONNECTION_STRING=app-insights-connection-string" \
           --verbose
         
     - name: Set Container App outputs

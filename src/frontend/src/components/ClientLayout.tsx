@@ -39,6 +39,17 @@ export function ClientLayout({ children }: ClientLayoutProps) {
         // Cache the config for use by other components
         setCachedClientConfig(clientConfig);
 
+        // Set telemetry configuration on window object for telemetry library
+        if (typeof window !== 'undefined') {
+          window.__CLIENT_CONFIG__ = {
+            telemetry: {
+              connectionString: clientConfig.telemetry.connectionString,
+              enabled: clientConfig.telemetry.enabled,
+            },
+            debug: clientConfig.debug,
+          };
+        }
+
         // Create MSAL configuration from client config
         const msalConfig = createMsalConfigFromClientConfig(clientConfig);
 
